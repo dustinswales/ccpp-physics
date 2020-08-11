@@ -172,7 +172,6 @@
 !                       consolidated constents/parameters by using      !
 !                       module physcons, and added program documentation!
 !    sep  2009 -- s. moorthi minor fixes                                !
-!    nov  2018 -- j. han add canopy heat storage parameterization       !
 !                                                                       !
 !  ====================  defination of variables  ====================  !
 !                                                                       !
@@ -337,18 +336,13 @@
      &       psisat, quartz, rch, refkdt, rr, rgl, rsmax, sndens,       &
      &       sncond, sbeta, sn_new, slope, snup, salp, soilwm, soilww,  &
      &       t1v, t24, t2v, th2v, topt, tsnow, zbot, z0
-
+      
+      real (kind=kind_phys) ::  shdfac0
       real (kind=kind_phys), dimension(nsold) :: rtdis, zsoil
 
       logical :: frzgra, snowng
 
       integer :: ice, k, kz
-!
-!  --- parameters for heat storage parametrization
-!
-      real (kind=kind_phys)            :: cpx, cpx1, cpfac, xx1, xx2
-      real (kind=kind_phys), parameter :: z0min=0.2_kind_phys,          &
-     &                                    z0max=1.0_kind_phys
 !
 !===> ...  begin here
 !
@@ -358,6 +352,7 @@
       runoff2 = 0.0
       runoff3 = 0.0
       snomlt  = 0.0
+      rc      = 0.0
 
 !  --- ...  define local variable ice to achieve:
 !             sea-ice case,          ice =  1
@@ -368,6 +363,7 @@
 !           vegetation fraction (shdfac) = 0.
 
 !> - Set ice = -1 and green vegetation fraction (shdfac) = 0 for glacial-ice land.
+      shdfac0 = shdfac
       ice = icein
 
       if(ivegsrc == 2) then
@@ -420,12 +416,18 @@
 !only igbp type has urban
 !urban
          if(vegtyp == 13)then
-              shdfac=0.05
-              rsmin=400.0
-              smcmax = 0.45
-              smcref = 0.42
-              smcwlt = 0.40
-              smcdry = 0.40
+!             shdfac=0.05
+!             rsmin=400.0
+!             smcmax = 0.45
+!             smcref = 0.42
+!             smcwlt = 0.40
+!             smcdry = 0.40
+              rsmin=400.0*(1-shdfac0)+40.0*shdfac0   ! gvf
+              shdfac=shdfac0                         ! gvf
+              smcmax = 0.45*(1-shdfac0)+smcmax*shdfac0
+              smcref = 0.42*(1-shdfac0)+smcref*shdfac0
+              smcwlt = 0.40*(1-shdfac0)+smcwlt*shdfac0
+              smcdry = 0.40*(1-shdfac0)+smcdry*shdfac0
          endif
         endif
 
@@ -662,18 +664,25 @@
 !  ---  outputs:
      &       df1                                                        &
      &     )
-!>   - For IGBP/urban, \f$df1=3.24\f$.
-        if(ivegsrc == 1) then
+!       if(ivegsrc == 1) then
 !only igbp type has urban
 !urban
-            if ( vegtyp == 13 ) df1=3.24
-        endif
+!           if ( vegtyp == 13 ) df1=3.24
+!       endif
 
 !>   - Add subsurface heat flux reduction effect from the
 !!  overlying green canopy, adapted from section 2.1.2 of
 !!  \cite peters-lidard_et_al_1997.
-
-        df1 = df1 * exp( sbeta*shdfac )
+!wz only urban for igbp type
+!
+!jhan urban canopy heat storage effect is included in pbl scheme
+!
+        if((.not.lheatstrg) .and.                                       &
+     &      (ivegsrc == 1 .and. vegtyp == 13)) then
+          df1 = 3.24*(1.-shdfac) + shdfac*df1*exp(sbeta*shdfac)
+        else
+          df1 = df1 * exp( sbeta*shdfac )
+        endif
 
       endif   ! end if_ice_block
 
@@ -799,22 +808,6 @@
         fdown = swnet + lwdn
 
       endif   ! end if_couple_block
-!
-!  ---  enhance cp as a function of z0 to mimic heat storage
-!
-      cpx   = cp
-      cpx1  = cp1
-      cpfac = 1.0
-      if (lheatstrg) then
-        if ((ivegsrc == 1 .and. vegtyp /= 13)
-     &                    .or.  ivegsrc == 2) then
-          xx1   = (z0 - z0min) / (z0max - z0min)
-          xx2   = 1.0 + min(max(xx1, 0.0), 1.0)
-          cpx   = cp  * xx2
-          cpx1  = cp1 * xx2
-          cpfac = cp / cpx
-        endif
-      endif
 
 !> - Call penman() to calculate potential evaporation (\a etp),
 !! and other partial products and sums for later
@@ -823,7 +816,7 @@
       call penman
 !  ---  inputs:                                                         !
 !          ( sfctmp, sfcprs, sfcems, ch, t2v, th2, prcp, fdown,         !
-!            cpx, cpfac, ssoil, q2, q2sat, dqsdt2, snowng, frzgra,      !
+!            ssoil, q2, q2sat, dqsdt2, snowng, frzgra,                  !
 !  ---  outputs:                                                        !
 !            t24, etp, rch, epsca, rr, flx2 )                           !
 
@@ -838,7 +831,7 @@
         call canres
 !  ---  inputs:                                                         !
 !          ( nsoil, nroot, swdn, ch, q2, q2sat, dqsdt2, sfctmp,         !
-!            cpx1, sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,  !
+!            sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,        !
 !            rsmax, topt, rgl, hs, xlai,                                !
 !  ---  outputs:                                                        !
 !            rc, pc, rcs, rct, rcq, rcsoil )                            !
@@ -860,7 +853,7 @@
 !            smcdry, cmcmax, dt, shdfac, sbeta, sfctmp, sfcems,         !
 !            t24, th2, fdown, epsca, bexp, pc, rch, rr, cfactr,         !
 !            slope, kdt, frzx, psisat, zsoil, dksat, dwsat,             !
-!            zbot, ice, rtdis, quartz, fxexp, csoil,                    !
+!            zbot, ice, rtdis, quartz, fxexp, csoil, lheatstrg,         !
 !  ---  input/outputs:                                                  !
 !            cmc, t1, stc, sh2o, tbot,                                  !
 !  ---  outputs:                                                        !
@@ -876,7 +869,7 @@
 !            cmcmax, dt, df1, sfcems, sfctmp, t24, th2, fdown, epsca,   !
 !            bexp, pc, rch, rr, cfactr, slope, kdt, frzx, psisat,       !
 !            zsoil, dwsat, dksat, zbot, shdfac, ice, rtdis, quartz,     !
-!            fxexp, csoil, flx2, snowng,                                !
+!            fxexp, csoil, flx2, snowng, lheatstrg,                     !
 !  ---  input/outputs:                                                  !
 !            prcp1, cmc, t1, stc, sncovr, sneqv, sndens, snowh,         !
 !            sh2o, tbot, beta,                                          !
@@ -1062,7 +1055,7 @@
       subroutine canres
 !  ---  inputs:
 !    &     ( nsoil, nroot, swdn, ch, q2, q2sat, dqsdt2, sfctmp,         &
-!    &       cpx1, sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,  &
+!    &       sfcprs, sfcems, sh2o, smcwlt, smcref, zsoil, rsmin,        &
 !    &       rsmax, topt, rgl, hs, xlai,                                &
 !  ---  outputs:
 !    &       rc, pc, rcs, rct, rcq, rcsoil                              &
@@ -1095,7 +1088,6 @@
 !     q2sat    - real, sat. air humidity at 1st level abv ground   1    !
 !     dqsdt2   - real, slope of sat. humidity function wrt temp    1    !
 !     sfctmp   - real, sfc temperature at 1st level above ground   1    !
-!     cpx1     - real, enhanced air heat capacity for heat storage 1    !
 !     sfcprs   - real, sfc pressure                                1    !
 !     sfcems   - real, sfc emissivity for lw radiation             1    !
 !     sh2o     - real, volumetric soil moisture                  nsoil  !
@@ -1201,8 +1193,8 @@
 !           evaporation (containing rc term).
 
       rc = rsmin / (xlai*rcs*rct*rcq*rcsoil)
-      rr = (4.0*sfcems*sigma1*rd1/cpx1) * (sfctmp**4.0)/(sfcprs*ch) + 1.0
-      delta = (lsubc/cpx1) * dqsdt2
+      rr = (4.0*sfcems*sigma1*rd1/cp1) * (sfctmp**4.0)/(sfcprs*ch) + 1.0
+      delta = (lsubc/cp1) * dqsdt2
 
       pc = (rr + delta) / (rr*(1.0 + rc*ch) + delta)
 !
@@ -1287,7 +1279,7 @@
 !    &       smcdry, cmcmax, dt, shdfac, sbeta, sfctmp, sfcems,         &
 !    &       t24, th2, fdown, epsca, bexp, pc, rch, rr, cfactr,         &
 !    &       slope, kdt, frzx, psisat, zsoil, dksat, dwsat,             &
-!    &       zbot, ice, rtdis, quartz, fxexp, csoil,                    &
+!    &       zbot, ice, rtdis, quartz, fxexp, csoil, lheatstrg,         &
 !  ---  input/outputs:
 !    &       cmc, t1, stc, sh2o, tbot,                                  &
 !  ---  outputs:
@@ -1344,6 +1336,8 @@
 !     quartz   - real, soil quartz content                         1    !
 !     fxexp    - real, bare soil evaporation exponent              1    !
 !     csoil    - real, soil heat capacity                          1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs from and to the calling program:                       !
 !     cmc      - real, canopy moisture content                     1    !
@@ -1380,6 +1374,8 @@
 !    &       rch, rr, cfactr, slope, kdt, frzx, psisat,                 &
 !    &       zsoil(nsoil), dksat, dwsat, zbot, rtdis(nsoil),            &
 !    &       quartz, fxexp, csoil
+
+!     logical, intent(in) :: lheatstrg
 
 !  ---  input/outputs:
 !     real (kind=kind_phys), intent(inout) :: cmc, t1, stc(nsoil),      &
@@ -1499,18 +1495,26 @@
 !  ---  outputs:
      &       df1                                                        &
      &     )
-       if(ivegsrc == 1) then
+!      if(ivegsrc == 1) then
 !urban
-         if ( vegtyp == 13 ) df1=3.24
-       endif
+!        if ( vegtyp == 13 ) df1=3.24
+!      endif
 
 !  --- ... vegetation greenness fraction reduction in subsurface heat
 !          flux via reduction factor, which is convenient to apply here
 !          to thermal diffusivity that is later used in hrt to compute
 !          sub sfc heat flux (see additional comments on veg effect
 !          sub-sfc heat flx in routine sflx)
-
-      df1 = df1 * exp( sbeta*shdfac )
+!wz only urban for igbp type
+!
+!jhan urban canopy heat storage effect is included in pbl scheme
+!
+        if((.not.lheatstrg) .and.                                       &
+     &      (ivegsrc == 1 .and. vegtyp == 13)) then
+          df1 = 3.24*(1.-shdfac) + shdfac*df1*exp(sbeta*shdfac)
+        else
+          df1 = df1 * exp( sbeta*shdfac )
+        endif
 
 !  --- ...  compute intermediate terms passed to routine hrt (via routine
 !           shflx below) for use in computing subsurface heat flux in hrt
@@ -1523,6 +1527,7 @@
 !  ---  inputs:
      &     ( nsoil, smc, smcmax, dt, yy, zz1, zsoil, zbot,              &
      &       psisat, bexp, df1, ice, quartz, csoil, vegtyp,             &
+     &       shdfac, lheatstrg,                                         &
 !  ---  input/outputs:
      &       stc, t1, tbot, sh2o,                                       &
 !  ---  outputs:
@@ -1551,7 +1556,7 @@
 !...................................
 !  ---  inputs:
 !    &     ( sfctmp, sfcprs, sfcems, ch, t2v, th2, prcp, fdown,         &
-!    &       cpx, cpfac, ssoil, q2, q2sat, dqsdt2, snowng, frzgra,      &
+!    &       ssoil, q2, q2sat, dqsdt2, snowng, frzgra,                  &
 !  ---  outputs:
 !    &       t24, etp, rch, epsca, rr, flx2                             &
 !    &     )
@@ -1577,8 +1582,6 @@
 !     th2      - real, air potential temp at zlvl abv grnd         1    !
 !     prcp     - real, precip rate                                 1    !
 !     fdown    - real, net solar + downward lw flux at sfc         1    !
-!     cpx      - real, enhanced air heat capacity for heat storage 1    !
-!     cpfac    - real, ratio air heat capacity to enhanced one     1    !
 !     ssoil    - real, upward soil heat flux                       1    !
 !     q2       - real, mixing ratio at hght zlvl abv ground        1    !
 !     q2sat    - real, sat mixing ratio at zlvl abv ground         1    !
@@ -1616,11 +1619,11 @@
 
 !  --- ...  prepare partial quantities for penman equation.
 
-      delta = elcp * cpfac * dqsdt2
+      delta = elcp * dqsdt2
       t24 = sfctmp * sfctmp * sfctmp * sfctmp
       rr  = t24 * 6.48e-8 / (sfcprs*ch) + 1.0
       rho = sfcprs / (rd1*t2v)
-      rch = rho * cpx * ch
+      rch = rho * cp * ch
 
 !  --- ...  adjust the partial sums / products with the latent heat
 !           effects caused by falling precipitation.
@@ -1646,7 +1649,7 @@
 !  --- ...  finish penman equation calculations.
 
       rad = fnet/rch + th2 - sfctmp
-      a = elcp * cpfac * (q2sat - q2)
+      a = elcp * (q2sat - q2)
       epsca = (a*rr + rad*delta) / (delta + rr)
       etp = epsca * rch / lsubc
 !
@@ -2320,7 +2323,7 @@
 !    &       cmcmax, dt, df1, sfcems, sfctmp, t24, th2, fdown, epsca,   &
 !    &       bexp, pc, rch, rr, cfactr, slope, kdt, frzx, psisat,       &
 !    &       zsoil, dwsat, dksat, zbot, shdfac, ice, rtdis, quartz,     &
-!    &       fxexp, csoil, flx2, snowng,                                &
+!    &       fxexp, csoil, flx2, snowng, lheatstrg,                     &
 !  ---  input/outputs:
 !    &       prcp1, cmc, t1, stc, sncovr, sneqv, sndens, snowh,         &
 !    &       sh2o, tbot, beta,                                          &
@@ -2380,6 +2383,8 @@
 !     csoil    - real, soil heat capacity                          1    !
 !     flx2     - real, freezing rain latent heat flux              1    !
 !     snowng   - logical, snow flag                                1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs from and to the calling program:                       !
 !     prcp1    - real, effective precip                            1    !
@@ -2426,6 +2431,9 @@
 !    &       csoil, fxexp, flx2, zsoil(nsoil), rtdis(nsoil)
 
 !     logical, intent(in) :: snowng
+!
+!     logical, intent(in) :: lheatstrg
+!
 
 !  ---  input/outputs:
 !     real (kind=kind_phys), intent(inout) :: prcp1, t1, sncovr, sneqv, &
@@ -2595,8 +2603,8 @@
       if (t12 <= tfreez) then
 
         t1 = t12
-!       ssoil = df1 * (t1 - stc(1)) / dtot
-        ssoil = (t1 - stc (1)) * max(7.0, df1/dtot)
+        ssoil = df1 * (t1 - stc(1)) / dtot
+!wz     ssoil = (t1 - stc (1)) * max(7.0, df1/dtot)
         sneqv = max(0.0, sneqv-esnow2)
         flx3 = 0.0
         ex = 0.0
@@ -2729,7 +2737,7 @@
 !           skin temp value as revised by shflx.
 
       zz1 = 1.0
-      yy = stc(1) - 0.5*ssoil*zsoil(1)*zz1 / df1
+      yy  = stc(1) - 0.5*ssoil*zsoil(1)*zz1 / df1
       t11 = t1
 
 !  --- ...  shflx will calc/update the soil temps.  note:  the sub-sfc heat flux
@@ -2742,6 +2750,7 @@
 !  ---  inputs:
      &     ( nsoil, smc, smcmax, dt, yy, zz1, zsoil, zbot,              &
      &       psisat, bexp, df1, ice, quartz, csoil, vegtyp,             &
+     &       shdfac, lheatstrg,                                         &
 !  ---  input/outputs:
      &       stc, t11, tbot, sh2o,                                      &
 !  ---  outputs:
@@ -3262,6 +3271,7 @@
 !  ---  inputs:
      &     ( nsoil, smc, smcmax, dt, yy, zz1, zsoil, zbot,              &
      &       psisat, bexp, df1, ice, quartz, csoil, vegtyp,             &
+     &       shdfac, lheatstrg,                                         &
 !  ---  input/outputs:
      &       stc, t1, tbot, sh2o,                                       &
 !  ---  outputs:
@@ -3296,6 +3306,9 @@
 !     quartz   - real, soil quartz content                         1    !
 !     csoil    - real, soil heat capacity                          1    !
 !     vegtyp   - integer, vegtation type                           1    !
+!     shdfac   - real, aeral coverage of green vegetation          1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    ! 
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs:                                                       !
 !     stc      - real, soil temp                                 nsoil  !
@@ -3316,7 +3329,10 @@
       integer, intent(in) :: nsoil, ice, vegtyp
 
       real (kind=kind_phys), intent(in) :: smc(nsoil), smcmax, dt, yy,  &
-     &       zz1, zsoil(nsoil), zbot, psisat, bexp, df1, quartz, csoil
+     &       zz1, zsoil(nsoil), zbot, psisat, bexp, df1, quartz, csoil, &
+     &       shdfac
+
+      logical, intent(in) :: lheatstrg
 
 !  ---  input/outputs:
       real (kind=kind_phys), intent(inout) :: stc(nsoil), t1, tbot,     &
@@ -3371,6 +3387,7 @@
 !  ---  inputs:
      &     ( nsoil, stc, smc, smcmax, zsoil, yy, zz1, tbot,             &
      &       zbot, psisat, dt, bexp, df1, quartz, csoil,vegtyp,         &
+     &       shdfac, lheatstrg,                                         &
 !  ---  input/outputs:
      &       sh2o,                                                      &
 !  ---  outputs:
@@ -4037,6 +4054,7 @@
 !  ---  inputs:
      &     ( nsoil, stc, smc, smcmax, zsoil, yy, zz1, tbot,             &
      &       zbot, psisat, dt, bexp, df1, quartz, csoil, vegtyp,        &
+     &       shdfac, lheatstrg,                                         &
 !  ---  input/outputs:
      &       sh2o,                                                      &
 !  ---  outputs:
@@ -4073,6 +4091,9 @@
 !     quartz   - real, soil quartz content                         1    !
 !     csoil    - real, soil heat capacity                          1    !
 !     vegtyp   - integer, vegetation type                          1    !
+!     shdfac   - real, aeral coverage of green vegetation          1    !
+!     lheatstrg- logical, flag for canopy heat storage             1    !
+!                         parameterization                              !
 !                                                                       !
 !  input/outputs:                                                       !
 !     sh2o     - real, unfrozen soil moisture                    nsoil  !
@@ -4090,7 +4111,9 @@
 
       real (kind=kind_phys),  intent(in) :: stc(nsoil), smc(nsoil),     &
      &       smcmax, zsoil(nsoil), yy, zz1, tbot, zbot, psisat, dt,     &
-     &       bexp, df1, quartz, csoil
+     &       bexp, df1, quartz, csoil, shdfac
+
+      logical, intent(in) :: lheatstrg
 
 !  ---  input/outputs:
       real (kind=kind_phys),  intent(inout) :: sh2o(nsoil)
@@ -4113,10 +4136,14 @@
 !
         csoil_loc=csoil
 
-       if (ivegsrc == 1)then
+       if (.not.lheatstrg .and. ivegsrc == 1)then
 !urban
+!
+!jhan urban canopy heat storage effect is included in pbl scheme
+!
         if( vegtyp == 13 ) then
-            csoil_loc=3.0e6
+!           csoil_loc=3.0e6
+            csoil_loc=3.0e6*(1.-shdfac)+csoil*shdfac  ! gvf
         endif
        endif
 
@@ -4248,9 +4275,17 @@
      &       df1n                                                       &
      &     )
 !urban
-      if (ivegsrc == 1)then
-       if ( vegtyp == 13 ) df1n = 3.24
-      endif
+!     if (ivegsrc == 1)then
+!      if ( vegtyp == 13 ) df1n = 3.24
+!     endif
+!wz only urban for igbp type
+!
+!jhan urban canopy heat storage effect is included in pbl scheme
+!
+        if((.not.lheatstrg) .and.
+     &      (ivegsrc == 1 .and. vegtyp == 13)) then
+          df1n = 3.24*(1.-shdfac) + shdfac*df1n
+        endif
 
 !  --- ...  calc the vertical soil temp gradient thru this layer
 
@@ -4288,9 +4323,17 @@
      &       df1n                                                       &
      &     )
 !urban
-      if (ivegsrc == 1)then
-       if ( vegtyp == 13 ) df1n = 3.24
-      endif
+!     if (ivegsrc == 1)then
+!      if ( vegtyp == 13 ) df1n = 3.24
+!     endif
+!wz only urban for igbp type
+!
+!jhan urban canopy heat storage effect is included in pbl scheme
+!
+        if((.not.lheatstrg) .and.
+     &      (ivegsrc == 1 .and. vegtyp == 13)) then
+          df1n = 3.24*(1.-shdfac) + shdfac*df1n
+        endif
 
 !  --- ...  calc the vertical soil temp gradient thru bottom layer.
 
@@ -4817,11 +4860,6 @@
 
 !  ---  external functions:
 !     real (kind=kind_phys) :: frh2o
-
-!urban
-       if (ivegsrc == 1)then
-            if ( vegtyp == 13 ) df1=3.24
-       endif
 !
 !===> ...  begin here
 !

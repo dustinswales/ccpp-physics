@@ -9,6 +9,14 @@
   type = integer
   intent = in
   optional = F
+[lkm]
+  standard_name = flag_for_lake_surface_scheme
+  long_name = flag for lake surface model
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+  optional = F
 [frac_grid]
   standard_name = flag_for_fractional_grid
   long_name = flag for fractional grid
@@ -33,6 +41,14 @@
   type = logical
   intent = in
   optional = F
+[cplwav2atm]
+  standard_name = flag_for_wave_coupling_to_atm
+  long_name = flag controlling ocean wave coupling to the atmosphere (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
 [landfrac]
   standard_name = land_area_fraction
   long_name = fraction of horizontal grid area occupied by land
@@ -46,6 +62,15 @@
   standard_name = lake_area_fraction
   long_name = fraction of horizontal grid area occupied by lake
   units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[lakedepth]
+  standard_name = lake_depth
+  long_name = lake depth
+  units = m
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -116,7 +141,7 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
-  intent = in
+  intent = inout
   optional = F
 [cimin]
   standard_name = minimum_sea_ice_concentration
@@ -154,7 +179,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[zorl_ocn]
+[zorl_wat]
   standard_name = surface_roughness_length_over_ocean_interstitial
   long_name = surface roughness length over ocean (temporary use as interstitial)
   units = cm
@@ -190,7 +215,7 @@
   kind = kind_phys
   intent = in
   optional = F
-[snowd_ocn]
+[snowd_wat]
   standard_name = surface_snow_thickness_water_equivalent_over_ocean
   long_name = water equivalent snow depth over ocean
   units = mm
@@ -226,7 +251,7 @@
   kind = kind_phys
   intent = in
   optional = F
-[tprcp_ocn]
+[tprcp_wat]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_ocean
   long_name = total precipitation amount in each time step over ocean
   units = m
@@ -262,6 +287,15 @@
   kind = kind_phys
   intent = in
   optional = F
+[uustar_wat]
+  standard_name = surface_friction_velocity_over_ocean
+  long_name = surface friction velocity over ocean
+  units = m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
 [uustar_lnd]
   standard_name = surface_friction_velocity_over_land
   long_name = surface friction velocity over land
@@ -289,7 +323,7 @@
   kind = kind_phys
   intent = in
   optional = F
-[weasd_ocn]
+[weasd_wat]
   standard_name = water_equivalent_accumulated_snow_depth_over_ocean
   long_name = water equiv of acc snow depth over ocean
   units = mm
@@ -352,7 +386,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[tsfc_ocn]
+[tsfc_wat]
   standard_name = surface_skin_temperature_over_ocean_interstitial
   long_name = surface skin temperature over ocean (temporary use as interstitial)
   units = K
@@ -406,7 +440,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[tsurf_ocn]
+[tsurf_wat]
   standard_name = surface_skin_temperature_after_iteration_over_ocean
   long_name = surface skin temperature after iteration over ocean
   units = K
@@ -442,6 +476,293 @@
   kind = kind_phys
   intent = inout
   optional = F
+[tgice]
+  standard_name = freezing_point_temperature_of_seawater
+  long_name = freezing point temperature of seawater
+  units = K
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[islmsk]
+  standard_name = sea_land_ice_mask
+  long_name = sea/land/ice mask (=0/1/2)
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = integer
+  intent = in
+  optional = F
+[semis_rad]
+  standard_name = surface_longwave_emissivity
+  long_name = surface lw emissivity in fraction
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[semis_wat]
+  standard_name = surface_longwave_emissivity_over_ocean_interstitial
+  long_name = surface lw emissivity in fraction over ocean (temporary use as interstitial)
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[semis_lnd]
+  standard_name = surface_longwave_emissivity_over_land_interstitial
+  long_name = surface lw emissivity in fraction over land (temporary use as interstitial)
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[semis_ice]
+  standard_name = surface_longwave_emissivity_over_ice_interstitial
+  long_name = surface lw emissivity in fraction over ice (temporary use as interstitial)
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[qss]
+  standard_name = surface_specific_humidity
+  long_name = surface air saturation specific humidity
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[qss_wat]
+  standard_name = surface_specific_humidity_over_ocean
+  long_name = surface air saturation specific humidity over ocean
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[qss_lnd]
+  standard_name = surface_specific_humidity_over_land
+  long_name = surface air saturation specific humidity over land
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[qss_ice]
+  standard_name = surface_specific_humidity_over_ice
+  long_name = surface air saturation specific humidity over ice
+  units = kg kg-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[hflx]
+  standard_name = kinematic_surface_upward_sensible_heat_flux
+  long_name = kinematic surface upward sensible heat flux
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[hflx_wat]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_over_ocean
+  long_name = kinematic surface upward sensible heat flux over ocean
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[hflx_lnd]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_over_land
+  long_name = kinematic surface upward sensible heat flux over land
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[hflx_ice]
+  standard_name = kinematic_surface_upward_sensible_heat_flux_over_ice
+  long_name = kinematic surface upward sensible heat flux over ice
+  units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[min_lakeice]
+  standard_name = lake_ice_minimum
+  long_name = minimum lake ice value
+  units = ???
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[min_seaice]
+  standard_name = sea_ice_minimum
+  long_name = minimum sea ice value
+  units = ???
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[errmsg]
+  standard_name = ccpp_error_message
+  long_name = error message for error handling in CCPP
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
+  intent = out
+  optional = F
+[errflg]
+  standard_name = ccpp_error_flag
+  long_name = error flag for error handling in CCPP
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = out
+  optional = F
+
+########################################################################
+[ccpp-arg-table]
+  name = GFS_surface_composites_inter_run
+  type = scheme
+[im]
+  standard_name = horizontal_loop_extent
+  long_name = horizontal loop extent
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+  optional = F
+[dry]
+  standard_name = flag_nonzero_land_surface_fraction
+  long_name = flag indicating presence of some land surface area fraction
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = logical
+  intent = in
+  optional = F
+[icy]
+  standard_name = flag_nonzero_sea_ice_surface_fraction
+  long_name = flag indicating presence of some sea ice surface area fraction
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = logical
+  intent = in
+  optional = F
+[wet]
+  standard_name = flag_nonzero_wet_surface_fraction
+  long_name = flag indicating presence of some ocean or lake surface area fraction
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = logical
+  intent = in
+  optional = F
+[semis_wat]
+  standard_name = surface_longwave_emissivity_over_ocean_interstitial
+  long_name = surface lw emissivity in fraction over ocean (temporary use as interstitial)
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[semis_lnd]
+  standard_name = surface_longwave_emissivity_over_land_interstitial
+  long_name = surface lw emissivity in fraction over land (temporary use as interstitial)
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[semis_ice]
+  standard_name = surface_longwave_emissivity_over_ice_interstitial
+  long_name = surface lw emissivity in fraction over ice (temporary use as interstitial)
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[adjsfcdlw]
+  standard_name = surface_downwelling_longwave_flux
+  long_name = surface downwelling longwave flux at current time
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[gabsbdlw_lnd]
+  standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_land
+  long_name = total sky surface downward longwave flux absorbed by the ground over land
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[gabsbdlw_ice]
+  standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_ice
+  long_name = total sky surface downward longwave flux absorbed by the ground over ice
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[gabsbdlw_wat]
+  standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_ocean
+  long_name = total sky surface downward longwave flux absorbed by the ground over ocean
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[adjsfcusw]
+  standard_name = surface_upwelling_shortwave_flux
+  long_name = surface upwelling shortwave flux at current time
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = F
+[adjsfcdsw]
+  standard_name = surface_downwelling_shortwave_flux
+  long_name = surface downwelling shortwave flux at current time
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[adjsfcnsw]
+  standard_name = surface_net_downwelling_shortwave_flux
+  long_name = surface net downwelling shortwave flux at current time
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -472,9 +793,33 @@
   type = integer
   intent = in
   optional = F
+[kice]
+  standard_name = ice_vertical_dimension
+  long_name = vertical loop extent for ice levels, start at 1
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+  optional = F
+[km]
+  standard_name = soil_vertical_dimension
+  long_name = soil vertical layer dimension
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+  optional = F
 [cplflx]
   standard_name = flag_for_flux_coupling
   long_name = flag controlling cplflx collection (default off)
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
+[cplwav2atm]
+  standard_name = flag_for_wave_coupling_to_atm
+  long_name = flag controlling ocean wave coupling to the atmosphere (default off)
   units = flag
   dimensions = ()
   type = logical
@@ -537,6 +882,24 @@
   kind = kind_phys
   intent = in
   optional = F
+[lakefrac]
+  standard_name = lake_area_fraction
+  long_name = fraction of horizontal grid area occupied by lake
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[oceanfrac]
+  standard_name = sea_area_fraction
+  long_name = fraction of horizontal grid area occupied by ocean
+  units = frac
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
 [zorl]
   standard_name = surface_roughness_length
   long_name = surface roughness length
@@ -564,7 +927,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[zorl_ocn]
+[zorl_wat]
   standard_name = surface_roughness_length_over_ocean_interstitial
   long_name = surface roughness length over ocean (temporary use as interstitial)
   units = cm
@@ -600,7 +963,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[cd_ocn]
+[cd_wat]
   standard_name = surface_drag_coefficient_for_momentum_in_air_over_ocean
   long_name = surface exchange coeff for momentum over ocean
   units = none
@@ -636,7 +999,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[cdq_ocn]
+[cdq_wat]
   standard_name = surface_drag_coefficient_for_heat_and_moisture_in_air_over_ocean
   long_name = surface exchange coeff heat & moisture over ocean
   units = none
@@ -672,7 +1035,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[rb_ocn]
+[rb_wat]
   standard_name = bulk_richardson_number_at_lowest_model_level_over_ocean
   long_name = bulk Richardson number at the surface over ocean
   units = none
@@ -708,7 +1071,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[stress_ocn]
+[stress_wat]
   standard_name = surface_wind_stress_over_ocean
   long_name = surface wind stress over ocean
   units = m2 s-2
@@ -744,7 +1107,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[ffmm_ocn]
+[ffmm_wat]
   standard_name = Monin_Obukhov_similarity_function_for_momentum_over_ocean
   long_name = Monin-Obukhov similarity function for momentum over ocean
   units = none
@@ -780,7 +1143,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[ffhh_ocn]
+[ffhh_wat]
   standard_name = Monin_Obukhov_similarity_function_for_heat_over_ocean
   long_name = Monin-Obukhov similarity function for heat over ocean
   units = none
@@ -816,7 +1179,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[uustar_ocn]
+[uustar_wat]
   standard_name = surface_friction_velocity_over_ocean
   long_name = surface friction velocity over ocean
   units = m s-1
@@ -852,7 +1215,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[fm10_ocn]
+[fm10_wat]
   standard_name = Monin_Obukhov_similarity_function_for_momentum_at_10m_over_ocean
   long_name = Monin-Obukhov similarity parameter for momentum at 10m over ocean
   units = none
@@ -888,7 +1251,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[fh2_ocn]
+[fh2_wat]
   standard_name = Monin_Obukhov_similarity_function_for_heat_at_2m_over_ocean
   long_name = Monin-Obukhov similarity parameter for heat at 2m over ocean
   units = none
@@ -924,7 +1287,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[tsurf_ocn]
+[tsurf_wat]
   standard_name = surface_skin_temperature_after_iteration_over_ocean
   long_name = surface skin temperature after iteration over ocean
   units = K
@@ -960,7 +1323,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[cmm_ocn]
+[cmm_wat]
   standard_name = surface_drag_wind_speed_for_momentum_in_air_over_ocean
   long_name = momentum exchange coefficient over ocean
   units = m s-1
@@ -996,7 +1359,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[chh_ocn]
+[chh_wat]
   standard_name = surface_drag_mass_flux_for_heat_and_moisture_in_air_over_ocean
   long_name = thermal exchange coefficient over ocean
   units = kg m-2 s-1
@@ -1032,7 +1395,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[gflx_ocn]
+[gflx_wat]
   standard_name = upward_heat_flux_in_soil_over_ocean
   long_name = soil heat flux over ocean
   units = W m-2
@@ -1068,7 +1431,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[ep1d_ocn]
+[ep1d_wat]
   standard_name = surface_upward_potential_latent_heat_flux_over_ocean
   long_name = surface upward potential latent heat flux over ocean
   units = W m-2
@@ -1104,7 +1467,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[weasd_ocn]
+[weasd_wat]
   standard_name = water_equivalent_accumulated_snow_depth_over_ocean
   long_name = water equiv of acc snow depth over ocean
   units = mm
@@ -1140,7 +1503,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[snowd_ocn]
+[snowd_wat]
   standard_name = surface_snow_thickness_water_equivalent_over_ocean
   long_name = water equivalent snow depth over ocean
   units = mm
@@ -1176,7 +1539,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[tprcp_ocn]
+[tprcp_wat]
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_ocean
   long_name = total precipitation amount in each time step over ocean
   units = m
@@ -1212,7 +1575,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[evap_ocn]
+[evap_wat]
   standard_name = kinematic_surface_upward_latent_heat_flux_over_ocean
   long_name = kinematic surface upward latent heat flux over ocean
   units = kg kg-1 m s-1
@@ -1248,7 +1611,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[hflx_ocn]
+[hflx_wat]
   standard_name = kinematic_surface_upward_sensible_heat_flux_over_ocean
   long_name = kinematic surface upward sensible heat flux over ocean
   units = K m s-1
@@ -1284,7 +1647,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[qss_ocn]
+[qss_wat]
   standard_name = surface_specific_humidity_over_ocean
   long_name = surface air saturation specific humidity over ocean
   units = kg kg-1
@@ -1338,7 +1701,7 @@
   kind = kind_phys
   intent = inout
   optional = F
-[tsfc_ocn]
+[tsfc_wat]
   standard_name = surface_skin_temperature_over_ocean_interstitial
   long_name = surface skin temperature over ocean (temporary use as interstitial)
   units = K
@@ -1397,6 +1760,24 @@
   long_name = ice fraction over open water
   units = frac
   dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[tiice]
+  standard_name = internal_ice_temperature
+  long_name = sea ice internal temperature
+  units = K
+  dimensions = (horizontal_dimension,ice_vertical_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[stc]
+  standard_name = soil_temperature
+  long_name = soil temperature
+  units = K
+  dimensions = (horizontal_dimension,soil_vertical_dimension)
   type = real
   kind = kind_phys
   intent = inout

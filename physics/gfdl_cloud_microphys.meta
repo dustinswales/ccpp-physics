@@ -180,6 +180,14 @@
   kind = kind_phys
   intent = in
   optional = F
+[islmsk]
+  standard_name = sea_land_ice_mask
+  long_name = sea/land/ice mask (=0/1/2)
+  units = flag
+  dimensions = (horizontal_dimension)
+  type = integer
+  intent = in
+  optional = F
 [gq0]
   standard_name = water_vapor_specific_humidity_updated_by_physics
   long_name = water vapor specific humidity updated by physics
@@ -227,7 +235,7 @@
   optional = F
 [gq0_ntgl]
   standard_name = graupel_mixing_ratio_updated_by_physics
-  long_name = moist mixing ratio of graupel updated by physics
+  long_name = moist ratio of mass of graupel to mass of dry air plus vapor (without condensates) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real

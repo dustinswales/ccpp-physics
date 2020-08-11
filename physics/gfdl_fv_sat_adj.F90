@@ -49,7 +49,7 @@ module fv_sat_adj
 !     <td>gfdl_cloud_microphys_mod</td>
 !     <td>ql_gen, qi_gen, qi0_max, ql_mlt, ql0_max, qi_lim, qs_mlt,
 !         tau_r2g, tau_smlt, tau_i2s, tau_v2l, tau_l2v, tau_imlt, tau_l2r,
-!         rad_rain, rad_snow, rad_graupel, dw_ocean, dw_land</td>
+!         rad_rain, rad_snow, rad_graupel, dw_ocean, dw_land, tintqs</td>
 !   </tr>
 ! </table>
     ! DH* TODO - MAKE THIS INPUT ARGUMENTS *DH
@@ -64,8 +64,7 @@ module fv_sat_adj
     use gfdl_cloud_microphys_mod, only: ql_gen, qi_gen, qi0_max, ql_mlt, ql0_max, qi_lim, qs_mlt
     use gfdl_cloud_microphys_mod, only: icloud_f, sat_adj0, t_sub, cld_min
     use gfdl_cloud_microphys_mod, only: tau_r2g, tau_smlt, tau_i2s, tau_v2l, tau_l2v, tau_imlt, tau_l2r
-    use gfdl_cloud_microphys_mod, only: rad_rain, rad_snow, rad_graupel, dw_ocean, dw_land
-
+    use gfdl_cloud_microphys_mod, only: rad_rain, rad_snow, rad_graupel, dw_ocean, dw_land, tintqs
 #ifdef MULTI_GASES
     use ccpp_multi_gases_mod, only: multi_gases_init,     &
                                     multi_gases_finalize, &
@@ -147,6 +146,12 @@ subroutine fv_sat_adj_init(do_sat_adj, kmp, nwat, ngas, rilist, cpilist, &
     ! If saturation adjustment is not used, return immediately
     if (.not.do_sat_adj) then
       write(errmsg,'(a)') 'Logic error: fv_sat_adj_init is called but do_sat_adj is set to false'
+      errflg = 1
+      return
+    end if
+
+    if (.not.nwat==6) then
+      write(errmsg,'(a)') 'Logic error: fv_sat_adj requires six water species (nwat=6)'
       errflg = 1
       return
     end if
@@ -264,7 +269,7 @@ subroutine fv_sat_adj_run(mdt, zvir, is, ie, isd, ied, kmp, km, kmdelz, js, je, 
     real(kind=kind_dyn), intent(in)    :: hs(isd:ied, jsd:jed)
     real(kind=kind_dyn), intent(in)    :: peln(is:ie, 1:km+1, js:je)
     ! For hydrostatic build, kmdelz=1, otherwise kmdelz=km (see fv_arrays.F90)
-    real(kind=kind_dyn), intent(in)    :: delz(isd:ied, jsd:jed, 1:kmdelz)
+    real(kind=kind_dyn), intent(in)    :: delz(is:ie, js:je, 1:kmdelz)
     real(kind=kind_dyn), intent(in)    :: delp(isd:ied, jsd:jed, 1:km)
     real(kind=kind_dyn), intent(inout) :: pt(isd:ied, jsd:jed, 1:km)
     real(kind=kind_dyn), intent(inout) :: pkz(is:ie, js:je, 1:km)
@@ -296,10 +301,6 @@ subroutine fv_sat_adj_run(mdt, zvir, is, ie, isd, ied, kmp, km, kmdelz, js, je, 
 
     ! Local variables
     real(kind=kind_dyn), dimension(is:ie,js:je) :: dpln
-#ifdef TRANSITION
-    ! For bit-for-bit reproducibility
-    real(kind=kind_dyn), volatile :: volatile_var
-#endif
     integer :: kdelz
     integer :: k, j, i
 
@@ -317,9 +318,6 @@ subroutine fv_sat_adj_run(mdt, zvir, is, ie, isd, ied, kmp, km, kmdelz, js, je, 
 !$OMP                 ql,qv,te0,fast_mp_consv,     &
 !$OMP                 hydrostatic,ng,zvir,pkz,     &
 !$OMP                 akap,te0_2d,ngas,qvi)        &
-#ifdef TRANSITION
-!$OMP          private(volatile_var)               &
-#endif
 !$OMP          private(k,j,i,kdelz,dpln)
 #endif
 
@@ -344,34 +342,19 @@ subroutine fv_sat_adj_run(mdt, zvir, is, ie, isd, ied, kmp, km, kmdelz, js, je, 
 #endif
                             ql(isd,jsd,k), qi(isd,jsd,k),                                   &
                             qr(isd,jsd,k), qs(isd,jsd,k), qg(isd,jsd,k),                    &
-                            hs, dpln, delz(isd:,jsd:,kdelz), pt(isd,jsd,k), delp(isd,jsd,k),&
+                            hs, dpln, delz(is:,js:,kdelz), pt(isd,jsd,k), delp(isd,jsd,k),&
                             q_con(isd:,jsd:,k), cappa(isd:,jsd:,k), area, dtdt(is,js,k),    &
                             out_dt, last_step, do_qa, qa(isd,jsd,k))
        if ( .not. hydrostatic  ) then
           do j=js,je
              do i=is,ie
 #ifdef MOIST_CAPPA
-#ifdef TRANSITION
-               volatile_var = log(rrg*delp(i,j,k)/delz(i,j,k)*pt(i,j,k))
-               pkz(i,j,k) = exp(cappa(i,j,k)*volatile_var)
-#else
                pkz(i,j,k) = exp(cappa(i,j,k)*log(rrg*delp(i,j,k)/delz(i,j,k)*pt(i,j,k)))
-#endif
-#else
-#ifdef TRANSITION
-#ifdef MULTI_GASES
-               volatile_var = log(rrg*delp(i,j,k)/delz(i,j,k)*pt(i,j,k))
-               pkz(i,j,k) = exp(akap*(virqd(q(i,j,k,1:num_gas))/vicpqd(q(i,j,k,1:num_gas))*volatile_var)
-#else
-               volatile_var = log(rrg*delp(i,j,k)/delz(i,j,k)*pt(i,j,k))
-               pkz(i,j,k) = exp(akap*volatile_var)
-#endif
 #else
 #ifdef MULTI_GASES
                pkz(i,j,k) = exp(akap*(virqd(q(i,j,k,1:num_gas))/vicpqd(q(i,j,k,1:num_gas))*log(rrg*delp(i,j,k)/delz(i,j,k)*pt(i,j,k)))
 #else
                pkz(i,j,k) = exp(akap*log(rrg*delp(i,j,k)/delz(i,j,k)*pt(i,j,k)))
-#endif
 #endif
 #endif
              enddo
@@ -419,8 +402,8 @@ subroutine fv_sat_adj_work(mdt, zvir, is, ie, js, je, ng, hydrostatic, consv_te,
     integer, intent (in) :: is, ie, js, je, ng
     logical, intent (in) :: hydrostatic, consv_te, out_dt, last_step, do_qa
     real(kind=kind_dyn), intent (in) :: zvir, mdt ! remapping time step
-    real(kind=kind_dyn), intent (in), dimension (is - ng:ie + ng, js - ng:je + ng) :: dp, delz, hs
-    real(kind=kind_dyn), intent (in), dimension (is:ie, js:je) :: dpln
+    real(kind=kind_dyn), intent (in), dimension (is - ng:ie + ng, js - ng:je + ng) :: dp,  hs
+    real(kind=kind_dyn), intent (in), dimension (is:ie, js:je) :: dpln, delz
     real(kind=kind_dyn), intent (inout), dimension (is - ng:ie + ng, js - ng:je + ng) :: pt
 #ifdef MULTI_GASES
     real(kind=kind_dyn), intent (inout), dimension (is - ng:ie + ng, js - ng:je + ng, 1:1, 1:num_gas) :: qvi
@@ -1052,9 +1035,13 @@ subroutine fv_sat_adj_work(mdt, zvir, is, ie, js, je, ng, hydrostatic, consv_te,
             
             do i = is, ie
                 
+                if(tintqs) then 
+                  tin = pt1(i)
+                else 
                   tin = pt1 (i) - (lcp2 (i) * q_cond (i) + icp2 (i) * q_sol (i)) ! minimum temperature
                 ! tin = pt1 (i) - ((lv00 + d0_vap * pt1 (i)) * q_cond (i) + &
                 ! (li00 + dc_ice * pt1 (i)) * q_sol (i)) / (mc_air (i) + qpz (i) * c_vap)
+                endif 
                 
                 ! -----------------------------------------------------------------------
                 ! determine saturated specific humidity
@@ -1097,14 +1084,14 @@ subroutine fv_sat_adj_work(mdt, zvir, is, ie, js, je, ng, hydrostatic, consv_te,
                 ! icloud_f = 2: binary cloud scheme (0 / 1)
                 ! -----------------------------------------------------------------------
                 
-                if (rh > 0.75 .and. qpz (i) > 1.e-6) then
+                if (rh > 0.75 .and. qpz (i) > 1.e-8) then
                     dq = hvar (i) * qpz (i)
                     q_plus = qpz (i) + dq
                     q_minus = qpz (i) - dq
                     if (icloud_f == 2) then
                         if (qpz (i) > qstar (i)) then
                             qa (i, j) = 1.
-                        elseif (qstar (i) < q_plus .and. q_cond (i) > 1.e-6) then
+                        elseif (qstar (i) < q_plus .and. q_cond (i) > 1.e-8) then
                             qa (i, j) = ((q_plus - qstar (i)) / dq) ** 2
                             qa (i, j) = min (1., qa (i, j))
                         else
@@ -1124,7 +1111,7 @@ subroutine fv_sat_adj_work(mdt, zvir, is, ie, js, je, ng, hydrostatic, consv_te,
                                 qa (i, j) = 0.
                             endif
                             ! impose minimum cloudiness if substantial q_cond (i) exist
-                            if (q_cond (i) > 1.e-6) then
+                            if (q_cond (i) > 1.e-8) then
                                 qa (i, j) = max (cld_min, qa (i, j))
                             endif
                             qa (i, j) = min (1., qa (i, j))

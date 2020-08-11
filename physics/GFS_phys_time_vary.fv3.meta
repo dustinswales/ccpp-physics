@@ -5,7 +5,7 @@
   standard_name = GFS_data_type_instance_all_blocks
   long_name = Fortran DDT containing FV3-GFS data
   units = DDT
-  dimensions = (ccpp_block_number)
+  dimensions = (ccpp_block_count)
   type = GFS_data_type
   intent = inout
   optional = F
@@ -21,7 +21,7 @@
   standard_name = GFS_interstitial_type_instance_all_threads
   long_name = Fortran DDT containing FV3-GFS interstitial data
   units = DDT
-  dimensions = (ccpp_thread_number)
+  dimensions = (omp_threads)
   type = GFS_interstitial_type
   intent = inout
   optional = F
@@ -81,7 +81,7 @@
   standard_name = GFS_data_type_instance_all_blocks
   long_name = Fortran DDT containing FV3-GFS data
   units = DDT
-  dimensions = (ccpp_block_number)
+  dimensions = (ccpp_block_count)
   type = GFS_data_type
   intent = inout
   optional = F
@@ -99,6 +99,14 @@
   units = count
   dimensions = ()
   type = integer
+  intent = in
+  optional = F
+[first_time_step]
+  standard_name = flag_for_first_time_step
+  long_name = flag for first time step for time integration loop (cold/warmstart)
+  units = flag
+  dimensions = ()
+  type = logical
   intent = in
   optional = F
 [errmsg]

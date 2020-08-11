@@ -137,6 +137,14 @@
   kind = kind_phys
   intent = out
   optional = F
+[do_cnvgwd]
+  standard_name = flag_for_convective_gravity_wave_drag
+  long_name = flag for convective gravity wave drag (gwd)
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+  optional = F
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -172,14 +180,6 @@
 [im]
   standard_name = horizontal_loop_extent
   long_name = horizontal loop extent
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
-  optional = F
-[ix]
-  standard_name = horizontal_dimension
-  long_name = horizontal dimension
   units = count
   dimensions = ()
   type = integer
@@ -354,7 +354,7 @@
 [pi]
   standard_name = pi
   long_name = ratio of a circle's circumference to its diameter
-  units = radians
+  units = none
   dimensions = ()
   type = real
   kind = kind_phys

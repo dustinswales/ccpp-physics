@@ -1,3 +1,9 @@
+!>\file sfc_ocean.F
+!! This file contains an alternative GFS near-surface sea temperature
+!! scheme when the model is initialized from GRIB2 data.
+
+!> This module contains the CCPP-compliant GFS near-surface sea temperature
+!! scheme when the model is initialized from GRIB2 data.
       module sfc_ocean
       implicit none
       private
@@ -15,19 +21,17 @@
       subroutine sfc_ocean_finalize()
       end subroutine sfc_ocean_finalize
 
-#if 0
+!>\defgroup gfs_ocean_main GFS Simple Ocean Scheme Module
+!! This subroutine calculates thermodynamical properties over
+!! open water.
 !! \section arg_table_sfc_ocean_run Argument Table
 !! \htmlinclude sfc_ocean_run.html
 !!
-#endif
       subroutine sfc_ocean_run                                          &
-!...................................
-!  ---  inputs:
-     &     ( im, cp, rd, eps, epsm1, hvap, rvrdm1, ps, u1, v1, t1, q1,  &
-     &       tskin, cm, ch, prsl1, prslki, wet, ddvel,                  &
+     &     ( im, cp, rd, eps, epsm1, hvap, rvrdm1, ps, t1, q1,          &   ! --- inputs
+     &       tskin, cm, ch, prsl1, prslki, wet, lake, wind,             &
      &       flag_iter,                                                 &
-!  ---  outputs:
-     &       qsurf, cmm, chh, gflux, evap, hflx, ep,                    &
+     &       qsurf, cmm, chh, gflux, evap, hflx, ep,                    &   ! --- outputs
      &       errmsg, errflg                                             &
      &     )
 
@@ -38,8 +42,9 @@
 !                                                                       !
 !    call sfc_ocean                                                     !
 !       inputs:                                                         !
-!          ( im, ps, u1, v1, t1, q1, tskin, cm, ch,                     !
-!            prsl1, prslki, wet, ddvel, flag_iter,                      !
+!          ( im, ps, t1, q1, tskin, cm, ch,                             !
+!!         ( im, ps, u1, v1, t1, q1, tskin, cm, ch,                     !
+!            prsl1, prslki, wet, wind, flag_iter,                       !
 !       outputs:                                                        !
 !            qsurf, cmm, chh, gflux, evap, hflx, ep )                   !
 !                                                                       !
@@ -62,7 +67,6 @@
 !  inputs:                                                       size   !
 !     im       - integer, horizontal dimension                     1    !
 !     ps       - real, surface pressure                            im   !
-!     u1, v1   - real, u/v component of surface layer wind         im   !
 !     t1       - real, surface layer mean temperature ( k )        im   !
 !     q1       - real, surface layer mean specific humidity        im   !
 !     tskin    - real, ground surface skin temperature ( k )       im   !
@@ -71,7 +75,7 @@
 !     prsl1    - real, surface layer mean pressure                 im   !
 !     prslki   - real,                                             im   !
 !     wet      - logical, =T if any ocean/lak, =F otherwise        im   !
-!     ddvel    - real, wind enhancement due to convection (m/s)    im   !
+!     wind     - real, wind speed (m/s)                            im   !
 !     flag_iter- logical,                                          im   !
 !                                                                       !
 !  outputs:                                                             !
@@ -95,10 +99,10 @@
       real (kind=kind_phys), intent(in) :: cp, rd, eps, epsm1, hvap,    &
      &      rvrdm1
 
-      real (kind=kind_phys), dimension(im), intent(in) :: ps, u1, v1,   &
-     &      t1, q1, tskin, cm, ch, prsl1, prslki, ddvel
+      real (kind=kind_phys), dimension(im), intent(in) :: ps,           &
+     &      t1, q1, tskin, cm, ch, prsl1, prslki, wind
 
-      logical, dimension(im), intent(in) :: flag_iter, wet
+      logical, dimension(im), intent(in) :: flag_iter, wet, lake
 
 !  ---  outputs:
       real (kind=kind_phys), dimension(im), intent(inout) :: qsurf,     &
@@ -109,7 +113,7 @@
 
 !  ---  locals:
 
-      real (kind=kind_phys) :: q0, qss, rch, rho, wind, tem, cpinv,     &
+      real (kind=kind_phys) :: q0, qss, rch, rho, tem, cpinv,           &
      &      hvapi, elocp
 
       integer :: i
@@ -134,10 +138,7 @@
 !           rho is density, qss is sat. hum. at surface
 
         if ( flag(i) ) then
-
-          wind     = max(sqrt(u1(i)*u1(i) + v1(i)*v1(i))                &
-     &                 + max( 0.0, min( ddvel(i), 30.0 ) ), 1.0)
-
+         if(.not.lake(i)) then
           q0       = max( q1(i), 1.0e-8 )
           rho      = prsl1(i) / (rd*t1(i)*(1.0 + rvrdm1*q0))
 
@@ -151,9 +152,9 @@
 
 !  --- ...    rcp  = rho cp ch v
 
-          rch      = rho * cp * ch(i) * wind
-          cmm(i)   = cm(i) * wind
-          chh(i)   = rho * ch(i) * wind
+          rch      = rho * cp * ch(i) * wind(i)
+          cmm(i)   = cm(i) * wind(i)
+          chh(i)   = rho * ch(i) * wind(i)
 
 !  --- ...  sensible and latent heat flux over open water
 
@@ -166,6 +167,7 @@
           hflx(i)  = hflx(i) * tem * cpinv
           evap(i)  = evap(i) * tem * hvapi
         endif
+       endif  !end of if not lake
       enddo
 !
       return

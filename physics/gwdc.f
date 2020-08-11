@@ -22,7 +22,7 @@
       subroutine gwdc_pre_run (                                         &
      &  im, cgwf, dx, work1, work2, dlength, cldf,                      &
      &  levs, kbot, ktop, dtp, gt0, gt0_init, del, cumabs,              &
-     &  errmsg, errflg )
+     &  do_cnvgwd, errmsg, errflg )
 
       use machine, only : kind_phys
       implicit none
@@ -38,6 +38,7 @@
       real(kind=kind_phys), intent(out) ::                              &
      &  dlength(:), cldf(:), cumabs(:)
 
+      logical,          intent(in)  :: do_cnvgwd
       character(len=*), intent(out) :: errmsg
       integer,          intent(out) :: errflg
 
@@ -48,6 +49,14 @@
       ! Initialize CCPP error handling variables
       errmsg = ''
       errflg = 0
+
+      ! DH*
+      if (.not. do_cnvgwd) then
+          write(0,*) "ERROR: , GWDC_PRE CALLED BUT DO_CNVGWD FALSE"
+          call sleep(5)
+          stop
+      end if
+      ! *DH
 
       do i = 1, im
         tem1       = dx(i)
@@ -132,7 +141,7 @@
 !!
 !> \section al_gwdc GFS Convective GWD Scheme Detailed Algorithm
 !> @{
-      subroutine gwdc_run (im,ix,km,lat,u1,v1,t1,q1,deltim,             &
+      subroutine gwdc_run (im,km,lat,u1,v1,t1,q1,deltim,                &
      &           pmid1,pint1,dpmid1,qmax,ktop,kbot,kcnv,cldf,           &
      &           grav,cp,rd,fv,pi,dlength,lprnt,ipr,fhour,              &
      &           utgwc,vtgwc,tauctx,taucty,errmsg,errflg)
@@ -177,16 +186,16 @@
 !
 !-----------------------------------------------------------------------
 
-      integer, intent(in) :: im, ix, km, lat, ipr
+      integer, intent(in) :: im, km, lat, ipr
       integer, intent(in) :: ktop(im),kbot(im),kcnv(im)
       real(kind=kind_phys), intent(in) :: grav,cp,rd,fv,fhour,deltim,pi
       real(kind=kind_phys), dimension(im), intent(in) :: qmax
       real(kind=kind_phys), dimension(im), intent(out) :: tauctx,taucty
       real(kind=kind_phys), dimension(im), intent(in) :: cldf,dlength
-      real(kind=kind_phys), dimension(ix,km), intent(in) :: u1,v1,t1,   &
+      real(kind=kind_phys), dimension(im,km), intent(in) :: u1,v1,t1,   &
      &                                                  q1,pmid1,dpmid1
-      real(kind=kind_phys), dimension(ix,km), intent(out) :: utgwc,vtgwc
-      real(kind=kind_phys), dimension(ix,km+1), intent(in) :: pint1
+      real(kind=kind_phys), dimension(im,km), intent(out) :: utgwc,vtgwc
+      real(kind=kind_phys), dimension(im,km+1), intent(in) :: pint1
 !
       logical, intent(in) :: lprnt
 !
@@ -366,7 +375,7 @@
 !         print *,' '
 !         write(*,*) 'Inside GWDC raw input start print at fhour = ',
 !    &               fhour
-!         write(*,*) 'IX  IM  KM  ',ix,im,km
+!         write(*,*) 'IM  KM  ',im,km
 !         write(*,*) 'KBOT KTOP QMAX DLENGTH kcnv  ',
 !    +     kbot(ipr),ktop(ipr),qmax(ipr),dlength(ipr),kcnv(ipr)
 !         write(*,*) 'grav  cp  rd  ',grav,cp,rd
@@ -1489,12 +1498,12 @@
       if (lssav) then
         dugwd(:) = dugwd(:) + tauctx(:)*dtf
         dvgwd(:) = dvgwd(:) + taucty(:)*dtf
-
-        if (ldiag3d) then
-          du3dt(:,:) = du3dt(:,:) + gwdcu(:,:)  * dtf
-          dv3dt(:,:) = dv3dt(:,:) + gwdcv(:,:)  * dtf
-        endif
       endif   ! end if_lssav
+
+      if (ldiag3d) then
+         du3dt(:,:) = du3dt(:,:) + gwdcu(:,:)  * dtf
+         dv3dt(:,:) = dv3dt(:,:) + gwdcv(:,:)  * dtf
+      endif
 
 !  --- ...  update the wind components with  gwdc tendencies
 

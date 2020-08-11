@@ -17,14 +17,6 @@
   type = logical
   intent = in
   optional = F
-[cplchm]
-  standard_name = flag_for_chemistry_coupling
-  long_name = flag controlling cplchm collection (default off)
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-  optional = F
 [hvap]
   standard_name = latent_heat_of_vaporization_of_water_at_0C
   long_name = latent heat of evaporation/sublimation
@@ -57,24 +49,6 @@
   long_name = ideal gas constant for dry air
   units = J kg-1 K-1
   dimensions = ()
-  type = real
-  kind = kind_phys
-  intent = in
-  optional = F
-[u1]
-  standard_name = x_wind_at_lowest_model_layer
-  long_name = u component of surface layer wind
-  units = m s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
-  optional = F
-[v1]
-  standard_name = y_wind_at_lowest_model_layer
-  long_name = v component of surface layer wind
-  units = m s-1
-  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -124,10 +98,10 @@
   kind = kind_phys
   intent = in
   optional = F
-[prslki]
-  standard_name = ratio_of_exner_function_between_midlayer_and_interface_at_lowest_model_layer
-  long_name = Exner function ratio bt midlayer and interface at 1st layer
-  units = ratio
+[wind]
+  standard_name = wind_speed_at_lowest_model_layer
+  long_name = wind speed at lowest model level
+  units = m s-1
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -141,15 +115,6 @@
   type = logical
   intent = in
   optional = F
-[ddvel]
-  standard_name = surface_wind_enhancement_due_to_convection
-  long_name = wind enhancement due to convection
-  units = m s-1
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
-  optional = F
 [flag_iter]
   standard_name = flag_for_iteration
   long_name = flag for iteration
@@ -159,8 +124,8 @@
   intent = in
   optional = F
 [dqsfc]
-  standard_name = surface_upward_latent_heat_flux_for_coupling_interstitial
-  long_name = sfc latent heat flux for coupling interstitial
+  standard_name = surface_upward_latent_heat_flux_for_coupling
+  long_name = sfc latent heat flux for coupling
   units = W m-2
   dimensions = (horizontal_dimension)
   type = real
@@ -168,9 +133,27 @@
   intent = in
   optional = F
 [dtsfc]
-  standard_name = surface_upward_sensible_heat_flux_for_coupling_interstitial
-  long_name = sfc sensible heat flux for coupling interstitial
+  standard_name = surface_upward_sensible_heat_flux_for_coupling
+  long_name = sfc sensible heat flux for coupling
   units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[dusfc]
+  standard_name = surface_x_momentum_flux_for_coupling
+  long_name = sfc x momentum flux for coupling
+  units = Pa 
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = F
+[dvsfc]
+  standard_name = surface_y_momentum_flux_for_coupling
+  long_name = sfc y momentum flux for coupling
+  units = Pa 
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
@@ -216,6 +199,15 @@
   standard_name = kinematic_surface_upward_sensible_heat_flux_over_ice
   long_name = kinematic surface upward sensible heat flux over ice
   units = K m s-1
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = F
+[stress]
+  standard_name = surface_wind_stress_over_ice
+  long_name = surface wind stress over ice
+  units = m2 s-2
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
