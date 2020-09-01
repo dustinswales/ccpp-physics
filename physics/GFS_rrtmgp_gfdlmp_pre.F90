@@ -3,11 +3,11 @@
 ! schemes. Only compatable with Model%imp_physics = Model%imp_physics_gfdl
 ! ########################################################################################
 module GFS_rrtmgp_gfdlmp_pre
-  use machine,      only: kind_phys
-  use physparam,    only: lcnorm, lcrick, idcor, iovrlw, iovrsw
-  use rrtmgp_aux,   only: check_error_msg
+  use machine,                 only: kind_phys
+  use rrtmgp_aux,              only: check_error_msg
   use module_radiation_clouds, only: get_alpha_exp, get_alpha_dcorr
-  ! Parameters
+  
+  ! Parameters specific to GFDLMP scheme.
   real(kind_phys), parameter :: &
        reliq_def  = 10.0 ,      & ! Default liq radius to 10 micron (used when effr_in=F)
        reice_def  = 50.0,       & ! Default ice radius to 50 micron (used when effr_in=F)
@@ -33,7 +33,8 @@ contains
   subroutine GFS_rrtmgp_gfdlmp_pre_run(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice,   &
        i_cldrain, i_cldsnow, i_cldgrpl, i_cldtot, yearlen, lsswr, lslwr, effr_in, julian,&
        lat, p_lev, p_lay, tv_lay, effrin_cldliq, effrin_cldice, effrin_cldrain,          &
-       effrin_cldsnow, tracer, con_pi, con_g, con_rd, con_epsq,                          &
+       effrin_cldsnow, tracer, con_pi, con_g, con_rd, con_epsq, iovr_lw, iovr_sw,        &
+       iovr_dcorr, iovr_exp, iovr_exprand,                                               &
        cld_frac, cld_lwp, cld_reliq, cld_iwp, cld_reice, cld_swp, cld_resnow, cld_rwp,   &
        cld_rerain, precip_frac, cloud_overlap_param, precip_overlap_param, de_lgth,      &
        deltaZ, errmsg, errflg)
@@ -51,7 +52,12 @@ contains
          i_cldsnow,         & ! Index into tracer array for cloud snow.
          i_cldgrpl,         & ! Index into tracer array for cloud groupel.
          i_cldtot,          & ! Index into tracer array for cloud total amount.
-         yearlen              ! Length of current year (365/366) WTF?             
+         yearlen,           & ! Length of current year (365/366) WTF?             
+         iovr_lw,           & ! Choice of LW cloud-overlap method
+         iovr_sw,           & ! Choice of SW cloud-overlap method
+         iovr_dcorr,        & ! Flag for decorrelation-length cloud overlap method
+         iovr_exp,          & ! Flag for exponential cloud overlap method
+         iovr_exprand         ! Flag for exponential-random cloud overlap method        
     logical, intent(in) :: &
     	 lsswr,             & ! Call SW radiation?
     	 lslwr,             & ! Call LW radiation
@@ -113,20 +119,6 @@ contains
     ! Test inputs
     if (ncnd .ne. 5) then
        errmsg = 'Incorrect number of cloud condensates provided'
-       errflg = 1
-       call check_error_msg('GFS_rrtmgp_gfdlmp_pre_run',errmsg)
-       return
-    endif
-    ! 
-    if (lcrick) then
-       errmsg = 'Namelist option lcrick is not supported.'
-       errflg = 1
-       call check_error_msg('GFS_rrtmgp_gfdlmp_pre_run',errmsg)
-       return
-    endif
-    ! 
-    if (lcnorm) then
-       errmsg = 'Namelist option lcnorm is not supported.'
        errflg = 1
        call check_error_msg('GFS_rrtmgp_gfdlmp_pre_run',errmsg)
        return
@@ -201,7 +193,7 @@ contains
     ! Cloud (and precipitation) overlap
     ! ####################################################################################
 
-    iovr = max(iovrsw,iovrlw)  
+    iovr = max(iovr_sw,iovr_lw)  
     
     ! Compute layer-thickness
     do iCol=1,nCol
@@ -213,10 +205,10 @@ contains
     !
     ! Cloud overlap parameter
     !
-    if (iovr == 3) then
+    if (iovr == iovr_dcorr) then
        call get_alpha_dcorr(nCol, nLev, lat, con_pi, deltaZ, de_lgth, cloud_overlap_param)
     endif
-    if (iovr == 4 .or. iovr == 5) then 
+    if (iovr == iovr_exp .or. iovr == iovr_exprand) then 
        call get_alpha_exp(nCol, nLev, deltaZ, iovr, lat, julian, yearlen, cld_frac, cloud_overlap_param)
     endif
 
