@@ -150,7 +150,7 @@ contains
     ! Call module_radiation_surface::setalb() to setup surface albedo.
     ! #######################################################################################
     call setalb (lsmask, snowd, sncovr, snoalb, zorl, coszen, tsfc, tsfc, hprime, alvsf,    &
-         alnsf, alvwf, alnwf, facsf, facwf, fice, tisfc, NCOL, alb1d, pertalb, sfcalb)
+         alnsf, alvwf, alnwf, facsf, facwf, fice, tisfc, NCOL, alb1d, lndp_alb, sfcalb)
        
     ! Approximate mean surface albedo from vis- and nir-  diffuse values.
     sfc_alb_dif(:) = max(0.01, 0.5 * (sfcalb(:,2) + sfcalb(:,4)))

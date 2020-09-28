@@ -75,14 +75,14 @@ contains
          errmsg                     ! CCPP error message
     integer, intent(out) :: &
          errflg                     ! CCPP error flag
-    real(kind_phys), dimension(ncol,NLev+1), intent(inout) :: &
+    real(kind_phys), dimension(ncol,NLev+1), intent(out) :: &
          fluxswUP_allsky,         & ! RRTMGP upward all-sky flux profiles (W/m2)
          fluxswDOWN_allsky,       & ! RRTMGP downward all-sky flux profiles (W/m2)
          fluxswUP_clrsky,         & ! RRTMGP upward clear-sky flux profiles (W/m2)
          fluxswDOWN_clrsky          ! RRTMGP downward clear-sky flux profiles (W/m2)
 
     ! Outputs (optional)
-    type(cmpfsw_type), dimension(ncol), intent(inout),optional :: &
+    type(cmpfsw_type), dimension(ncol), intent(out),optional :: &
          scmpsw                     ! 2D surface fluxes, components:
                                     ! uvbfc - total sky downward uv-b flux (W/m2)
                                     ! uvbf0 - clear sky downward uv-b flux (W/m2)
