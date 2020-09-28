@@ -105,7 +105,7 @@ contains
     ! Compute clear-sky fluxes (if requested)
     !
     ! Add aerosol optics to gas optics
-    call check_error_msg('rrtmgp_lw_rte_run',lw_optical_props_aerosol%increment(lw_optical_props_clrsky))
+    call check_error_msg('rrtmgp_lw_rte_run',lw_optical_props_aerosol%increment(lw_optical_props_clrsky),errflg,errmsg)
 
     ! Call RTE solver
     if (doLWclrsky) then
@@ -115,7 +115,8 @@ contains
             sources,                         & ! IN  - source function
             sfc_emiss_byband,                & ! IN  - surface emissivity in each LW band
             flux_clrsky,                     & ! OUT - Fluxes
-            n_gauss_angles = nGauss_angles))   ! IN  - Number of angles in Gaussian quadrature
+            n_gauss_angles = nGauss_angles), & ! IN  - Number of angles in Gaussian quadrature
+	    errflg,errmsg)
 
        ! Store fluxes
        fluxlwUP_clrsky   = sum(flux_clrsky%bnd_flux_up,dim=3)
@@ -129,7 +130,7 @@ contains
     ! All-sky fluxes
     !
     ! Add cloud optics to clear-sky optics
-    call check_error_msg('rrtmgp_lw_rte_run',lw_optical_props_clouds%increment(lw_optical_props_clrsky))
+    call check_error_msg('rrtmgp_lw_rte_run',lw_optical_props_clouds%increment(lw_optical_props_clrsky),errflg,errmsg)
 
     ! Call RTE solver
     if (use_LW_jacobian) then
@@ -142,7 +143,8 @@ contains
             flux_allsky,                     & ! OUT - Flxues 
             n_gauss_angles = nGauss_angles,  & ! IN  - Number of angles in Gaussian quadrature
             flux_up_Jac    = fluxlwUP_jac,   & ! OUT - surface temperature flux (upward) Jacobian (W/m2/K)
-            flux_dn_Jac    = fluxlwDOWN_jac))  ! OUT - surface temperature flux (downward) Jacobian (W/m2/K)
+            flux_dn_Jac    = fluxlwDOWN_jac),& ! OUT - surface temperature flux (downward) Jacobian (W/m2/K)
+	    errflg,errmsg)
     else
        call check_error_msg('rrtmgp_lw_rte_run',rte_lw(           &
             lw_optical_props_clrsky,         & ! IN  - optical-properties
@@ -150,7 +152,8 @@ contains
             sources,                         & ! IN  - source function
             sfc_emiss_byband,                & ! IN  - surface emissivity in each LW band
             flux_allsky,                     & ! OUT - Flxues 
-            n_gauss_angles = nGauss_angles))   ! IN  - Number of angles in Gaussian quadrature    
+            n_gauss_angles = nGauss_angles), & ! IN  - Number of angles in Gaussian quadrature    
+	    errflg,errmsg)
     end if
             
     ! Store fluxes

@@ -163,9 +163,9 @@ contains
 
        ! Compute clear-sky fluxes (if requested)
        ! Clear-sky fluxes (gas+aerosol)
-       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_aerosol%increment(sw_optical_props_clrsky))
+       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_aerosol%increment(sw_optical_props_clrsky),errflg,errmsg)
        ! Delta-scale optical properties
-       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_clrsky%delta_scale())
+       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_clrsky%delta_scale(),errflg,errmsg)
        if (doSWclrsky) then
           call check_error_msg('rrtmgp_sw_rte_run',rte_sw(     &
                sw_optical_props_clrsky,      & ! IN  - optical-properties
@@ -174,7 +174,8 @@ contains
                toa_src_sw(idxday(1:nday),:), & ! IN  - incident solar flux at TOA
                sfc_alb_dir,                  & ! IN  - Shortwave surface albedo (direct)
                sfc_alb_dif,                  & ! IN  - Shortwave surface albedo (diffuse)
-               flux_clrsky))                   ! OUT - Fluxes, clear-sky, 3D (nCol,NLev,nBand) 
+               flux_clrsky),                 & ! OUT - Fluxes, clear-sky, 3D (nCol,NLev,nBand) 
+	       errflg,errmsg)
           ! Store fluxes
           fluxswUP_clrsky(idxday(1:nday),:)   = sum(flux_clrsky%bnd_flux_up,dim=3)
           fluxswDOWN_clrsky(idxday(1:nday),:) = sum(flux_clrsky%bnd_flux_dn,dim=3)
@@ -182,9 +183,9 @@ contains
        
        ! Compute all-sky fluxes
        ! All-sky fluxes (clear-sky + clouds)
-       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_clouds%increment(sw_optical_props_clrsky))
+       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_clouds%increment(sw_optical_props_clrsky),errflg,errmsg)
        ! Delta-scale optical properties
-       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_clrsky%delta_scale())
+       call check_error_msg('rrtmgp_sw_rte_run',sw_optical_props_clrsky%delta_scale(),errflg,errmsg)
        call check_error_msg('rrtmgp_sw_rte_run',rte_sw(     &
             sw_optical_props_clrsky,      & ! IN  - optical-properties
             top_at_1,                     & ! IN  - veritcal ordering flag
@@ -192,7 +193,8 @@ contains
             toa_src_sw(idxday(1:nday),:), & ! IN  - incident solar flux at TOA
             sfc_alb_dir,                  & ! IN  - Shortwave surface albedo (direct)
             sfc_alb_dif,                  & ! IN  - Shortwave surface albedo (diffuse)
-            flux_allsky))                   ! OUT - Fluxes, clear-sky, 3D (nCol,NLev,nBand) 
+            flux_allsky),                 & ! OUT - Fluxes, clear-sky, 3D (nCol,NLev,nBand) 
+	    errflg,errmsg)
        ! Store fluxes
        fluxswUP_allsky(idxday(1:nday),:)   = sum(flux_allsky%bnd_flux_up,dim=3)
        fluxswDOWN_allsky(idxday(1:nday),:) = sum(flux_allsky%bnd_flux_dn,dim=3)

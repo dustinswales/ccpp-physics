@@ -263,7 +263,7 @@ contains
 !    endif
 
     ! Initialize gas concentrations and gas optics class
-    call check_error_msg('lw_gas_optics_init',gas_concentrations%init(active_gases_array))
+    call check_error_msg('lw_gas_optics_init',gas_concentrations%init(active_gases_array),errflg,errmsg)
     call check_error_msg('lw_gas_optics_init',lw_gas_props%load(gas_concentrations, gas_names, &
          key_species, band2gpt, band_lims, press_ref, press_ref_trop, temp_ref,  temp_ref_p,   &
          temp_ref_t, vmr_ref, kmajor, kminor_lower, kminor_upper, gas_minor, identifier_minor, &
@@ -271,7 +271,7 @@ contains
          minor_scales_with_density_lower,  minor_scales_with_density_upper, scaling_gas_lower, &
          scaling_gas_upper, scale_by_complement_lower, scale_by_complement_upper,              &
          kminor_start_lower, kminor_start_upper, totplnk, planck_frac, rayl_lower, rayl_upper, &
-	 optimal_angle_fit))
+	 optimal_angle_fit),errflg,errmsg)
 
   end subroutine rrtmgp_lw_gas_optics_init
 
@@ -320,8 +320,8 @@ contains
     if (.not. doLWrad) return
 
     ! Allocate and initialize
-    call check_error_msg('rrtmgp_lw_gas_optics_run',lw_optical_props_clrsky%alloc_1scl(ncol, nLev, lw_gas_props))
-    call check_error_msg('rrtmgp_lw_gas_optics_run',sources%alloc(ncol, nLev, lw_gas_props))
+    call check_error_msg('rrtmgp_lw_gas_optics_run',lw_optical_props_clrsky%alloc_1scl(ncol, nLev, lw_gas_props),errflg,errmsg)
+    call check_error_msg('rrtmgp_lw_gas_optics_run',sources%alloc(ncol, nLev, lw_gas_props),errflg,errmsg)
 
     ! Gas-optics 
     call check_error_msg('rrtmgp_lw_gas_optics_run',lw_gas_props%gas_optics(&
@@ -332,7 +332,8 @@ contains
          gas_concentrations,      & ! IN  - RRTMGP DDT: trace gas volumne mixing-ratios
          lw_optical_props_clrsky, & ! OUT - RRTMGP DDT: longwave optical properties
          sources,                 & ! OUT - RRTMGP DDT: source functions
-         tlev=t_lev))               ! IN  - Temperature @ layer-interfaces (K) (optional)
+         tlev=t_lev),             & ! IN  - Temperature @ layer-interfaces (K) (optional)
+	 errflg,errmsg)
 
   end subroutine rrtmgp_lw_gas_optics_run
 
