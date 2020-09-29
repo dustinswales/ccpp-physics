@@ -42,7 +42,6 @@ module GFS_rrtmgp_setup
         imp_physics_zhao_carr_pdf, imp_physics_mg,  si, levr, ictm, isol, ico2, iaer,    &
         ialb, iems, ntcw,  num_p3d,  ntoz, iovr_sw, iovr_lw, isubc_sw, isubc_lw,         &
         icliq_sw, crick_proof, ccnorm, norad_precip, idate, iflip, me, errmsg, errflg)
-     implicit none
 
      ! Inputs
      integer, intent(in) :: &
@@ -146,8 +145,6 @@ module GFS_rrtmgp_setup
    subroutine GFS_rrtmgp_setup_run (idate, jdate, deltsw, deltim, lsswr, me, &
         slag, sdec, cdec, solcon, errmsg, errflg)
      
-     implicit none
-     
      ! interface variables
      integer,              intent(in)  :: idate(:)
      integer,              intent(in)  :: jdate(:)
@@ -182,8 +179,6 @@ module GFS_rrtmgp_setup
 !! \htmlinclude GFS_rrtmgp_setup_finalize.html
 !!
    subroutine GFS_rrtmgp_setup_finalize (errmsg, errflg)
-     
-     implicit none
      
      character(len=*),          intent(  out) :: errmsg
      integer,                   intent(  out) :: errflg
@@ -326,8 +321,6 @@ module GFS_rrtmgp_setup
       use module_radiation_gases,     only : gas_init
       use module_radiation_surface,   only : sfc_init
       use GFS_cloud_diagnostics,      only : hml_cloud_diagnostics_initialize
-
-      implicit none
 
 !  ---  inputs:
      integer, intent(in) :: &
@@ -526,8 +519,6 @@ module GFS_rrtmgp_setup
       use module_radiation_astronomy, only : sol_update
       use module_radiation_aerosols,  only : aer_update
       use module_radiation_gases,     only : gas_update
-
-      implicit none
 
 !  ---  inputs:
       integer, intent(in) :: idate(:), jdate(:), me

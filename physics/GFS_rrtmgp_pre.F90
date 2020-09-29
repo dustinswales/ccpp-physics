@@ -11,6 +11,7 @@ module GFS_rrtmgp_pre
   use mo_gas_optics_rrtmgp,  only: ty_gas_optics_rrtmgp
   use mo_gas_concentrations, only: ty_gas_concs
   use rrtmgp_aux,            only: check_error_msg
+  implicit none
 
   real(kind_phys), parameter :: &
        amd   = 28.9644_kind_phys,  & ! Molecular weight of dry-air     (g/mol)
