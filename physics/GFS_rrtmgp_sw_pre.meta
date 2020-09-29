@@ -248,7 +248,7 @@
   standard_name = weights_for_stochastic_surface_physics_perturbation
   long_name = weights for stochastic surface physics perturbation
   units = none
-  dimensions = (horizontal_dimension,number_of_surface_perturbations)
+  dimensions = (horizontal_dimension,number_of_land_surface_variables_perturbed)
   type = real
   kind = kind_phys
   intent = in

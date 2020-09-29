@@ -11,6 +11,8 @@ module GFS_rrtmgp_sw_pre
        cdfnor                      ! Routine to compute CDF (used to compute percentiles)
   use mo_gas_optics_rrtmgp,  only: &
        ty_gas_optics_rrtmgp
+  implicit none
+
   public GFS_rrtmgp_sw_pre_run,GFS_rrtmgp_sw_pre_init,GFS_rrtmgp_sw_pre_finalize
   
 contains
@@ -27,29 +29,28 @@ contains
 !> \section arg_table_GFS_rrtmgp_sw_pre_run
 !! \htmlinclude GFS_rrtmgp_sw_pre.html
 !!
-  subroutine GFS_rrtmgp_sw_pre_run(me, nCol, nLev, lndp_type, n_var_lndp,lndp_var_list,     &  
-       lndp_prt_list, lsswr, solhr,                                                         &
-       lon, coslat, sinlat,  snowd, sncovr, snoalb, zorl, tsfc, hprime, alvsf,              &
-       alnsf, alvwf, alnwf, facsf, facwf, fice, tisfc, lsmask, sfc_wts, p_lay, tv_lay,      &
-       relhum, p_lev, sw_gas_props,                                                         &
-       nday, idxday, alb1d, coszen, coszdg, sfc_alb_nir_dir, sfc_alb_nir_dif,               &
-       sfc_alb_uvvis_dir, sfc_alb_uvvis_dif, sfc_alb_dif, errmsg, errflg)
+  subroutine GFS_rrtmgp_sw_pre_run(me, nCol, nLev, lndp_type, n_var_lndp, lndp_var_list,    &  
+       lndp_prt_list, lsswr, solhr, lon, coslat, sinlat,  snowd, sncovr, snoalb, zorl, tsfc,&
+       hprime, alvsf, alnsf, alvwf, alnwf, facsf, facwf, fice, tisfc, lsmask, sfc_wts,      &
+       p_lay, tv_lay, relhum, p_lev, sw_gas_props, nday, idxday, alb1d, coszen, coszdg,     &
+       sfc_alb_nir_dir, sfc_alb_nir_dif, sfc_alb_uvvis_dir, sfc_alb_uvvis_dif, sfc_alb_dif, &
+       errmsg, errflg)
     
     ! Inputs   
     integer, intent(in)    :: &
          me,                & ! Current MPI rank
          nCol,              & ! Number of horizontal grid points
          nLev,              & ! Number of vertical layers
-         n_var_lndp,        &  ! Number of surface variables perturbed
-         lndp_type             ! Type of land perturbations scheme used
+         n_var_lndp,        & ! Number of surface variables perturbed
+         lndp_type            ! Type of land perturbations scheme used
     character(len=3), dimension(n_var_lndp), intent(in) ::  & 
-         lndp_var_list
+         lndp_var_list        ! Variables to be perturbed for landperts
     real(kind_phys), dimension(n_var_lndp), intent(in) ::   &
-         lndp_prt_list
+         lndp_prt_list        ! Magnitude of perturbations for landperts
     logical,intent(in) :: &
-         lsswr             ! Call RRTMGP SW radiation?
+         lsswr                ! Call RRTMGP SW radiation?
     real(kind_phys), intent(in) :: &
-         solhr                 ! Time in hours after 00z at the current timestep
+         solhr                ! Time in hours after 00z at the current timestep
     real(kind_phys), dimension(nCol), intent(in) :: &
          lsmask,            & ! Landmask: sea/land/ice=0/1/2
          lon,               & ! Longitude
@@ -101,7 +102,7 @@ contains
          errflg               ! Error flag
 
     ! Local variables
-    integer :: i, j, iCol, iBand, iLay
+    integer :: i, j, k, iCol, iBand, iLay
     real(kind_phys), dimension(ncol, NF_ALBD) :: sfcalb
     real(kind_phys) :: lndp_alb
 
@@ -136,14 +137,14 @@ contains
     alb1d(:) = 0.
     lndp_alb = -999.
     if (lndp_type ==1) then
-      do k =1,n_var_lndp
-       if (lndp_var_list(k) == 'alb') then
-          do i=1,ncol
-            call cdfnor(sfc_wts(i,k),alb1d(i))
-            lndp_alb = lndp_prt_list(k)
-          enddo
-        endif
-      enddo
+       do k =1,n_var_lndp
+          if (lndp_var_list(k) == 'alb') then
+             do i=1,ncol
+                call cdfnor(sfc_wts(i,k),alb1d(i))
+                lndp_alb = lndp_prt_list(k)
+             enddo
+          endif
+       enddo
     endif
     
     ! #######################################################################################
