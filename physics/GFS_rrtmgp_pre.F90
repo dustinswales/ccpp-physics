@@ -11,6 +11,7 @@ module GFS_rrtmgp_pre
   use mo_gas_optics_rrtmgp,  only: ty_gas_optics_rrtmgp
   use mo_gas_concentrations, only: ty_gas_concs
   use rrtmgp_aux,            only: check_error_msg
+  implicit none
 
   real(kind_phys), parameter :: &
        amd   = 28.9644_kind_phys,  & ! Molecular weight of dry-air     (g/mol)
@@ -302,13 +303,13 @@ contains
     vmr_o3  = merge(o3_lay*amdo3,           0., o3_lay .gt. 0.)
     
     ! Initialize and opulate RRTMGP DDT w/ gas-concentrations
-    call check_error_msg('sw_gas_optics_init',gas_concentrations%init(active_gases_array))
-    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_o2),  gas_vmr(:,:,4)))
-    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_co2), gas_vmr(:,:,1)))
-    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_ch4), gas_vmr(:,:,3)))
-    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_n2o), gas_vmr(:,:,2)))
-    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_h2o), vmr_h2o))
-    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_o3),  vmr_o3))
+    call check_error_msg('sw_gas_optics_init',gas_concentrations%init(active_gases_array),errflg,errmsg)
+    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_o2),  gas_vmr(:,:,4)),errflg,errmsg)
+    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_co2), gas_vmr(:,:,1)),errflg,errmsg)
+    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_ch4), gas_vmr(:,:,3)),errflg,errmsg)
+    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_n2o), gas_vmr(:,:,2)),errflg,errmsg)
+    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_h2o), vmr_h2o),errflg,errmsg)
+    call check_error_msg('GFS_rrtmgp_pre_run',gas_concentrations%set_vmr(active_gases_array(iStr_o3),  vmr_o3),errflg,errmsg)
 
     ! #######################################################################################
     ! Radiation time step (output) (Is this really needed?) (Used by some diagnostics)

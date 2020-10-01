@@ -273,7 +273,8 @@ contains
 
 
     ! Initialize gas concentrations and gas optics class
-    call check_error_msg('sw_gas_optics_init',gas_concentrations%init(active_gases_array))
+    call check_error_msg('sw_gas_optics_init',gas_concentrations%init(active_gases_array), &
+     	 errflg,errmsg)
     call check_error_msg('sw_gas_optics_init',sw_gas_props%load(gas_concentrations, gas_names, &
          key_species, band2gpt, band_lims, press_ref, press_ref_trop, temp_ref, temp_ref_p,    &
          temp_ref_t, vmr_ref, kmajor, kminor_lower, kminor_upper, gas_minor, identifier_minor, &
@@ -281,7 +282,7 @@ contains
          minor_scales_with_density_lower, minor_scales_with_density_upper, scaling_gas_lower,  &
          scaling_gas_upper, scale_by_complement_lower, scale_by_complement_upper,              &
          kminor_start_lower, kminor_start_upper, solar_quiet, solar_facular, solar_sunspot,    &
-	 tsi_default, mg_default, sb_default, rayl_lower, rayl_upper)) 
+	 tsi_default, mg_default, sb_default, rayl_lower, rayl_upper),errflg,errmsg) 
 
   end subroutine rrtmgp_sw_gas_optics_init
 
@@ -346,17 +347,17 @@ contains
 
     if (nDay .gt. 0) then
        ! Allocate space
-       call check_error_msg('rrtmgp_sw_gas_optics_run',sw_optical_props_clrsky%alloc_2str(nday, nLev, sw_gas_props))
+       call check_error_msg('rrtmgp_sw_gas_optics_run',sw_optical_props_clrsky%alloc_2str(nday, nLev, sw_gas_props),errflg,errmsg)
 
        ! Initialize gas concentrations and gas optics class
-       call check_error_msg('rrtmgp_sw_rte_run',gas_concentrations_daylit%init(active_gases_array))
+       call check_error_msg('rrtmgp_sw_rte_run',gas_concentrations_daylit%init(active_gases_array),errflg,errmsg)
 
        ! Subset the gas concentrations, only need daylit points.
        do iGas=1,rrtmgp_nGases
           call check_error_msg('rrtmgp_sw_rte_run',&
-               gas_concentrations%get_vmr(trim(active_gases_array(iGas)),vmrTemp))
+               gas_concentrations%get_vmr(trim(active_gases_array(iGas)),vmrTemp),errflg,errmsg)
           call check_error_msg('rrtmgp_sw_rte_run',&
-               gas_concentrations_daylit%set_vmr(trim(active_gases_array(iGas)),vmrTemp(idxday(1:nday),:)))
+               gas_concentrations_daylit%set_vmr(trim(active_gases_array(iGas)),vmrTemp(idxday(1:nday),:)),errflg,errmsg)
        enddo
 
        ! Gas-optics
@@ -367,7 +368,8 @@ contains
             gas_concentrations_daylit, & ! IN  - RRTMGP DDT: trace gas volumne mixing-ratios
             sw_optical_props_clrsky,   & ! OUT - RRTMGP DDT: Shortwave optical properties, by
                                          !                   spectral point (tau,ssa,g)
-            toa_src_sw_temp))            ! OUT - TOA incident shortwave radiation (spectral)
+            toa_src_sw_temp),          & ! OUT - TOA incident shortwave radiation (spectral)
+	    errflg,errmsg)
        toa_src_sw(idxday(1:nday),:) = toa_src_sw_temp
        ! Scale incident flux
        do ij=1,nday

@@ -1,3 +1,7 @@
+[ccpp-table-properties]
+  name = GFS_cloud_diagnostics
+  type = scheme
+
 ########################################################################
 [ccpp-arg-table]
   name = GFS_cloud_diagnostics_run
@@ -132,7 +136,7 @@
   intent = in
   optional = F   
 [iovr_sw]
-  standard_name = flag_for_cloud_overlap_for_shortwave_radiation
+  standard_name = flag_for_cloud_overlap_method_for_shortwave_radiation
   long_name = sw cloud-overlap method
   units = flag
   dimensions = ()
@@ -140,7 +144,7 @@
   intent = in
   optional = F
 [iovr_lw]
-  standard_name = flag_for_cloud_overlap_for_longwave_radiation
+  standard_name = flag_for_cloud_overlap_method_for_longwave_radiation
   long_name = lw cloud-overlap method
   units = flag
   dimensions = ()

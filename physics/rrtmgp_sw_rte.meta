@@ -1,3 +1,10 @@
+[ccpp-table-properties]
+  name = rrtmgp_sw_rte
+  type = scheme
+  dependencies = machine.F,radsw_param.f,rte-rrtmgp/rte/mo_rte_sw.F90,rte-rrtmgp/rte/mo_fluxes.F90,rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90,rrtmgp_aux.F90
+  dependencies = rte-rrtmgp/rte/kernels/mo_rte_solver_kernels.F90,rte-rrtmgp/extensions/mo_fluxes_byband.F90,rte-rrtmgp/extensions/mo_fluxes_byband_kernels.F90
+
+########################################################################
 [ccpp-arg-table]
   name = rrtmgp_sw_rte_run
   type = scheme
@@ -185,7 +192,7 @@
   units = W m-2
   dimensions = (horizontal_dimension)
   type = cmpfsw_type
-  intent = inout
+  intent = out
   optional = T
 [fluxswUP_allsky]
   standard_name = RRTMGP_sw_flux_profile_upward_allsky
@@ -194,7 +201,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
   optional = F
 [fluxswDOWN_allsky]
   standard_name = RRTMGP_sw_flux_profile_downward_allsky
@@ -203,7 +210,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
   optional = F
 [fluxswUP_clrsky]
   standard_name = RRTMGP_sw_flux_profile_upward_clrsky
@@ -212,7 +219,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
   optional = F
 [fluxswDOWN_clrsky]
   standard_name = RRTMGP_sw_flux_profile_downward_clrsky
@@ -221,7 +228,7 @@
   dimensions = (horizontal_dimension,vertical_dimension_plus_one)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
   optional = F
 [errmsg]
   standard_name = ccpp_error_message

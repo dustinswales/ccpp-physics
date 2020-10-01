@@ -103,7 +103,7 @@ contains
        
        ! Allocate RRTMGP DDT: Aerosol optics [nCol,nlev,nBands]
        call check_error_msg('rrtmgp_sw_aerosol_optics_run',sw_optical_props_aerosol%alloc_2str(      &
-            nDay, nlev, sw_gas_props%get_band_lims_wavenumber()))
+            nDay, nlev, sw_gas_props%get_band_lims_wavenumber()),errflg,errmsg)
        
        ! Copy aerosol optical information to RRTMGP DDT
        sw_optical_props_aerosol%tau = aerosolssw(idxday(1:nday),:,:,1)

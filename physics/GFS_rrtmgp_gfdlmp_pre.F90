@@ -118,9 +118,7 @@ contains
     
     ! Test inputs
     if (ncnd .ne. 5) then
-       errmsg = 'Incorrect number of cloud condensates provided'
-       errflg = 1
-       call check_error_msg('GFS_rrtmgp_gfdlmp_pre_run',errmsg)
+       call check_error_msg('GFS_rrtmgp_gfdlmp_pre_run','Incorrect number of cloud condensates provided',errflg,errmsg)
        return
     endif
 

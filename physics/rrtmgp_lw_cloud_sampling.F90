@@ -100,10 +100,8 @@ contains
     errflg = 0
 
     ! 
-    if (all([iovr_maxrand, iovr_dcorr, iovr_exp, iovr_exprand] .ne. iovr_lw)) then
-       errmsg = 'Cloud overlap assumption not supported.'
-       errflg = 1
-       call check_error_msg('rrtmgp_lw_cloud_sampling',errmsg)
+    if (iovr_lw .ne. 1 .and. iovr_lw .ne. 3 .and. iovr_lw .ne. 4 .and. iovr_lw .ne. 5) then
+       call check_error_msg('rrtmgp_lw_cloud_sampling','Cloud overlap assumption not supported.',errflg,errmsg)
        return
     endif
     
@@ -115,7 +113,7 @@ contains
 
     ! Allocate space RRTMGP DDTs [nCol,nLev,nGpt]
     call check_error_msg('rrtmgp_lw_cloud_sampling_run',&
-         lw_optical_props_clouds%alloc_1scl(nCol, nLev, lw_gas_props))
+         lw_optical_props_clouds%alloc_1scl(nCol, nLev, lw_gas_props),errflg,errmsg)
     
     ! Change random number seed value for each radiation invocation (isubc_lw =1 or 2).
     if(isubc_lw == 1) then      ! advance prescribed permutation seed
@@ -163,7 +161,7 @@ contains
     call check_error_msg('rrtmgp_lw_cloud_sampling_run_draw_samples',&
          draw_samples(cldfracMCICA,                                  &
                       lw_optical_props_cloudsByBand,                 &
-                      lw_optical_props_clouds))
+                      lw_optical_props_clouds),errflg,errmsg)
 
     ! ####################################################################################
     ! Next sample the precipitation...
@@ -171,7 +169,7 @@ contains
     
     ! Allocate space RRTMGP DDTs [nCol,nLev,nGpt]
     call check_error_msg('rrtmgp_lw_cloud_sampling_run',&
-         lw_optical_props_precip%alloc_1scl(nCol, nLev, lw_gas_props))
+         lw_optical_props_precip%alloc_1scl(nCol, nLev, lw_gas_props),errflg,errmsg)
     
     ! Change random number seed value for each radiation invocation (isubc_lw =1 or 2).
     if(isubc_lw == 1) then      ! advance prescribed permutation seed
@@ -222,7 +220,7 @@ contains
     call check_error_msg('rrtmgp_lw_precip_sampling_run_draw_samples',&
          draw_samples(precipfracSAMP,                                 &
                       lw_optical_props_precipByBand,                  &
-                      lw_optical_props_precip))
+                      lw_optical_props_precip),errflg,errmsg)
          
     ! ####################################################################################
     ! Just add precipitation optics to cloud-optics

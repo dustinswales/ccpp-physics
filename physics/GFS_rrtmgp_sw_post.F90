@@ -160,7 +160,8 @@ contains
                fluxswUP_clrsky(idxday(1:nDay),:),   & ! IN  - Shortwave upward clear-sky flux profiles (W/m2)
                fluxswDOWN_clrsky(idxday(1:nDay),:), & ! IN  - Shortwave downward clear-sky flux profiles (W/m2)
                p_lev(idxday(1:nDay),:),             & ! IN  - Pressure at model-interface (Pa)
-               thetaTendClrSky))                      ! OUT - Clear-sky heating-rate (K/sec)
+               thetaTendClrSky),                    & ! OUT - Clear-sky heating-rate (K/sec)
+	       errflg,errmsg)
           htrswc(idxday(1:nDay),:)=thetaTendClrSky !**NOTE** GP doesn't use radiation levels, it uses the model fields. Not sure if this is necessary
        endif
 
@@ -170,7 +171,8 @@ contains
             fluxswUP_allsky(idxday(1:nDay),:),      & ! IN  - Shortwave upward all-sky flux profiles (W/m2)
             fluxswDOWN_allsky(idxday(1:nDay),:),    & ! IN  - Shortwave downward all-sky flux profiles (W/m2)
             p_lev(idxday(1:nDay),:),                & ! IN  - Pressure at model-interface (Pa)
-            thetaTendAllSky))                         ! OUT - All-sky heating-rate (K/sec)
+            thetaTendAllSky),                       & ! OUT - All-sky heating-rate (K/sec)
+	    errflg,errmsg)
        htrsw(idxday(1:nDay),:) = thetaTendAllSky
 
        ! #######################################################################################

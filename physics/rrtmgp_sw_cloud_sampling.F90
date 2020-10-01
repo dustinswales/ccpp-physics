@@ -106,10 +106,8 @@ contains
     errflg = 0
     
     ! Only works w/ SDFs v15p2 and v16beta
-    if (all([iovr_maxrand, iovr_dcorr, iovr_exp, iovr_exprand] .ne. iovr_sw)) then
-       errmsg = 'Cloud overlap assumption not supported.'
-       errflg = 1
-       call check_error_msg('rrtmgp_sw_cloud_sampling',errmsg)
+    if (iovr_sw .ne. 1 .and. iovr_sw .ne. 3 .and. iovr_sw .ne. 4 .and. iovr_sw .ne. 5) then
+       call check_error_msg('rrtmgp_sw_cloud_sampling','Cloud overlap assumption not supported.',errflg,errmsg)
        return
     endif
     
@@ -121,7 +119,7 @@ contains
 
        ! Allocate space RRTMGP DDTs [nday,nLev,nGpt]
        call check_error_msg('rrtmgp_sw_cloud_sampling_run', & 
-            sw_optical_props_clouds%alloc_2str(nday, nLev, sw_gas_props))
+            sw_optical_props_clouds%alloc_2str(nday, nLev, sw_gas_props),errflg,errmsg)
  
        ! Change random number seed value for each radiation invocation (isubc_sw =1 or 2).
        if(isubc_sw == 1) then      ! advance prescribed permutation seed
@@ -168,7 +166,8 @@ contains
        call check_error_msg('rrtmgp_sw_cloud_sampling_run_draw_samples', & 
             draw_samples(cldfracMCICA,                      &
                          sw_optical_props_cloudsByBand,     &
-                         sw_optical_props_clouds))
+                         sw_optical_props_clouds),          &
+            errflg,errmsg)
          
        ! #################################################################################       
        ! Next sample precipitation (same as clouds for now)
@@ -176,7 +175,7 @@ contains
 
        ! Allocate space RRTMGP DDTs [nday,nLev,nGpt]
        call check_error_msg('rrtmgp_sw_cloud_sampling_run', &
-           sw_optical_props_precip%alloc_2str( nday, nLev, sw_gas_props))
+           sw_optical_props_precip%alloc_2str( nday, nLev, sw_gas_props),errflg,errmsg)
  
        ! Change random number seed value for each radiation invocation (isubc_sw =1 or 2).
        if(isubc_sw == 1) then      ! advance prescribed permutation seed
@@ -224,7 +223,8 @@ contains
        call check_error_msg('rrtmgp_sw_precip_sampling_run_draw_samples', & 
             draw_samples(precipfracSAMP,                    &
                          sw_optical_props_precipByBand,     &
-                         sw_optical_props_precip))                  
+                         sw_optical_props_precip),          &
+	    errflg,errmsg)
     endif
          
     ! ####################################################################################        

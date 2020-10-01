@@ -1,3 +1,9 @@
+[ccpp-table-properties]
+  name = rrtmgp_lw_cloud_sampling
+  type = scheme
+  dependencies = machine.F,mersenne_twister.f,physparam.f,rrtmgp_sampling.F90,rrtmgp_aux.F90
+
+########################################################################
 [ccpp-arg-table]
   name = rrtmgp_lw_cloud_sampling_init
   type = scheme
@@ -80,7 +86,7 @@
   intent = in
   optional = F
 [iovr_lw]
-  standard_name = flag_for_cloud_overlap_for_longwave_radiation
+  standard_name = flag_for_cloud_overlap_method_for_longwave_radiation
   long_name = lw cloud-overlap method
   units = flag
   dimensions = ()

@@ -252,15 +252,18 @@ contains
     if (doGP_cldoptics_LUT) then
        call check_error_msg('lw_cloud_optics_init',lw_cloud_props%load(band_lims,        &
             radliq_lwr, radliq_upr, radliq_fac, radice_lwr, radice_upr,  radice_fac,     &
-            lut_extliq, lut_ssaliq, lut_asyliq, lut_extice, lut_ssaice, lut_asyice))
+            lut_extliq, lut_ssaliq, lut_asyliq, lut_extice, lut_ssaice, lut_asyice),     &
+	    errflg,errmsg)
     endif
     if (doGP_cldoptics_PADE) then
        call check_error_msg('lw_cloud_optics_init', lw_cloud_props%load(band_lims,       &
             pade_extliq, pade_ssaliq, pade_asyliq, pade_extice, pade_ssaice, pade_asyice,&
             pade_sizereg_extliq, pade_sizereg_ssaliq, pade_sizereg_asyliq,               &
-            pade_sizereg_extice, pade_sizereg_ssaice, pade_sizereg_asyice))
+            pade_sizereg_extice, pade_sizereg_ssaice, pade_sizereg_asyice),              &
+	    errflg,errmsg)
     endif
-    call check_error_msg('lw_cloud_optics_init',lw_cloud_props%set_ice_roughness(nrghice))
+    call check_error_msg('lw_cloud_optics_init',lw_cloud_props%set_ice_roughness(nrghice), &
+    	 errflg,errmsg)
  
   end subroutine rrtmgp_lw_cloud_optics_init
 
@@ -336,11 +339,11 @@ contains
     ! Allocate space for RRTMGP DDTs containing cloud radiative properties    
     ! Cloud optics [nCol,nLev,nBands]
     call check_error_msg('rrtmgp_lw_cloud_optics_run',lw_optical_props_cloudsByBand%alloc_1scl(&
-         ncol, nLev, lw_gas_props%get_band_lims_wavenumber()))
+         ncol, nLev, lw_gas_props%get_band_lims_wavenumber()),errflg,errmsg)
     lw_optical_props_cloudsByBand%tau(:,:,:) = 0._kind_phys    
     ! Precipitation optics [nCol,nLev,nBands]
     call check_error_msg('rrtmgp_lw_cloud_optics_run',lw_optical_props_precipByBand%alloc_1scl(&
-         ncol, nLev, lw_gas_props%get_band_lims_wavenumber()))
+         ncol, nLev, lw_gas_props%get_band_lims_wavenumber()),errflg,errmsg)
     lw_optical_props_precipByBand%tau(:,:,:) = 0._kind_phys
     
     ! Compute cloud-optics for RTE.
@@ -351,8 +354,8 @@ contains
             cld_iwp,                       & ! IN  - Cloud ice water path (g/m2)
             cld_reliq,                     & ! IN  - Cloud liquid effective radius (microns)
             cld_reice,                     & ! IN  - Cloud ice effective radius (microns)
-            lw_optical_props_cloudsByBand))  ! OUT - RRTMGP DDT containing cloud radiative properties
-                                             !       in each band
+            lw_optical_props_cloudsByBand),& ! OUT - RRTMGP DDT containing cloud radiative properties
+            errflg,errmsg)                   !       in each band
        ! Add in rain and snow(+groupel) 
        do iCol=1,nCol
           do iLay=1,nLev                                      

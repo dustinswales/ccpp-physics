@@ -123,7 +123,8 @@ contains
             fluxlwUP_clrsky,   & ! IN  - RRTMGP upward longwave clear-sky flux profiles (W/m2)
             fluxlwDOWN_clrsky, & ! IN  - RRTMGP downward longwave clear-sky flux profiles (W/m2)
             p_lev,             & ! IN  - Pressure @ layer-interfaces (Pa)
-            htrlwc))               ! OUT - Longwave clear-sky heating rate (K/sec)
+            htrlwc),           & ! OUT - Longwave clear-sky heating rate (K/sec)
+            errflg,errmsg)
     endif
     
     ! All-sky heating-rate (mandatory)
@@ -131,7 +132,8 @@ contains
         fluxlwUP_allsky,      & ! IN  - RRTMGP upward longwave all-sky flux profiles (W/m2)
         fluxlwDOWN_allsky,    & ! IN  - RRTMGP downward longwave all-sky flux profiles (W/m2)
         p_lev,                & ! IN  - Pressure @ layer-interfaces (Pa)
-        htrlw))                 ! OUT - Longwave all-sky heating rate (K/sec)
+        htrlw),               & ! OUT - Longwave all-sky heating rate (K/sec)
+	errflg,errmsg)
 
     ! #######################################################################################
     ! Save LW outputs.

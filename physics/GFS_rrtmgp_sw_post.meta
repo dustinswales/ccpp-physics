@@ -1,3 +1,10 @@
+[ccpp-table-properties]
+  name = GFS_rrtmgp_sw_post
+  type = scheme
+  dependencies = iounitdef.f,machine.F,radiation_aerosols.f,radsw_param.f,rte-rrtmgp/extensions/mo_fluxes_byband.F90,rte-rrtmgp/extensions/mo_fluxes_byband_kernels.F90
+  dependencies = rte-rrtmgp/rte/mo_fluxes.F90,rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90,rte-rrtmgp/extensions/mo_heating_rates.F90,rrtmgp_aux.F90
+
+########################################################################
 [ccpp-arg-table]
   name = GFS_rrtmgp_sw_post_run
   type = scheme
@@ -342,7 +349,7 @@
   intent = out
   optional = F
 [htrsw]
-  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step_and_radiation_levels
   long_name = total sky sw heating rate
   units = K s-1
   dimensions = (horizontal_dimension,vertical_dimension)
@@ -359,7 +366,7 @@
   intent = out
   optional = F  
 [htrswc]
-  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels
   long_name = clear sky sw heating rates
   units = K s-1
   dimensions = (horizontal_dimension,vertical_dimension)
