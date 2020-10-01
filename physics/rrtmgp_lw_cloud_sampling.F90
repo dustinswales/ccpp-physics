@@ -1,15 +1,12 @@
 module rrtmgp_lw_cloud_sampling
   use machine,                  only: kind_phys
   use mo_gas_optics_rrtmgp,     only: ty_gas_optics_rrtmgp
-  use physparam,                only: isubclw, iovrlw
   use mo_optical_props,         only: ty_optical_props_1scl
   use rrtmgp_sampling,          only: sampled_mask, draw_samples
   use mersenne_twister,         only: random_setseed, random_number, random_stat  
   use rrtmgp_aux,               only: check_error_msg
   use netcdf
-
   implicit none
-
 contains
 
   ! #########################################################################################
@@ -45,7 +42,8 @@ contains
 !! \section arg_table_rrtmgp_lw_cloud_sampling_run
 !! \htmlinclude rrtmgp_lw_cloud_sampling_run.html
 !!
-  subroutine rrtmgp_lw_cloud_sampling_run(doLWrad, nCol, nLev, ipsdlw0, icseed_lw,   &
+  subroutine rrtmgp_lw_cloud_sampling_run(doLWrad, nCol, nLev, ipsdlw0, icseed_lw,          &
+       iovr_lw, iovr_maxrand, iovr_dcorr, iovr_exp, iovr_exprand, isubc_lw,                 &
        cld_frac, precip_frac, cloud_overlap_param, precip_overlap_param, lw_gas_props,      &
        lw_optical_props_cloudsByBand, lw_optical_props_precipByBand,                        &
        lw_optical_props_clouds, lw_optical_props_precip, errmsg, errflg)
@@ -56,12 +54,18 @@ contains
     integer, intent(in) :: &
          nCol,                             & ! Number of horizontal gridpoints
          nLev,                             & ! Number of vertical layers
-         ipsdlw0                             ! Initial permutation seed for McICA
+         ipsdlw0,                          & ! Initial permutation seed for McICA
+         iovr_lw,                          & ! Choice of LW cloud-overlap method
+         iovr_maxrand,                     & ! Flag for maximum-random cloud overlap method
+         iovr_dcorr,                       & ! Flag for decorrelation-length cloud overlap method
+         iovr_exp,                         & ! Flag for exponential cloud overlap method
+         iovr_exprand,                     & ! Flag for exponential-random cloud overlap method
+         isubc_lw                            ! Choice for sub-column cloud sampling
     integer,intent(in),dimension(ncol) :: &
          icseed_lw                           ! auxiliary special cloud related array when module 
-                                             ! variable isubclw=2, it provides permutation seed 
+                                             ! variable isubc_lw=2, it provides permutation seed 
                                              ! for each column profile that are used for generating 
-                                             ! random numbers. when isubclw /=2, it will not be used.
+                                             ! random numbers. when isubc_lw /=2, it will not be used.
     real(kind_phys), dimension(ncol,nLev),intent(in) :: &
          cld_frac,                         & ! Total cloud fraction by layer
          precip_frac                         ! Precipitation fraction by layer
@@ -111,12 +115,12 @@ contains
     call check_error_msg('rrtmgp_lw_cloud_sampling_run',&
          lw_optical_props_clouds%alloc_1scl(nCol, nLev, lw_gas_props),errflg,errmsg)
     
-    ! Change random number seed value for each radiation invocation (isubclw =1 or 2).
-    if(isubclw == 1) then      ! advance prescribed permutation seed
+    ! Change random number seed value for each radiation invocation (isubc_lw =1 or 2).
+    if(isubc_lw == 1) then      ! advance prescribed permutation seed
        do iCol = 1, ncol
           ipseed_lw(iCol) = ipsdlw0 + iCol
        enddo
-    elseif (isubclw == 2) then ! use input array of permutaion seeds
+    elseif (isubc_lw == 2) then ! use input array of permutaion seeds
        do iCol = 1, ncol
           ipseed_lw(iCol) = icseed_lw(iCol)
        enddo
@@ -132,11 +136,11 @@ contains
 
     ! Cloud-overlap.
     ! Maximum-random
-    if (iovrlw == 1) then
+    if (iovr_lw == iovr_maxrand) then
        call sampled_mask(rng3D, cld_frac, cldfracMCICA) 
     endif
-	!  Exponential decorrelation length overlap
-    if (iovrlw == 3) then
+    !  Exponential decorrelation length overlap
+    if (iovr_lw == iovr_dcorr) then
        ! Generate second RNG
        do iCol=1,ncol
           call random_setseed(ipseed_lw(icol),rng_stat)
@@ -148,7 +152,7 @@ contains
                          randoms2      = rng3D2)
     endif
     ! Exponential or Exponential-random
-    if (iovrlw == 4 .or. iovrlw == 5) then
+    if (iovr_lw == iovr_exp .or. iovr_lw == iovr_exprand) then
        call sampled_mask(rng3D, cld_frac, cldfracMCICA,  &
                          overlap_param = cloud_overlap_param(:,1:nLev-1))    
     endif
@@ -167,12 +171,12 @@ contains
     call check_error_msg('rrtmgp_lw_cloud_sampling_run',&
          lw_optical_props_precip%alloc_1scl(nCol, nLev, lw_gas_props),errflg,errmsg)
     
-    ! Change random number seed value for each radiation invocation (isubclw =1 or 2).
-    if(isubclw == 1) then      ! advance prescribed permutation seed
+    ! Change random number seed value for each radiation invocation (isubc_lw =1 or 2).
+    if(isubc_lw == 1) then      ! advance prescribed permutation seed
        do iCol = 1, ncol
           ipseed_lw(iCol) = ipsdlw0 + iCol
        enddo
-    elseif (isubclw == 2) then ! use input array of permutaion seeds
+    elseif (isubc_lw == 2) then ! use input array of permutaion seeds
        do iCol = 1, ncol
           ipseed_lw(iCol) = icseed_lw(iCol)
        enddo
@@ -189,11 +193,11 @@ contains
 
     ! Precipitation overlap.
 	! Maximum-random
-    if (iovrlw == 1) then
+    if (iovr_lw == iovr_maxrand) then
         call sampled_mask(rng3D, precip_frac, precipfracSAMP)      
     endif 
 	!  Exponential decorrelation length overlap
-    if (iovrlw == 3) then
+    if (iovr_lw == iovr_dcorr) then
        ! No need to call RNG second time for now, just use the same seeds for precip as clouds.
        !! Generate second RNG
        !do iCol=1,ncol
@@ -206,7 +210,7 @@ contains
                          randoms2      = rng3D2)
     endif
     ! Exponential or Exponential-random
-    if (iovrlw == 4 .or. iovrlw == 5) then
+    if (iovr_lw == iovr_exp .or. iovr_lw == iovr_exprand) then
        call sampled_mask(rng3D, precip_frac, precipfracSAMP,               &
                          overlap_param = precip_overlap_param(:,1:nLev-1))
     endif

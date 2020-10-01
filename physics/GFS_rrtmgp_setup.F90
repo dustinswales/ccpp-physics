@@ -5,7 +5,7 @@ module GFS_rrtmgp_setup
    use physparam, only : &
         isolar,  ictmflg, ico2flg, ioznflg, iaerflg, iaermdl, icldflg, &
         iovrsw,  iovrlw,  lcrick,  lcnorm,  lnoprec, ialbflg, iemsflg, & 
-        isubcsw, isubclw, ivflip , ipsd0,   iswcliq
+        isubcsw, isubclw, ivflip , ipsd0,   iswcliq   
    use machine, only: &
         kind_phys                  ! Working type
    implicit none
@@ -40,24 +40,34 @@ module GFS_rrtmgp_setup
    subroutine GFS_rrtmgp_setup_init(imp_physics, imp_physics_fer_hires, imp_physics_gfdl,&
         imp_physics_thompson, imp_physics_wsm6, imp_physics_zhao_carr,                   &
         imp_physics_zhao_carr_pdf, imp_physics_mg,  si, levr, ictm, isol, ico2, iaer,    &
-        ialb, iems, ntcw,  num_p3d,  ntoz, iovr_sw, iovr_lw, isubc_sw, isubc_lw,         &
-        icliq_sw, crick_proof, ccnorm, norad_precip, idate, iflip, me, errmsg, errflg)
+        ialb, iems, ntcw,  num_p3d,  ntoz, iovr_sw, iovr_lw, iovr_maxrand, iovr_dcorr,   &
+        iovr_exp, iovr_exprand, isubc_sw, isubc_lw, icliq_sw, crick_proof, ccnorm,       &
+        norad_precip, idate, iflip, me, errmsg, errflg)
+     implicit none
 
      ! Inputs
      integer, intent(in) :: &
-          imp_physics,               & ! Flag for MP scheme
+          imp_physics,               & ! Choice of MP scheme
           imp_physics_fer_hires,     & ! Flag for fer-hires scheme
           imp_physics_gfdl,          & ! Flag for gfdl scheme
           imp_physics_thompson,      & ! Flag for thompsonscheme
           imp_physics_wsm6,          & ! Flag for wsm6 scheme
           imp_physics_zhao_carr,     & ! Flag for zhao-carr scheme
           imp_physics_zhao_carr_pdf, & ! Flag for zhao-carr+PDF scheme
-          imp_physics_mg               ! Flag for MG scheme
+          imp_physics_mg,            & ! Flag for MG scheme
+          iovr_lw,                   & ! Choice of longwave cloud-overlap method
+          iovr_sw,                   & ! Choice of shortwave cloud-overlap method
+          iovr_maxrand,              & ! Flag for maximum-random cloud overlap method
+          iovr_dcorr,                & ! Flag for decorrelation-length cloud overlap method
+          iovr_exp,                  & ! Flag for exponential cloud overlap method
+          iovr_exprand,              & ! Flag for exponential-random cloud overlap method  
+          isubc_lw,                  & ! Choice of LW sub-column cloud sampling
+          isubc_sw,                  & ! Choice of SW sub-column cloud sampling          
+          iflip                        ! Flag for vertical grid order (0=toa-2-sfc;1=sfc-2-toa)     
      real(kind_phys), dimension(levr+1), intent(in) :: &
           si
      integer, intent(in) :: levr, ictm, isol, ico2, iaer, ialb, iems,   & 
-          ntcw, num_p3d, ntoz, iovr_sw, iovr_lw, isubc_sw, isubc_lw,    &
-          icliq_sw, iflip, me 
+          ntcw, num_p3d, ntoz, icliq_sw, me 
      logical, intent(in) :: &
           crick_proof, ccnorm, norad_precip
      integer, intent(in), dimension(4) :: &
@@ -77,16 +87,21 @@ module GFS_rrtmgp_setup
      ico2flg = ico2                     ! co2 data source control flag
      ioznflg = ntoz                     ! ozone data source control flag
      iswcliq = icliq_sw                 ! optical property for liquid clouds for sw
-     iovrsw  = iovr_sw                  ! cloud overlapping control flag for sw
-     iovrlw  = iovr_lw                  ! cloud overlapping control flag for lw
      lcrick  = crick_proof              ! control flag for eliminating CRICK 
      lcnorm  = ccnorm                   ! control flag for in-cld condensate 
      lnoprec = norad_precip             ! precip effect on radiation flag (ferrier microphysics)
-     isubcsw = isubc_sw                 ! sub-column cloud approx flag in sw radiation
-     isubclw = isubc_lw                 ! sub-column cloud approx flag in lw radiation
      ialbflg = ialb                     ! surface albedo control flag
      iemsflg = iems                     ! surface emissivity control flag
+     
+     ! These below are interstitial fields in GP, EXCEPT where GP share code with G. In which
+     ! case these fields are included via physparam, so they still need to be set. I don't 
+     ! want to modify these shared G/GP routines, as it would require substantial modifications
+     ! on the G side, which I don't want to do...
      ivflip  = iflip                    ! vertical index direction control flag
+     iovrsw  = iovr_sw                  ! cloud overlapping control flag for sw
+     iovrlw  = iovr_lw                  ! cloud overlapping control flag for lw
+     isubcsw = isubc_sw                 ! sub-column cloud approx flag in sw radiation
+     isubclw = isubc_lw                 ! sub-column cloud approx flag in lw radiation
      
      if ( ictm==0 .or. ictm==-2 ) then
         iaerflg = mod(iaer, 100)        ! no volcanic aerosols for clim hindcast
@@ -99,13 +114,7 @@ module GFS_rrtmgp_setup
         errflg = 1
         return
      endif
-     
-     !if ( ntcw > 0 ) then
-     icldflg = 1                     ! prognostic cloud optical prop scheme
-     !else
-     !   icldflg = 0                     ! no support for diag cloud opt prop scheme
-     !endif
-     
+
      ! Set initial permutation seed for mcica cloud-radiation
      if ( isubc_sw>0 .or. isubc_lw>0 ) then
         ipsd0 = 17*idate(1)+43*idate(2)+37*idate(3)+23*idate(4)
@@ -124,10 +133,10 @@ module GFS_rrtmgp_setup
              ' ccnorm=',ccnorm,' norad_precip=',norad_precip
      endif
      
-
      call radinit( si, levr, imp_physics, imp_physics_fer_hires, imp_physics_gfdl,       &
         imp_physics_thompson, imp_physics_wsm6, imp_physics_zhao_carr,                   &
-        imp_physics_zhao_carr_pdf, imp_physics_mg,  me, errflg )
+        imp_physics_zhao_carr_pdf, imp_physics_mg, iovr_sw, iovr_lw, iovr_maxrand,       &
+        iovr_dcorr, iovr_exp, iovr_exprand, isubc_sw, isubc_lw, iflip, me, errflg )
      
      if ( me == 0 ) then
         print *,'  Radiation sub-cloud initial seed =',ipsd0,           &
@@ -200,16 +209,9 @@ module GFS_rrtmgp_setup
    
    
    subroutine radinit(si, NLAY, imp_physics, imp_physics_fer_hires, imp_physics_gfdl,    &
-        imp_physics_thompson, imp_physics_wsm6, imp_physics_zhao_carr, &
-        imp_physics_zhao_carr_pdf, imp_physics_mg, me, errflg )
-     !...................................
-
-!  ---  inputs:
-!     &     ( si, NLAY, imp_physics, imp_physics_fer_hires, imp_physics_gfdl,            &
-!     &       imp_physics_thompson, imp_physics_wsm6, imp_physics_zhao_carr,             &
-!     &       imp_physics_zhao_carr_pdf, imp_physics_mg, me )
-!  ---  outputs:
-!          ( errflg )
+        imp_physics_thompson, imp_physics_wsm6, imp_physics_zhao_carr,                   &
+        imp_physics_zhao_carr_pdf, imp_physics_mg, iovr_sw, iovr_lw, iovr_maxrand,       &
+        iovr_dcorr, iovr_exp, iovr_exprand, isubc_sw, isubc_lw, iflip, me, errflg )
 
 ! =================   subprogram documentation block   ================ !
 !                                                                       !
@@ -276,9 +278,6 @@ module GFS_rrtmgp_setup
 !              b:=0 use fixed sfc emissivity=1.0 (black-body)           !
 !                =1 use varying climtology sfc emiss (veg based)        !
 !                =2 future development (not yet)                        !
-!   icldflg  : cloud optical property scheme control flag               !
-!              =0: use diagnostic cloud scheme                          !
-!              =1: use prognostic cloud scheme (default)                !
 !   imp_physics  : cloud microphysics scheme control flag               !
 !              =99 zhao/carr/sundqvist microphysics scheme              !
 !              =98 zhao/carr/sundqvist microphysics+pdf cloud&cnvc,cnvw !
@@ -286,15 +285,14 @@ module GFS_rrtmgp_setup
 !              =8 Thompson microphysics scheme                          !
 !              =6 WSM6 microphysics scheme                              !
 !              =10 MG microphysics scheme                               !
-!   iovrsw   : control flag for cloud overlap in sw radiation           !
-!   iovrlw   : control flag for cloud overlap in lw radiation           !
-!              =0: random overlapping clouds                            !
-!              =1: max/ran overlapping clouds                           !
-!   isubcsw  : sub-column cloud approx control flag in sw radiation     !
-!   isubclw  : sub-column cloud approx control flag in lw radiation     !
-!              =0: with out sub-column cloud approximation              !
-!              =1: mcica sub-col approx. prescribed random seed         !
-!              =2: mcica sub-col approx. provided random seed           !
+!   iovr_sw      : choice cloud overlap in sw radiation                 !
+!   iovr_lw      : choice of cloud overlap in lw radiation              !
+!   iovr_maxrand : flag for maximum-random cloud overlap method         !
+!   iovr_dcorr   : flag for decorrelation-length cloud overlap method   !
+!   iovr_exp     : flag for exponential cloud overlap method            !
+!   iovr_exprand : flag for exponential-random cloud overlap method     !
+!   isubc_sw     : choice SW cloud sub-column sampling method           !
+!   isubc_lw     : choice SW cloud sub-column sampling method           !
 !   lcrick   : control flag for eliminating CRICK                       !
 !              =t: apply layer smoothing to eliminate CRICK             !
 !              =f: do not apply layer smoothing                         !
@@ -304,7 +302,7 @@ module GFS_rrtmgp_setup
 !   lnoprec  : precip effect in radiation flag (ferrier microphysics)   !
 !              =t: snow/rain has no impact on radiation                 !
 !              =f: snow/rain has impact on radiation                    !
-!   ivflip   : vertical index direction control flag                    !
+!   iflip   : vertical index direction control flag                    !
 !              =0: index from toa to surface                            !
 !              =1: index from surface to toa                            !
 !                                                                       !
@@ -324,14 +322,23 @@ module GFS_rrtmgp_setup
 
 !  ---  inputs:
      integer, intent(in) :: &
-          imp_physics,               & ! Flag for MP scheme
+          imp_physics,               & ! Choice of MP scheme
           imp_physics_fer_hires,     & ! Flag for fer-hires scheme
           imp_physics_gfdl,          & ! Flag for gfdl scheme
           imp_physics_thompson,      & ! Flag for thompsonscheme
           imp_physics_wsm6,          & ! Flag for wsm6 scheme
           imp_physics_zhao_carr,     & ! Flag for zhao-carr scheme
           imp_physics_zhao_carr_pdf, & ! Flag for zhao-carr+PDF scheme
-          imp_physics_mg               ! Flag for MG scheme
+          imp_physics_mg,            & ! Flag for MG scheme
+          iovr_lw,                   & ! Choice for LW cloud-overlap method
+          iovr_sw,                   & ! Choice for SW cloud-overlap method
+          iovr_maxrand,              & ! Flag for maximum-random cloud overlap method
+          iovr_dcorr,                & ! Flag for decorrelation-length cloud overlap method
+          iovr_exp,                  & ! Flag for exponential cloud overlap method
+          iovr_exprand,              & ! Flag for exponential-random cloud overlap method          
+          isubc_lw,                  & ! Choice of LW sub-column cloud sampling
+          isubc_sw,                  & ! Choice of SW sub-column cloud sampling
+          iflip                        ! Flag for vertical grid order (0=toa-2-sfc;1=sfc-2-toa)
       integer, intent(in) :: NLAY, me
       real (kind=kind_phys), intent(in) :: si(:)
 
@@ -368,12 +375,10 @@ module GFS_rrtmgp_setup
         print *, VTAGRAD                !print out version tag
         print *,' - Selected Control Flag settings: ICTMflg=',ictmflg,  &
      &    ' ISOLar =',isolar, ' ICO2flg=',ico2flg,' IAERflg=',iaerflg,  &
-     &    ' IALBflg=',ialbflg,' IEMSflg=',iemsflg,' ICLDflg=',icldflg,  &
+     &    ' IALBflg=',ialbflg,' IEMSflg=',iemsflg,' ICLDflg=1',  &
      &    ' IMP_PHYSICS=',imp_physics,' IOZNflg=',ioznflg
-        print *,' IVFLIP=',ivflip,' IOVRSW=',iovrsw,' IOVRLW=',iovrlw,  &
-     &    ' ISUBCSW=',isubcsw,' ISUBCLW=',isubclw
-!       write(0,*)' IVFLIP=',ivflip,' IOVRSW=',iovrsw,' IOVRLW=',iovrlw,&
-!    &    ' ISUBCSW=',isubcsw,' ISUBCLW=',isubclw
+        print *,' IVFLIP=',iflip,' IOVRSW=',iovr_sw,' IOVRLW=',iovr_lw,  &
+     &    ' ISUBCSW=',isubc_sw,' ISUBCLW=',isubc_lw
         print *,' LCRICK=',lcrick,' LCNORM=',lcnorm,' LNOPREC=',lnoprec
 
         if ( ictmflg==0 .or. ictmflg==-2 ) then
@@ -381,39 +386,39 @@ module GFS_rrtmgp_setup
           print *,'   No volcanic aerosols'
         endif
 
-        if ( isubclw == 0 ) then
-          print *,' - ISUBCLW=',isubclw,' No McICA, use grid ',         &
+        if ( isubc_lw == 0 ) then
+          print *,' - ISUBCLW=',isubc_lw,' No McICA, use grid ',         &
      &            'averaged cloud in LW radiation'
-        elseif ( isubclw == 1 ) then
-          print *,' - ISUBCLW=',isubclw,' Use McICA with fixed ',       &
+        elseif ( isubc_lw == 1 ) then
+          print *,' - ISUBCLW=',isubc_lw,' Use McICA with fixed ',       &
      &            'permutation seeds for LW random number generator'
-        elseif ( isubclw == 2 ) then
-          print *,' - ISUBCLW=',isubclw,' Use McICA with random ',      &
+        elseif ( isubc_lw == 2 ) then
+          print *,' - ISUBCLW=',isubc_lw,' Use McICA with random ',      &
      &            'permutation seeds for LW random number generator'
         else
-          print *,' - ERROR!!! ISUBCLW=',isubclw,' is not a ',          &
+          print *,' - ERROR!!! ISUBCLW=',isubc_lw,' is not a ',          &
      &            'valid option '
           stop
         endif
 
-        if ( isubcsw == 0 ) then
-          print *,' - ISUBCSW=',isubcsw,' No McICA, use grid ',         &
+        if ( isubc_sw == 0 ) then
+          print *,' - ISUBCSW=',isubc_sw,' No McICA, use grid ',         &
      &            'averaged cloud in SW radiation'
-        elseif ( isubcsw == 1 ) then
-          print *,' - ISUBCSW=',isubcsw,' Use McICA with fixed ',       &
+        elseif ( isubc_sw == 1 ) then
+          print *,' - ISUBCSW=',isubc_sw,' Use McICA with fixed ',       &
      &            'permutation seeds for SW random number generator'
-        elseif ( isubcsw == 2 ) then
-          print *,' - ISUBCSW=',isubcsw,' Use McICA with random ',      &
+        elseif ( isubc_sw == 2 ) then
+          print *,' - ISUBCSW=',isubc_sw,' Use McICA with random ',      &
      &            'permutation seeds for SW random number generator'
         else
-          print *,' - ERROR!!! ISUBCSW=',isubcsw,' is not a ',          &
+          print *,' - ERROR!!! ISUBCSW=',isubc_sw,' is not a ',          &
      &            'valid option '
           stop
         endif
 
-        if ( isubcsw /= isubclw ) then
+        if ( isubc_sw /= isubc_lw ) then
           print *,' - *** Notice *** ISUBCSW /= ISUBCLW !!!',           &
-     &            isubcsw, isubclw
+     &            isubc_sw, isubc_lw
         endif
       endif
 
