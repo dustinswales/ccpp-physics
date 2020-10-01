@@ -106,7 +106,7 @@ contains
     errflg = 0
     
     ! Only works w/ SDFs v15p2 and v16beta
-    if (iovrsw .ne. 1 .and. iovrsw .ne. 3 .and. iovrsw .ne. 4 .and. iovrsw .ne. 5) then
+    if (iovr_sw .ne. 1 .and. iovr_sw .ne. 3 .and. iovr_sw .ne. 4 .and. iovr_sw .ne. 5) then
        call check_error_msg('rrtmgp_sw_cloud_sampling','Cloud overlap assumption not supported.',errflg,errmsg)
        return
     endif

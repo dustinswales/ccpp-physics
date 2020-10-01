@@ -100,7 +100,7 @@ contains
     errflg = 0
 
     ! 
-    if (iovrlw .ne. 1 .and. iovrlw .ne. 3 .and. iovrlw .ne. 4 .and. iovrlw .ne. 5) then
+    if (iovr_lw .ne. 1 .and. iovr_lw .ne. 3 .and. iovr_lw .ne. 4 .and. iovr_lw .ne. 5) then
        call check_error_msg('rrtmgp_lw_cloud_sampling','Cloud overlap assumption not supported.',errflg,errmsg)
        return
     endif
