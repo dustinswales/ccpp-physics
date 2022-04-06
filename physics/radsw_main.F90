@@ -317,6 +317,11 @@
      &                             random_stat
       use module_radsw_ref, only : preflog, tref
       use module_radsw_sflux
+      ! For RRTMGP diagnostic flux calculation
+      use mo_optical_props, only: ty_optical_props_2str
+      use mo_rte_sw,        only: rte_sw
+      use mo_fluxes_byband, only: ty_fluxes_byband
+      use radiation_tools,  only: check_error_msg
 !
       implicit none
 !
