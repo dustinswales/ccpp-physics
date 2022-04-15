@@ -293,7 +293,7 @@
       use module_radlw_ref,     only : preflog, tref, chi_mls
 !
       ! For RRTMGP diagnostic flux calculation
-      use mo_optical_props,    only: ty_optical_props_1scl, ty_optical_props_2str
+      use mo_optical_props,    only: ty_optical_props_1scl
       use mo_rte_lw,           only: rte_lw
       use mo_fluxes_byband,    only: ty_fluxes_byband
       use mo_source_functions, only: ty_source_func_lw
@@ -435,7 +435,7 @@
      &       icseed,aeraod,aerssa,sfemis,sfgtmp,                        &
      &       dzlyr,delpin,de_lgth,alpha,                                &
      &       npts, nlay, nlp1, lprnt, cld_cf, lslwr,                    &
-     &       hlwc,topflx,sfcflx,cldtau,                                 &   !  ---  outputs
+     &       hlwc,topflx,sfcflx,cldtau,topflw_rrtmgp,sfcflw_rrtmgp,     &   !  ---  outputs
      &       HLW0,HLWB,FLXPRF,                                          &   !  ---  optional
      &       cld_lwp, cld_ref_liq, cld_iwp, cld_ref_ice,                &
      &       cld_rwp,cld_ref_rain, cld_swp, cld_ref_snow,               &
@@ -648,6 +648,8 @@
 
       type (topflw_type),    dimension(:), intent(inout) :: topflx
       type (sfcflw_type),    dimension(:), intent(inout) :: sfcflx
+      type (topflw_type),    dimension(:), intent(inout) :: topflw_rrtmgp
+      type (sfcflw_type),    dimension(:), intent(inout) :: sfcflw_rrtmgp
 
       character(len=*), intent(out) :: errmsg
       integer,          intent(out) :: errflg
@@ -684,6 +686,8 @@
       real (kind=kind_phys), dimension(nlay,ngptlw) :: fracs_r
       real(kind=kind_phys), dimension(ngptlw,nlay) :: cldfmc
       real (kind=kind_phys), dimension(nbands) :: semiss, secdiff
+      real(kind_phys), dimension(1, nlay+1) :: gpUP_allsky,             &
+           gpDOWN_allsky, gpUP_clrsky, gpDOWN_clrsky
 
 !  ---  column amount of absorbing gases:
 !       (:,m) m = 1-h2o, 2-co2, 3-o3, 4-n2o, 5-ch4, 6-o2, 7-co
@@ -710,98 +714,12 @@
       integer :: istart              ! beginning band of calculation
       integer :: iend                ! ending band of calculation
       integer :: iout                ! output option flag (inactive)
-      ! RRTMGP diagnostics flux calculation
-      type(ty_optical_props_1scl) :: &
-           lw_optical_props_clrsky, & ! RRTMGP DDT: Longwave clear-sky radiative properties at each spectral point 
-           lw_optical_props_aerosol   ! RRTMGP DDT: Longwave aerosol optical properties at each band
-      type(ty_optical_props_2str) :: &
-           lw_optical_props_clouds    ! RRTMGP DDT: Longwave cloud optical properties at each spectral point
-      type(ty_source_func_lw) :: &
-           sources                    ! RRTMGP DDT: Longwave source functions
-      type(ty_fluxes_byband) :: &
-           flux_allsky                ! RRTMGP DDT: Longwave all-sky fluxes in each band
-      real(kind_phys), dimension(1,nlp1,nbands), target :: &
-           fluxLW_up_allsky,        & !
-           fluxLW_dn_allsky           !
-      integer :: bcount
-      real(kind_phys), dimension(2,nbands) :: band2gpt, band2gpt_lcl
-      real(kind_phys), dimension(nbands) :: ngb_lcl
 !
 !===> ... begin here
 !
       ! Initialize CCPP error handling variables
       errmsg = ''
       errflg = 0
-
-      !
-      ! Allocate RRTMGP DDTs (use info from radlw_parameters.f)
-      ! by-gpoint
-      allocate(lw_optical_props_clrsky%band2gpt     (2,nbands   ))
-      allocate(lw_optical_props_clrsky%band_lims_wvn(2,nbands   ))
-      allocate(lw_optical_props_clrsky%gpt2band(ngptlw          ))
-      allocate(lw_optical_props_clrsky%tau(      1, nlay, ngptlw))
-      ! by-band
-      allocate(lw_optical_props_aerosol%band2gpt     (2,nbands   ))
-      allocate(lw_optical_props_aerosol%band_lims_wvn(2,nbands   ))
-      allocate(lw_optical_props_aerosol%gpt2band(nbands          ))
-      allocate(lw_optical_props_aerosol%tau(      1, nlay, nbands))
-      ! by-gpoint 
-      allocate(lw_optical_props_clouds%tau(      1, nlay, ngptlw))
-      allocate(lw_optical_props_clouds%ssa(      1, nlay, ngptlw))
-      allocate(lw_optical_props_clouds%g(        1, nlay, ngptlw))
-      allocate(lw_optical_props_clouds%band2gpt     (2, nbands))
-      allocate(lw_optical_props_clouds%band_lims_wvn(2, nbands))
-      allocate(lw_optical_props_clouds%gpt2band(       ngptlw))
-      ! by-gpoint 
-      allocate(sources%band2gpt     (2,nbands   ))
-      allocate(sources%band_lims_wvn(2,nbands   ))
-      allocate(sources%gpt2band(nbands          ))
-      allocate(sources%sfc_source(    1,       ngptlw))
-      allocate(sources%lay_source(    1, nlay, ngptlw))
-      allocate(sources%lev_source_inc(1, nlay, ngptlw))
-      allocate(sources%lev_source_dec(1, nlay, ngptlw))
-      allocate(sources%sfc_source_Jac(1,       ngptlw))
-      
-      ! RRTMGP needs the gpointt-2-band information. Compute from ngb in radlw_param.f
-      ! Optical quantites defined "g(spectral)-point"
-      bcount = 1
-      band2gpt(1,bcount) = 1
-      do i = 2,ngptlw
-         band2gpt(2,bcount) = i-1
-         if (ngb(i) > ngb(i-1)) then
-            bcount = bcount + 1
-            band2gpt(1,bcount) = i
-         endif
-      enddo
-      band2gpt(2,bcount) = ngptlw
-      ! Optical quantities defined "by-band"
-      do i = 1, nbands
-         band2gpt_lcl(1:2,i) = i
-         ngb_lcl(i)          = i
-      end do
-
-      ! Initialize spectral data in DDTs
-      ! by-gpoint
-      sources%band2gpt                            = band2gpt
-      sources%band_lims_wvn(1,:)                  = wvnlw1
-      sources%band_lims_wvn(2,:)                  = wvnlw2
-      sources%gpt2band                            = ngb
-      ! by-gpoint
-      lw_optical_props_clrsky%band2gpt            = band2gpt
-      lw_optical_props_clrsky%band_lims_wvn(1,:)  = wvnlw1
-      lw_optical_props_clrsky%band_lims_wvn(2,:)  = wvnlw2
-      lw_optical_props_clrsky%gpt2band            = ngb
-      ! by-gpoint
-      lw_optical_props_clouds%band2gpt            = band2gpt
-      lw_optical_props_clouds%band_lims_wvn(1,:)  = wvnlw1
-      lw_optical_props_clouds%band_lims_wvn(2,:)  = wvnlw2
-      lw_optical_props_clouds%gpt2band            = ngb
-      ! by-band
-      lw_optical_props_aerosol%band2gpt           = band2gpt_lcl
-      lw_optical_props_aerosol%band_lims_wvn(1,:) = wvnlw1
-      lw_optical_props_aerosol%band_lims_wvn(2,:) = wvnlw2
-      lw_optical_props_aerosol%gpt2band           = ngb_lcl
-
 !mz*
 ! For passing in cloud physical properties; cloud optics parameterized
 ! in RRTMG:
@@ -1306,17 +1224,20 @@
      &     ( semiss,delp,cldfmc,taucld,tautot,pklay,pklev,              &
      &       fracs,secdiff,nlay,nlp1,                                   &
 !  ---  outputs:
-     &       totuflux,totdflux,htr, totuclfl,totdclfl,htrcl, htrb       &
-     &     )
-
-          
-          ! Diagnostics RRTMGP flux calculation
-          flux_allsky%bnd_flux_up => fluxLW_up_allsky
-          flux_allsky%bnd_flux_dn => fluxLW_dn_allsky
+     &       totuflux,totdflux,htr, totuclfl,totdclfl,htrcl, htrb,      &
+     &       gpUP_allsky, gpDOWN_allsky, gpUP_clrsky, gpDOWN_clrsky)
 
         endif   ! end if_isubclw_block
 
 !> -# Save outputs.
+
+        ! RRTMGP diagnostic fluxes
+        topflw_rrtmgp(iplon)%upfxc = gpUP_allsky(1,nlay+1)
+        topflw_rrtmgp(iplon)%upfx0 = gpUP_clrsky(1,nlay+1)
+        sfcflw_rrtmgp(iplon)%upfxc = gpUP_allsky(1,1)
+        sfcflw_rrtmgp(iplon)%upfx0 = gpUP_clrsky(1,1)
+        sfcflw_rrtmgp(iplon)%dnfxc = gpDOWN_allsky(1,1)
+        sfcflw_rrtmgp(iplon)%dnfx0 = gpDOWN_clrsky(1,1)
 
         topflx(iplon)%upfxc = totuflux(nlay)
         topflx(iplon)%upfx0 = totuclfl(nlay)
@@ -1326,6 +1247,9 @@
         sfcflx(iplon)%dnfxc = totdflux(0)
         sfcflx(iplon)%dnfx0 = totdclfl(0)
 
+        print*,"##########################################################################"
+        write(*,"(a10,8f10.2)") "RRTMG:  ",topflx(iplon)%upfxc, sfcflx(iplon)%upfxc, sfcflx(iplon)%dnfxc, topflx(iplon)%upfx0,sfcflx(iplon)%upfx0,sfcflx(iplon)%dnfx0
+        write(*,"(a10,8f10.2)") "RRTMGP: ",topflw_rrtmgp(iplon)%upfxc, sfcflw_rrtmgp(iplon)%upfxc, sfcflw_rrtmgp(iplon)%dnfxc, topflw_rrtmgp(iplon)%upfx0,sfcflw_rrtmgp(iplon)%upfx0,sfcflw_rrtmgp(iplon)%dnfx0
         if (ivflip == 0) then       ! output from toa to sfc
 
 !! --- ...  optional fluxes
@@ -3553,8 +3477,8 @@
       subroutine rtrnmc                                                 &
      &     ( semiss,delp,cldfmc,taucld,tautot,pklay,pklev,              & !  ---  inputs:
      &       fracs,secdif, nlay,nlp1,                                   &
-     &       totuflux,totdflux,htr, totuclfl,totdclfl,htrcl, htrb       & !  ---  outputs:
-     &     )
+     &       totuflux,totdflux,htr, totuclfl,totdclfl,htrcl, htrb,      & !  ---  outputs:
+     &       gpUP_allsky, gpDOWN_allsky, gpUP_clrsky, gpDOWN_clrsky)
 
 !  ===================  program usage description  ===================  !
 !                                                                       !
@@ -3587,6 +3511,10 @@
 !   totdclfl- real, clear sky downward flux (w/m2)               0:nlay !
 !   htrcl   - real, clear sky heating rate (k/sec or k/day)        nlay !
 !   htrb    - real, spectral band lw heating rate (k/day)    nlay*nbands!
+!   gpUP_allsky
+!   gpDOWN_allsky
+!   gpUP_clrsky
+!   gpDOWN_clrsky
 !                                                                       !
 !  module veriables:                                                    !
 !   ngb     - integer, band index for each g-value                ngptlw!
@@ -3676,6 +3604,8 @@
 
       real (kind=kind_phys), dimension(0:nlay), intent(out) ::          &
      &       totuflux, totdflux, totuclfl, totdclfl
+      real(kind_phys), dimension(1, nlay+1), intent(out) :: &
+           gpUP_allsky, gpDOWN_allsky, gpUP_clrsky, gpDOWN_clrsky
 
 !  ---  locals:
       real (kind=kind_phys), parameter :: rec_6 = 0.166667
@@ -3694,6 +3624,84 @@
      &       clfm, trng, gasu
 
       integer :: ittot, itgas, ib, ig, k
+
+      ! RRTMGP diagnostics flux calculation
+      type(ty_optical_props_1scl) :: &
+           lw_optical_props_clrsky, & ! RRTMGP DDT: Longwave clear-sky radiative properties at each spectral point 
+           lw_optical_props_clouds    ! RRTMGP DDT: Longwave cloud optical properties at each spectral point
+      type(ty_source_func_lw) :: &
+           lw_sources                 ! RRTMGP DDT: Longwave source functions
+      type(ty_fluxes_byband) :: &
+           flux_clrsky,             & ! RRTMGP DDT: Longwave clear-sky fluxes in each ban
+           flux_allsky                ! RRTMGP DDT: Longwave all-sky fluxes in each band
+      real(kind_phys), dimension(1,nlay+1,nbands), target :: &
+           fluxLW_up_allsky, fluxLW_dn_allsky, fluxLW_up_clrsky, fluxLW_dn_clrsky
+      integer :: bcount, i
+      real(kind_phys), dimension(2,nbands) :: band2gpt, band2gpt_lcl
+      real(kind_phys), dimension(nbands) :: ngb_lcl
+      real(kind_phys), dimension(nbands,1) :: sfc_emiss
+      logical :: top_at_1=.false.
+      integer :: n_gauss_angles = 3
+
+      !
+      ! Allocate RRTMGP DDTs (use info from radlw_parameters.f)
+      ! by-gpoint
+      allocate(lw_optical_props_clrsky%band2gpt     (2, nbands))
+      allocate(lw_optical_props_clrsky%band_lims_wvn(2, nbands))
+      allocate(lw_optical_props_clrsky%gpt2band(        ngptlw))
+      allocate(lw_optical_props_clrsky%tau(    1, nlay, ngptlw))
+      ! by-gpoint
+      allocate(lw_optical_props_clouds%band2gpt     (2, nbands))
+      allocate(lw_optical_props_clouds%band_lims_wvn(2, nbands))
+      allocate(lw_optical_props_clouds%gpt2band(        ngptlw))
+      allocate(lw_optical_props_clouds%tau(    1, nlay, ngptlw))
+      !allocate(lw_optical_props_clouds%ssa(    1, nlay, ngptlw))
+      !allocate(lw_optical_props_clouds%g(      1, nlay, ngptlw))
+      ! by-gpoint 
+      allocate(lw_sources%band2gpt     (2,        nbands))
+      allocate(lw_sources%band_lims_wvn(2,        nbands))
+      allocate(lw_sources%gpt2band(               ngptlw))
+      allocate(lw_sources%sfc_source(    1,       ngptlw))
+      allocate(lw_sources%lay_source(    1, nlay, ngptlw))
+      allocate(lw_sources%lev_source_inc(1, nlay, ngptlw))
+      allocate(lw_sources%lev_source_dec(1, nlay, ngptlw))
+      allocate(lw_sources%sfc_source_Jac(1,       ngptlw))
+
+      ! RRTMGP needs the gpointt-2-band information. Compute from ngb in radlw_param.f
+      ! Optical quantites defined "g(spectral)-point"
+      bcount = 1
+      band2gpt(1,bcount) = 1
+      do i = 2,ngptlw
+         band2gpt(2,bcount) = i-1
+         if (ngb(i) > ngb(i-1)) then
+            bcount = bcount + 1
+            band2gpt(1,bcount) = i
+         endif
+      enddo
+      band2gpt(2,bcount) = ngptlw
+      ! Optical quantities defined "by-band"
+      do i = 1, nbands
+         band2gpt_lcl(1:2,i) = i
+         ngb_lcl(i)          = i
+      end do
+
+      ! Initialize spectral data in RRTMGP DDTs
+      ! by-gpoint
+      lw_sources%band2gpt                         = band2gpt
+      lw_sources%band_lims_wvn(1,:)               = wvnlw1
+      lw_sources%band_lims_wvn(2,:)               = wvnlw2
+      lw_sources%gpt2band                         = ngb
+      ! by-gpoint
+      lw_optical_props_clrsky%band2gpt            = band2gpt
+      lw_optical_props_clrsky%band_lims_wvn(1,:)  = wvnlw1
+      lw_optical_props_clrsky%band_lims_wvn(2,:)  = wvnlw2
+      lw_optical_props_clrsky%gpt2band            = ngb
+      ! by-gpoint
+      lw_optical_props_clouds%band2gpt            = band2gpt
+      lw_optical_props_clouds%band_lims_wvn(1,:)  = wvnlw1
+      lw_optical_props_clouds%band_lims_wvn(2,:)  = wvnlw2
+      lw_optical_props_clouds%gpt2band            = ngb
+
 !
 !===> ...  begin here
 !
@@ -3858,11 +3866,41 @@
             radclru = radclru*trng + gasu
             clrurad(k,ib) = clrurad(k,ib) + radclru
 
+            ! Populate RRTMGP DDT's
+            lw_optical_props_clouds%tau(1, k, ig) = tautot(ig,k) + taucld(ib,k)
           endif   ! end if_clfm_block
-
+          ! Populate RRTMGP DDT's 
+          lw_optical_props_clrsky%tau(1, k, ig) = tautot(ig,k)
+          lw_sources%lay_source(    1,   k, ig) = fracs(ig,k)
+          lw_sources%lev_source_inc(1,   k, ig) = pklev(ib,k)
+          lw_sources%lev_source_dec(1,   k, ig) = pklev(ib,k-1)
         enddo   ! end do_k_loop
 
-      enddo   ! end do_ig_loop
+        ! Populate RRTMGP DDT's
+        lw_sources%sfc_source(    1, ig) = fracs(ig,1) * pklay(ib,0)
+        lw_sources%sfc_source_Jac(1, ig) = fracs(ig,1) * (pklay(ib,1)-pklay(ib,0))
+        sfc_emiss(:,1) = semiss
+     enddo   ! end do_ig_loop
+
+     ! Call RTE
+     !
+     ! Clear-sky
+     !
+     flux_clrsky%bnd_flux_up => fluxLW_up_clrsky
+     flux_clrsky%bnd_flux_dn => fluxLW_dn_clrsky
+     call check_error_msg('radlw_main.F90:rte_lw_clrsky()',rte_lw( lw_optical_props_clrsky, top_at_1, &
+          lw_sources, sfc_emiss, flux_clrsky, n_gauss_angles = n_gauss_angles))
+     gpUP_clrsky   = sum(flux_clrsky%bnd_flux_up, dim=3)
+     gpDOWN_clrsky = sum(flux_clrsky%bnd_flux_dn, dim=3)
+     !
+     ! All-sky
+     !
+     flux_allsky%bnd_flux_up => fluxLW_up_allsky
+     flux_allsky%bnd_flux_dn => fluxLW_dn_allsky
+     call check_error_msg('radlw_main.F90:rte_lw_allsky()',rte_lw( lw_optical_props_clouds, top_at_1, &
+          lw_sources, sfc_emiss, flux_allsky, n_gauss_angles = n_gauss_angles))
+     gpUP_allsky   = sum(flux_allsky%bnd_flux_up, dim=3)
+     gpDOWN_allsky = sum(flux_allsky%bnd_flux_dn, dim=3) 
 
 !> -# Process longwave output from band for total and clear streams.
 !!    Calculate upward, downward, and net flux.

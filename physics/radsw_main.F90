@@ -3422,7 +3422,62 @@
      &       zr3, zr4, zr5, zt1, zt2, zt3, zf1, zf2, zrpp1
 
       integer :: ib, ibd, jb, jg, k, kp, itind
-!
+
+      ! RRTMGP diagnostics flux calculation 
+      type(ty_optical_props_2str) :: &
+           sw_optical_props_clrsky, & ! RRTMGP DDT: Shortwave clear-sky radiative properties at each spectral point
+           sw_optical_props_clouds    ! RRTMGP DDT: Shortwave cloud optical properties at each spectral point
+      real(kind_phys), dimension(nbdsw,1) :: &
+           sfc_alb_dir,sfc_alb_dif
+      type(ty_fluxes_byband) :: &
+           flux_allsky, & ! All-sky flux (W/m2)
+           flux_clrsky    ! Clear-sky flux (W/m2)
+      real(kind_phys), dimension(1,nlay+1,nbdsw),target :: &
+           fluxSW_up_allsky, fluxSW_up_clrsky, fluxSW_dn_allsky, fluxSW_dn_clrsky, fluxSW_dn_dir_allsky
+      integer :: bcount, i
+      real(kind_phys), dimension(2,nbdsw) :: band2gpt
+      real(kind_phys), dimension(2), parameter :: nIR_uvvis_bnd = (/12850,16000/)
+
+      ! Allocate RRTMGP DDTs (use info from radsw_parameters.f)
+      ! by-gpoint
+      allocate(sw_optical_props_clrsky%band2gpt     (2, nbdsw))
+      allocate(sw_optical_props_clrsky%band_lims_wvn(2, nbdsw))
+      allocate(sw_optical_props_clrsky%gpt2band(        ngptsw))
+      allocate(sw_optical_props_clrsky%tau(    1, nlay, ngptsw))
+      allocate(sw_optical_props_clrsky%ssa(    1, nlay, ngptsw))
+      allocate(sw_optical_props_clrsky%g(      1, nlay, ngptsw))
+      ! by-gpoint
+      allocate(sw_optical_props_clouds%band2gpt     (2, nbdsw))
+      allocate(sw_optical_props_clouds%band_lims_wvn(2, nbdsw))
+      allocate(sw_optical_props_clouds%gpt2band(        ngptsw))
+      allocate(sw_optical_props_clouds%tau(    1, nlay, ngptsw))
+      allocate(sw_optical_props_clouds%ssa(    1, nlay, ngptsw))
+      allocate(sw_optical_props_clouds%g(      1, nlay, ngptsw))
+
+      ! RRTMGP needs the gpointt-2-band information. Compute from ngb in radsw_param.f
+      ! Optical quantites defined "g(spectral)-point"
+      bcount = 1
+      band2gpt(1,bcount) = 1
+      do i = 2,ngptsw
+         band2gpt(2,bcount) = i-1
+         if (ngb(i) > ngb(i-1)) then
+            bcount = bcount + 1
+            band2gpt(1,bcount) = i
+         endif
+      enddo
+      band2gpt(2,bcount) = ngptsw
+
+      ! Initialize spectral data in RRTMGP DDTs
+      ! by-gpoint
+      sw_optical_props_clrsky%band2gpt            = band2gpt
+      sw_optical_props_clrsky%band_lims_wvn(1,:)  = wvnum1
+      sw_optical_props_clrsky%band_lims_wvn(2,:)  = wvnum2
+      sw_optical_props_clrsky%gpt2band            = ngb
+      ! by-gpoint
+      sw_optical_props_clouds%band2gpt            = band2gpt
+      sw_optical_props_clouds%band_lims_wvn(1,:)  = wvnum1
+      sw_optical_props_clouds%band_lims_wvn(2,:)  = wvnum2
+      sw_optical_props_clouds%gpt2band            = ngb
 !===> ...  begin here
 !
 !> -# Initialize output fluxes.
@@ -3904,7 +3959,13 @@
 !>  -  Calculate pre-delta-scaling clear and cloudy direct beam transmittance.
               ztdbt0 = zldbt0(k) * ztdbt0
 
+              ! Populate RRTMGP DDT's
+              sw_optical_props_clouds%tau(1, k, ig) = taucw(k,ib)
+              sw_optical_props_clouds%ssa(1, k, ig) = ssacw(k,ib)
+              sw_optical_props_clouds%g(1, k, ig)   = asycw(k,ib)
             endif    ! end if_cldfmc_block
+            ! Populate RRTMGP DDT's
+            sw_optical_props_clrsky%tau(1, k, ig) = taur(k,jg)+taug(k,jg)+tauae(k,ib)
           enddo   ! end do_k_loop
 
 !> -# Call vrtqdr(), to  perform vertical quadrature
