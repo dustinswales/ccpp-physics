@@ -3641,7 +3641,7 @@
       real(kind_phys), dimension(nbands) :: ngb_lcl
       real(kind_phys), dimension(nbands,1) :: sfc_emiss
       logical :: top_at_1=.false.
-      integer :: n_gauss_angles = 3
+      integer :: n_gauss_angles = 1
 
       !
       ! Allocate RRTMGP DDTs (use info from radlw_parameters.f)
@@ -3753,6 +3753,9 @@
             gasfac = tfn_tbl(itgas)
             odepth = tau_tbl(itgas)
           endif
+          lw_optical_props_clrsky%tau(1, k, ig) = max(f_zero, tautot(ig,k))
+          lw_sources%lay_source(    1,   k, ig) = fracs(ig,k)   * pklay(ib,k)
+          lw_sources%lev_source_dec(1,   k, ig) = fracs(ig,k)   * pklev(ib,k)
 
           plfrac = fracs(ig,k)
           blay = pklay(ib,k)
@@ -3842,7 +3845,7 @@
           clfm = cldfmc(ig,k)
           trng = trngas(k)
           gasu = gassrcu(k)
-
+          lw_sources%lev_source_inc(1,   k, ig) = fracs(ig,k) * pklev(ib,k)
           if (clfm > eps) then
 !  --- ...  cloudy layer
 
@@ -3869,16 +3872,12 @@
             ! Populate RRTMGP DDT's
             lw_optical_props_clouds%tau(1, k, ig) = tautot(ig,k) + taucld(ib,k)
           endif   ! end if_clfm_block
-          ! Populate RRTMGP DDT's 
-          lw_optical_props_clrsky%tau(1, k, ig) = tautot(ig,k)
-          lw_sources%lay_source(    1,   k, ig) = fracs(ig,k)
-          lw_sources%lev_source_inc(1,   k, ig) = pklev(ib,k)
-          lw_sources%lev_source_dec(1,   k, ig) = pklev(ib,k-1)
+
         enddo   ! end do_k_loop
 
         ! Populate RRTMGP DDT's
-        lw_sources%sfc_source(    1, ig) = fracs(ig,1) * pklay(ib,0)
-        lw_sources%sfc_source_Jac(1, ig) = fracs(ig,1) * (pklay(ib,1)-pklay(ib,0))
+        lw_sources%sfc_source(    1, ig) = fracs(ig,1) * pklev(ib,0)
+        lw_sources%sfc_source_Jac(1, ig) = fracs(ig,1) * abs(pklev(ib,1)-pklev(ib,0))
         sfc_emiss(:,1) = semiss
      enddo   ! end do_ig_loop
 
@@ -3890,8 +3889,8 @@
      flux_clrsky%bnd_flux_dn => fluxLW_dn_clrsky
      call check_error_msg('radlw_main.F90:rte_lw_clrsky()',rte_lw( lw_optical_props_clrsky, top_at_1, &
           lw_sources, sfc_emiss, flux_clrsky, n_gauss_angles = n_gauss_angles))
-     gpUP_clrsky   = sum(flux_clrsky%bnd_flux_up, dim=3)
-     gpDOWN_clrsky = sum(flux_clrsky%bnd_flux_dn, dim=3)
+     gpUP_clrsky   = sum(flux_clrsky%bnd_flux_up, dim=3)*1e4
+     gpDOWN_clrsky = sum(flux_clrsky%bnd_flux_dn, dim=3)*1e4
      !
      ! All-sky
      !
@@ -3899,8 +3898,8 @@
      flux_allsky%bnd_flux_dn => fluxLW_dn_allsky
      call check_error_msg('radlw_main.F90:rte_lw_allsky()',rte_lw( lw_optical_props_clouds, top_at_1, &
           lw_sources, sfc_emiss, flux_allsky, n_gauss_angles = n_gauss_angles))
-     gpUP_allsky   = sum(flux_allsky%bnd_flux_up, dim=3)
-     gpDOWN_allsky = sum(flux_allsky%bnd_flux_dn, dim=3) 
+     gpUP_allsky   = sum(flux_allsky%bnd_flux_up, dim=3)*1e4
+     gpDOWN_allsky = sum(flux_allsky%bnd_flux_dn, dim=3)*1e4
 
 !> -# Process longwave output from band for total and clear streams.
 !!    Calculate upward, downward, and net flux.

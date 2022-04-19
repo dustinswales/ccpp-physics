@@ -3960,12 +3960,12 @@
               ztdbt0 = zldbt0(k) * ztdbt0
 
               ! Populate RRTMGP DDT's
-              sw_optical_props_clouds%tau(1, k, ig) = taucw(k,ib)
-              sw_optical_props_clouds%ssa(1, k, ig) = ssacw(k,ib)
-              sw_optical_props_clouds%g(1, k, ig)   = asycw(k,ib)
+              sw_optical_props_clouds%tau(1, k, jg) = taucw(k,ib)
+              sw_optical_props_clouds%ssa(1, k, jg) = ssacw(k,ib)
+              sw_optical_props_clouds%g(1, k, jg)   = asycw(k,ib)
             endif    ! end if_cldfmc_block
             ! Populate RRTMGP DDT's
-            sw_optical_props_clrsky%tau(1, k, ig) = taur(k,jg)+taug(k,jg)+tauae(k,ib)
+            sw_optical_props_clrsky%tau(1, k, jg) = taur(k,jg)+taug(k,jg)+tauae(k,ib)
           enddo   ! end do_k_loop
 
 !> -# Call vrtqdr(), to  perform vertical quadrature
