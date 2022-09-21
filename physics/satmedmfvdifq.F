@@ -80,7 +80,7 @@
      &     rlmx,elmx,sfc_rlm,                                           &
      &     ntqv,dtend,dtidx,index_of_temperature,index_of_x_wind,       &
      &     index_of_y_wind,index_of_process_pbl,gen_tend,ldiag3d,       &
-     &     errmsg,errflg)
+     &     ttend, qtend, utend, vtend, errmsg,errflg)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -126,6 +126,8 @@
      &                     hpbl(:)
       real(kind=kind_phys), intent(out) ::                              &
      &                     dkt(:,:), dku(:,:)
+      real(kind=kind_phys),intent(out) ::  ttend(:,:),   utend(:,:),    &
+     &                     vtend(:,:),  qtend(:,:)
 !
       logical, intent(in)  :: dspheat
       character(len=*), intent(out) :: errmsg
@@ -229,7 +231,6 @@
      &                     rdt,     rdz,    qmin,   qlmin,
      &                     rimin,   rbcr,   rbint,  tdzmin,
      &                     rlmn,    rlmn0,  rlmn1,  rlmn2,
-     &                     ttend,   utend,  vtend,  qtend,
      &                     zfac,    zfmin,  vk,     spdk2,
      &                     tkmin,   tkbmx,  xkgdx,
      &                     xkinv1,  xkinv2,
@@ -1685,8 +1686,8 @@ c
       do k = 1,km
          do i = 1,im
 !           f1(i,k) = max(f1(i,k), tkmin)
-            qtend = (f1(i,k)-q1(i,k,ntke))*rdt
-            rtg(i,k,ntke) = rtg(i,k,ntke)+qtend
+            qtend(i,k)    = (f1(i,k)-q1(i,k,ntke))*rdt
+            rtg(i,k,ntke) = rtg(i,k,ntke)+qtend(i,k)
          enddo
       enddo
       if(ldiag3d) then
@@ -2120,12 +2121,12 @@ c
 c
       do  k = 1,km
          do i = 1,im
-            ttend      = (f1(i,k)-t1(i,k))*rdt
-            qtend      = (f2(i,k)-q1(i,k,1))*rdt
-            tdt(i,k)   = tdt(i,k)+ttend
-            rtg(i,k,1) = rtg(i,k,1)+qtend
-!           dtsfc(i)   = dtsfc(i)+cont*del(i,k)*ttend
-!           dqsfc(i)   = dqsfc(i)+conq*del(i,k)*qtend
+            ttend(i,k) = (f1(i,k)-t1(i,k))*rdt
+            qtend(i,k) = (f2(i,k)-q1(i,k,1))*rdt
+            tdt(i,k)   = tdt(i,k)+ttend(i,k)
+            rtg(i,k,1) = rtg(i,k,1)+qtend(i,k)
+!           dtsfc(i)   = dtsfc(i)+cont*del(i,k)*ttend(i,k)
+!           dqsfc(i)   = dqsfc(i)+conq*del(i,k)*qtend(i,k)
          enddo
       enddo
 
@@ -2147,8 +2148,8 @@ c
         if(idtend>=1) then
           do  k = 1,km
             do i = 1,im
-              ttend      = (f1(i,k)-t1(i,k))*rdt
-              dtend(i,k,idtend) = dtend(i,k,idtend)+ttend*delt
+              ttend(i,k)        = (f1(i,k)-t1(i,k))*rdt
+              dtend(i,k,idtend) = dtend(i,k,idtend)+ttend(i,k)*delt
             enddo
           enddo
         endif
@@ -2157,8 +2158,8 @@ c
         if(idtend>=1) then
           do  k = 1,km
             do i = 1,im
-              qtend      = (f2(i,k)-q1(i,k,1))*rdt
-              dtend(i,k,idtend) = dtend(i,k,idtend)+qtend*delt
+              qtend(i,k)        = (f2(i,k)-q1(i,k,1))*rdt
+              dtend(i,k,idtend) = dtend(i,k,idtend)+qtend(i,k)*delt
             enddo
           enddo
         endif
@@ -2169,8 +2170,8 @@ c
           is = (n-1) * km
           do k = 1, km
             do i = 1, im
-              qtend = (f2(i,k+is)-q1(i,k,n))*rdt
-              rtg(i,k,n) = rtg(i,k,n)+qtend
+              qtend(i,k) = (f2(i,k+is)-q1(i,k,n))*rdt
+              rtg(i,k,n) = rtg(i,k,n)+qtend(i,k)
             enddo
           enddo
         enddo
@@ -2183,8 +2184,9 @@ c
               if(n/=ntke) then
                 do k = 1, km
                   do i = 1, im
-                    qtend = (f2(i,k+is)-q1(i,k,n))*rdt
-                    dtend(i,k,idtend) = dtend(i,k,idtend)+qtend*delt
+                    qtend(i,k)        = (f2(i,k+is)-q1(i,k,n))*rdt
+                    dtend(i,k,idtend) = dtend(i,k,idtend)+              &
+     &                   qtend(i,k)*delt
                   enddo
                 enddo
               endif
@@ -2200,8 +2202,8 @@ c
           do i = 1,im
 !           tem = min(diss(i,k), dspmax)
 !           ttend = tem / cp
-            ttend = diss(i,k) / cp
-            tdt(i,k) = tdt(i,k) + dspfac * ttend
+            ttend(i,k) = diss(i,k) / cp
+            tdt(i,k) = tdt(i,k) + dspfac * ttend(i,k)
           enddo
         enddo
         if(ldiag3d .and. .not. gen_tend) then
@@ -2209,8 +2211,9 @@ c
           if(idtend>=1) then
             do k = 1,km1
               do i = 1,im
-                ttend = diss(i,k) / cp
-                dtend(i,k,idtend) = dtend(i,k,idtend)+dspfac*ttend*delt
+                ttend(i,k) = diss(i,k) / cp
+                dtend(i,k,idtend) = dtend(i,k,idtend)+                  &
+     &               dspfac*ttend(i,k)*delt
               enddo
             enddo
           endif
@@ -2283,12 +2286,12 @@ c
 c
       do k = 1,km
          do i = 1,im
-            utend = (f1(i,k)-u1(i,k))*rdt
-            vtend = (f2(i,k)-v1(i,k))*rdt
-            du(i,k)  = du(i,k)+utend
-            dv(i,k)  = dv(i,k)+vtend
-!           dusfc(i) = dusfc(i)+conw*del(i,k)*utend
-!           dvsfc(i) = dvsfc(i)+conw*del(i,k)*vtend
+            utend(i,k) = (f1(i,k)-u1(i,k))*rdt
+            vtend(i,k) = (f2(i,k)-v1(i,k))*rdt
+            du(i,k)    = du(i,k)+utend(i,k)
+            dv(i,k)    = dv(i,k)+vtend(i,k)
+!           dusfc(i) = dusfc(i)+conw*del(i,k)*utend(i,k)
+!           dvsfc(i) = dvsfc(i)+conw*del(i,k)*vtend(i,k)
          enddo
       enddo
       do i = 1,im
@@ -2301,8 +2304,8 @@ c
         if(idtend>=1) then
           do k = 1,km
             do i = 1,im
-              utend = (f1(i,k)-u1(i,k))*rdt
-              dtend(i,k,idtend) = dtend(i,k,idtend) + utend*delt
+              utend(i,k)        = (f1(i,k)-u1(i,k))*rdt
+              dtend(i,k,idtend) = dtend(i,k,idtend) + utend(i,k)*delt
             enddo
           enddo
         endif
@@ -2311,8 +2314,8 @@ c
         if(idtend>=1) then
           do k = 1,km
             do i = 1,im
-              vtend = (f2(i,k)-v1(i,k))*rdt
-              dtend(i,k,idtend) = dtend(i,k,idtend) + vtend*delt
+              vtend(i,k)        = (f2(i,k)-v1(i,k))*rdt
+              dtend(i,k,idtend) = dtend(i,k,idtend) + vtend(i,k)*delt
             enddo
           enddo
         endif

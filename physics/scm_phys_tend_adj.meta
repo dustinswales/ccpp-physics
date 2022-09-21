@@ -1,0 +1,196 @@
+[ccpp-table-properties]
+  name = scm_phys_tend_adj
+  type = scheme
+  dependencies = machine.F
+
+########################################################################
+[ccpp-arg-table]
+  name = scm_phys_tend_adj_init
+  type = scheme
+[errmsg]
+  standard_name = ccpp_error_message
+  long_name = error message for error handling in CCPP
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
+  intent = out
+[errflg]
+  standard_name = ccpp_error_code
+  long_name = error code for error handling in CCPP
+  units = 1
+  dimensions = ()
+  type = integer
+  intent = out
+
+########################################################################
+[ccpp-arg-table]
+  name = scm_phys_tend_adj_run
+  type = scheme
+[dtp]
+  standard_name = timestep_for_physics
+  long_name = physics timestep
+  units = s
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[dtf]
+  standard_name = timestep_for_dynamics
+  long_name = dynamics timestep
+  units = s
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[tgrs]
+  standard_name = air_temperature
+  long_name = model layer mean temperature
+  units = K
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[ugrs]
+  standard_name = x_wind
+  long_name = zonal wind
+  units = m s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[vgrs]
+  standard_name = y_wind
+  long_name = meridional wind
+  units = m s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[qgrs]
+  standard_name = tracer_concentration
+  long_name = model layer mean tracer concentration
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = in
+[dTdt_lwrad]
+  standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep
+  long_name = total sky lw heating rate
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dTdt_swrad]
+  standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_timestep
+  long_name = total sky sw heating rate
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dTdt_pbl]
+  standard_name = tendency_of_air_temperature_due_to_PBL_scheme
+  long_name = tendency of air temperature due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dqdt_pbl]
+  standard_name = tendency_of_moisture_due_to_PBL_scheme
+  long_name = tendency of moisture  due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dudt_pbl]
+  standard_name = tendency_of_zondal_wind_due_to_PBL_scheme
+  long_name = tendency of zonal wind  due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dvdt_pbl]
+  standard_name = tendency_of_meridional_wind_due_to_PBL_scheme
+  long_name = tendency of meridional wind  due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dudt_gwd]
+  standard_name = tendency_of_x_wind_due_to_gravity_wave_drag
+  long_name = zonal wind tendency due to UGWP
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dvdt_gwd]
+  standard_name = tendency_of_y_wind_due_to_gravity_wave_drag
+  long_name = meridional wind tendency due to UGWP
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dtdt_gwd]
+  standard_name = tendency_of_air_temperature_due_to_gravity_wave_drag
+  long_name = air temperature tendency due to UGWP
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[gt0]
+  standard_name = air_temperature_of_new_state
+  long_name = temperature updated by physics
+  units = K
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+[gu0]
+  standard_name = x_wind_of_new_state
+  long_name = zonal wind updated by physics
+  units = m s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+[gv0]
+  standard_name = y_wind_of_new_state
+  long_name = meridional wind updated by physics
+  units = m s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+[gq0]
+  standard_name = tracer_concentration_of_new_state
+  long_name = tracer concentration updated by physics
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = inout
+[errmsg]
+  standard_name = ccpp_error_message
+  long_name = error message for error handling in CCPP
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
+  intent = out
+[errflg]
+  standard_name = ccpp_error_code
+  long_name = error code for error handling in CCPP
+  units = 1
+  dimensions = ()
+  type = integer
+  intent = out

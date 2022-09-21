@@ -74,7 +74,7 @@
      &     kinver,xkzm_m,xkzm_h,xkzm_s,                                 &
      &     index_of_temperature,index_of_x_wind,index_of_y_wind,        &
      &     index_of_process_pbl,ntqv,ntoz,dtend,dtidx,                  &
-     &     gen_tend,ldiag3d,errmsg,errflg)
+     &     gen_tend,ldiag3d,ttend,qtend,utend,vtend,errmsg,errflg)
 !
       use machine  , only : kind_phys
       use funcphys , only : fpvs
@@ -116,6 +116,8 @@
      &                     hpbl(:)
 !
       logical, intent(in)  :: dspheat
+      real(kind=kind_phys),intent(out) ::  ttend(:,:),   utend(:,:),    &
+     &                     vtend(:,:),  qtend(:,:)
       character(len=*), intent(out) :: errmsg
       integer,          intent(out) :: errflg
 
@@ -207,7 +209,6 @@
      &                     ri,      rimin,
      &                     rbcr,    rbint,  tdzmin,
      &                     rlmn,    rlmx,   elmx,
-     &                     ttend,   utend,  vtend,  qtend,
      &                     zfac,    zfmin,  vk,     spdk2,
      &                     tkmin,   xkzinv, dspfac, xkgdx,
      &                     zlup,    zldn,   bsum,
@@ -1283,8 +1284,8 @@
       do k = 1,km
          do i = 1,im
 !           f1(i,k) = max(f1(i,k), tkmin)
-            qtend = (f1(i,k)-q1(i,k,ntke))*rdt
-            rtg(i,k,ntke) = rtg(i,k,ntke)+qtend
+            qtend(i,k)    = (f1(i,k)-q1(i,k,ntke))*rdt
+            rtg(i,k,ntke) = rtg(i,k,ntke)+qtend(i,k)
          enddo
       enddo
 !
@@ -1405,12 +1406,12 @@
 !
       do  k = 1,km
          do i = 1,im
-            ttend      = (f1(i,k)-t1(i,k))*rdt
-            qtend      = (f2(i,k)-q1(i,k,1))*rdt
-            tdt(i,k)   = tdt(i,k)+ttend
-            rtg(i,k,1) = rtg(i,k,1)+qtend
-            dtsfc(i)   = dtsfc(i)+cont*del(i,k)*ttend
-            dqsfc(i)   = dqsfc(i)+conq*del(i,k)*qtend
+            ttend(i,k) = (f1(i,k)-t1(i,k))*rdt
+            qtend(i,k) = (f2(i,k)-q1(i,k,1))*rdt
+            tdt(i,k)   = tdt(i,k)+ttend(i,k)
+            rtg(i,k,1) = rtg(i,k,1)+qtend(i,k)
+            dtsfc(i)   = dtsfc(i)+cont*del(i,k)*ttend(i,k)
+            dqsfc(i)   = dqsfc(i)+conq*del(i,k)*qtend(i,k)
          enddo
       enddo
       if (ldiag3d .and. .not. gen_tend) then
@@ -1429,8 +1430,8 @@
           is = (kk-1) * km
           do k = 1, km
             do i = 1, im
-              qtend = (f2(i,k+is)-q1(i,k,kk))*rdt
-              rtg(i,k,kk) = rtg(i,k,kk)+qtend
+              qtend(i,k)  = (f2(i,k+is)-q1(i,k,kk))*rdt
+              rtg(i,k,kk) = rtg(i,k,kk)+qtend(i,k)
             enddo
           enddo
         enddo
@@ -1443,8 +1444,8 @@
         do i = 1,im
 !         tem = min(diss(i,k), dspmax)
 !         ttend = tem / cp
-          ttend = diss(i,k) / cp
-          tdt(i,k) = tdt(i,k) + dspfac * ttend
+          ttend(i,k) = diss(i,k) / cp
+          tdt(i,k) = tdt(i,k) + dspfac * ttend(i,k)
         enddo
       enddo
       endif
@@ -1515,12 +1516,12 @@
 !
       do k = 1,km
          do i = 1,im
-            utend = (f1(i,k)-u1(i,k))*rdt
-            vtend = (f2(i,k)-v1(i,k))*rdt
-            du(i,k)  = du(i,k)+utend
-            dv(i,k)  = dv(i,k)+vtend
-            dusfc(i) = dusfc(i)+conw*del(i,k)*utend
-            dvsfc(i) = dvsfc(i)+conw*del(i,k)*vtend
+            utend(i,k) = (f1(i,k)-u1(i,k))*rdt
+            vtend(i,k) = (f2(i,k)-v1(i,k))*rdt
+            du(i,k)  = du(i,k)+utend(i,k)
+            dv(i,k)  = dv(i,k)+vtend(i,k)
+            dusfc(i) = dusfc(i)+conw*del(i,k)*utend(i,k)
+            dvsfc(i) = dvsfc(i)+conw*del(i,k)*vtend(i,k)
          enddo
       enddo
       if (ldiag3d .and. .not. gen_tend) then

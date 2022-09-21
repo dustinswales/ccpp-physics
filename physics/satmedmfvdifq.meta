@@ -652,6 +652,38 @@
   dimensions = ()
   type = logical
   intent = in
+[ttend]
+  standard_name = tendency_of_air_temperature_due_to_PBL_scheme
+  long_name = tendency of air temperature due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+[qtend]
+  standard_name = tendency_of_moisture_due_to_PBL_scheme
+  long_name = tendency of moisture  due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+[utend]
+  standard_name = tendency_of_zondal_wind_due_to_PBL_scheme
+  long_name = tendency of zonal wind  due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+[vtend]
+  standard_name = tendency_of_meridional_wind_due_to_PBL_scheme
+  long_name = tendency of meridional wind  due to the PBL scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
