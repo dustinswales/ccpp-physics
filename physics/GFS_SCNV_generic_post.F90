@@ -15,7 +15,7 @@
         dtend, dtidx, index_of_temperature, index_of_x_wind, index_of_y_wind,      &
         index_of_process_scnv, ntqv, flag_for_scnv_generic_tend,                   &
         ntcw,ntiw,ntclamt,ntrw,ntsw,ntrnc,ntsnc,ntgl,ntgnc,ntsigma,                &
-        imfshalcnv, imfshalcnv_sas, imfshalcnv_samf, ntrac,                        &
+        imfshalcnv, imfshalcnv_sas, imfshalcnv_samf, ntrac, dtp,                   &
         cscnv, satmedmf, trans_trac, ras, dTdt_SCNV, dqdt_SCNV, dudt_SCNV,         &
         dvdt_SCNV, errmsg, errflg)
 
@@ -26,7 +26,7 @@
       integer, intent(in) :: im, levs, nn, ntqv, nsamftrac
       integer, intent(in) :: ntcw,ntiw,ntclamt,ntrw,ntsw,ntrnc,ntsnc,ntgl,ntgnc,ntsigma,ntrac
       logical, intent(in) :: lssav, ldiag3d, qdiag3d, flag_for_scnv_generic_tend
-      real(kind=kind_phys),                     intent(in) :: frain
+      real(kind=kind_phys),                     intent(in) :: frain, dtp
       real(kind=kind_phys), dimension(:,:), intent(in) :: gu0, gv0, gt0
       real(kind=kind_phys), dimension(:,:), intent(in) :: save_u, save_v, save_t
       real(kind=kind_phys), dimension(:,:,:),   intent(in) :: save_q, gq0
@@ -88,19 +88,19 @@
         if (ldiag3d) then
           idtend = dtidx(index_of_temperature, index_of_process_scnv)
           if(idtend>=1) then
-             dTdt_SCNV(:,:)    = (gt0 - save_t) * frain
+             dTdt_SCNV(:,:)    = (gt0 - save_t) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gt0 - save_t) * frain
           endif
 
           idtend = dtidx(index_of_x_wind, index_of_process_scnv)
           if(idtend>=1) then
-             dudt_SCNV(:,:)    = (gu0 - save_u) * frain
+             dudt_SCNV(:,:)    = (gu0 - save_u) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gu0 - save_u) * frain
           endif
 
           idtend = dtidx(index_of_y_wind, index_of_process_scnv)
           if(idtend>=1) then
-             dvdt_SCNV(:,:)    = (gv0 - save_v) * frain
+             dvdt_SCNV(:,:)    = (gv0 - save_v) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gv0 - save_v) * frain
           endif
 
@@ -113,7 +113,7 @@
                    tracers = tracers + 1
                    idtend = dtidx(100+n,index_of_process_scnv)
                    if(idtend>0) then
-                      dqdt_SCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) * frain
+                      dqdt_SCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) / dtp
                       dtend(:,:,idtend) = dtend(:,:,idtend) + clw(:,:,tracers)-save_q(:,:,n) * frain
                    endif
                 endif
@@ -122,14 +122,14 @@
             do n=2,ntrac
                idtend = dtidx(100+n,index_of_process_scnv)
                if(idtend>0) then
-                  dqdt_SCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n))*frain
+                  dqdt_SCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n)) / dtp
                   dtend(:,:,idtend) = dtend(:,:,idtend) + (gq0(:,:,n)-save_q(:,:,n))*frain
                endif
             enddo
           endif
           idtend = dtidx(100+ntqv, index_of_process_scnv)
           if(idtend>=1) then
-             dqdt_SCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) * frain
+             dqdt_SCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gq0(:,:,ntqv) - save_q(:,:,ntqv)) * frain
           endif
         endif

@@ -337,7 +337,7 @@
            if(idtend>=1) then
               do k=1,levs
                  do i=1,im
-                    dTdt_cldMP(i,k)   = (gt0(i,k)-save_t(i,k)) * frain
+                    dTdt_cldMP(i,k)   = (gt0(i,k)-save_t(i,k)) / dtp
                     dtend(i,k,idtend) = dtend(i,k,idtend) + (gt0(i,k)-save_t(i,k)) * frain
                  enddo
               enddo
@@ -348,7 +348,7 @@
                  if(idtend>=1) then
                     do k=1,levs
                        do i=1,im
-                          dqdt_cldMP(i,k,itrac) = (gq0(i,k,itrac)-save_q(i,k,itrac)) * frain
+                          dqdt_cldMP(i,k,itrac) = (gq0(i,k,itrac)-save_q(i,k,itrac)) / dtp
                           dtend(i,k,idtend) = dtend(i,k,idtend) + (gq0(i,k,itrac)-save_q(i,k,itrac)) * frain
                        enddo
                     enddo

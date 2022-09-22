@@ -59,10 +59,13 @@
       integer, intent(out) :: errflg
 
       integer :: i, k, n, idtend, tracers
+      real(kind=kind_phys) :: dtp
 
       ! Initialize CCPP error handling variables
       errmsg = ''
       errflg = 0
+
+      dtp = dtf/frain
 
       if (.not. ras .and. .not. cscnv) then
         if (npdf3d == 3 .and. num_p3d == 4) then
@@ -96,19 +99,19 @@
         if (ldiag3d .and. flag_for_dcnv_generic_tend) then
           idtend=dtidx(index_of_temperature,index_of_process_dcnv)
           if(idtend>=1) then
-             dTdt_DCNV(:,:)    = (gt0-save_t)*frain
+             dTdt_DCNV(:,:)    = (gt0-save_t) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gt0-save_t)*frain
           endif
 
           idtend=dtidx(index_of_x_wind,index_of_process_dcnv)
           if(idtend>=1) then
-             dudt_DCNV(:,:)    = (gu0-save_u)*frain
+             dudt_DCNV(:,:)    = (gu0-save_u) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gu0-save_u)*frain
           endif
 
           idtend=dtidx(index_of_y_wind,index_of_process_dcnv)
           if(idtend>=1) then
-             dvdt_DCNV(:,:)    = (gv0-save_v)*frain
+             dvdt_DCNV(:,:)    = (gv0-save_v) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gv0-save_v)*frain
           endif
 
@@ -123,7 +126,7 @@
                    tracers = tracers + 1
                    idtend = dtidx(100+n,index_of_process_dcnv)
                    if(idtend>0) then
-                      dqdt_DCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) * frain
+                      dqdt_DCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) / dtp
                       dtend(:,:,idtend) = dtend(:,:,idtend) + clw(:,:,tracers)-save_q(:,:,n) * frain
                    endif
                 endif
@@ -132,14 +135,14 @@
             do n=2,ntrac
                idtend = dtidx(100+n,index_of_process_dcnv)
                if(idtend>0) then
-                  dqdt_DCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n))*frain
+                  dqdt_DCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n)) / dtp
                   dtend(:,:,idtend) = dtend(:,:,idtend) + (gq0(:,:,n)-save_q(:,:,n))*frain
                endif
             enddo
           endif
           idtend = dtidx(100+ntqv, index_of_process_dcnv)
           if(idtend>=1) then
-             dqdt_DCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) * frain
+             dqdt_DCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gq0(:,:,ntqv) - save_q(:,:,ntqv)) * frain
           endif
 

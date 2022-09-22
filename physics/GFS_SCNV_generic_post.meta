@@ -412,6 +412,14 @@
   dimensions = ()
   type = integer
   intent = in
+[dtp]
+  standard_name = timestep_for_physics
+  long_name = physics time step
+  units = s
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
 [dTdt_SCNV]
   standard_name = tendency_of_air_temperature_due_to_SCNV_scheme
   long_name = tendency of air temperature due to the SCNV scheme
