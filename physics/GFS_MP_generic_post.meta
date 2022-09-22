@@ -754,6 +754,22 @@
   dimensions = ()
   type = logical
   intent = in
+[dTdt_cldMP]
+  standard_name = tendency_of_air_temperature_due_to_cloud_mp_scheme
+  long_name = tendency of air temperature due to the cloud microphysics scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+[dqdt_cldMP]
+  standard_name = tendency_of_moisture_due_to_cloud_mp_scheme
+  long_name = tendency of moisture  due to the cloud microphysics scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = out
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP

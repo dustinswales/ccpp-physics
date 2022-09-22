@@ -211,6 +211,22 @@
   type = real
   kind = kind_phys
   intent = in
+[dTdt_cldMP]
+  standard_name = tendency_of_air_temperature_due_to_cloud_mp_scheme
+  long_name = tendency of air temperature due to the cloud microphysics scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dqdt_cldMP]
+  standard_name = tendency_of_moisture_due_to_cloud_mp_scheme
+  long_name = tendency of moisture  due to the cloud microphysics scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = in
 [gt0]
   standard_name = air_temperature_of_new_state
   long_name = temperature updated by physics

@@ -28,7 +28,7 @@
         graupelprv, draincprv, drainncprv, diceprv, dsnowprv, dgraupelprv, dtp, dfi_radar_max_intervals,                  &
         dtend, dtidx, index_of_temperature, index_of_process_mp,ldiag3d, qdiag3d,dqdt_qmicro, lssav, num_dfi_radar,       &
         fh_dfi_radar,index_of_process_dfi_radar, ix_dfi_radar, dfi_radar_tten, radar_tten_limits, fhour, prevsq,      &
-        errmsg, errflg)
+        dTdt_cldMP, dqdt_cldMP, errmsg, errflg)
 !
       use machine, only: kind_phys
       use calpreciptype_mod, only: calpreciptype
@@ -84,6 +84,8 @@
       real(kind=kind_phys), dimension(:,:),    intent(inout) :: dqdt_qmicro
       real(kind=kind_phys), dimension(:,:),    intent(inout) :: prevsq
       real(kind=kind_phys),                    intent(in)    :: dtp
+      real(kind=kind_phys), dimension(:,:),    intent(out)   :: dTdt_cldMP
+      real(kind=kind_phys), dimension(:,:,:),  intent(out)   :: dqdt_cldMP
 
       ! CCPP error handling
       character(len=*), intent(out) :: errmsg
@@ -335,6 +337,7 @@
            if(idtend>=1) then
               do k=1,levs
                  do i=1,im
+                    dTdt_cldMP(i,k)   = (gt0(i,k)-save_t(i,k)) * frain
                     dtend(i,k,idtend) = dtend(i,k,idtend) + (gt0(i,k)-save_t(i,k)) * frain
                  enddo
               enddo
@@ -345,6 +348,7 @@
                  if(idtend>=1) then
                     do k=1,levs
                        do i=1,im
+                          dqdt_cldMP(i,k,itrac) = (gq0(i,k,itrac)-save_q(i,k,itrac)) * frain
                           dtend(i,k,idtend) = dtend(i,k,idtend) + (gq0(i,k,itrac)-save_q(i,k,itrac)) * frain
                        enddo
                     enddo

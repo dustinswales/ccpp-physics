@@ -30,17 +30,19 @@ contains
   subroutine scm_phys_tend_adj_run(dtp, dtf, tgrs, ugrs, vgrs, qgrs, dTdt_lwrad,         &
        dTdt_swrad, dTdt_pbl, dqdt_pbl, dudt_pbl, dvdt_pbl, dTdt_gwd, dudt_gwd, dvdt_gwd, &
        dTdt_SCNV, dqdt_SCNV, dudt_SCNV, dvdt_SCNV, dTdt_DCNV, dqdt_DCNV, dudt_DCNV,      &
-       dvdt_DCNV, gt0, gu0, gv0, gq0, errmsg, errflg)
+       dvdt_DCNV, dTdt_cldMP, dqdt_cldMP, gt0, gu0, gv0, gq0, errmsg, errflg)
 
     ! Inputs
     real(kind_phys), intent(in   )                   :: dtp, dtf
     real(kind_phys), intent(in   ), dimension(:,:)   :: tgrs, ugrs, vgrs
-    real(kind_phys), intent(in   ), dimension(:,:,:) :: qgrs, dqdt_DCNV, dqdt_SCNV
+    real(kind_phys), intent(in   ), dimension(:,:,:) :: qgrs, dqdt_DCNV, dqdt_SCNV,      &
+                                                        dqdt_cldMP
     real(kind_phys), intent(in   ), dimension(:,:)   :: dTdt_lwrad, dTdt_swrad, dTdt_pbl, &
                                                         dqdt_pbl,   dudt_pbl,   dvdt_pbl, &
                                                         dTdt_gwd,   dudt_gwd,   dvdt_gwd, &
                                                         dTdt_SCNV,  dudt_SCNV,  dvdt_SCNV,&
-                                                        dTdt_DCNV,  dudt_DCNV,  dvdt_DCNV
+                                                        dTdt_DCNV,  dudt_DCNV,  dvdt_DCNV,&
+                                                        dTdt_cldMP
     ! Outputs
     real(kind_phys), intent(inout), dimension(:,:)   :: gt0, gu0, gv0
     real(kind_phys), intent(inout), dimension(:,:,:) :: gq0
@@ -64,19 +66,19 @@ contains
     ! Reconstruct state using scheme tendencies...
     !
     gt1(:,:)   = tgrs(:,:)   + (dTdt_pbl(:,:) + dTdt_gwd(:,:) + dTdt_SCNV(:,:)   + &
-                                dTdt_DCNV(:,:) + dTdt_lwrad(:,:)+ dTdt_swrad(:,:)) * dtp
+                                dTdt_DCNV(:,:) + dTdt_lwrad(:,:)+ dTdt_swrad(:,:) + dTdt_cldMP(:,:)) * dtp
     gu1(:,:)   = ugrs(:,:)   + (dudt_pbl(:,:) + dudt_gwd(:,:) + dudt_SCNV(:,:)   + &
                                 dudt_DCNV(:,:)) * dtp 
     gv1(:,:)   = vgrs(:,:)   + (dvdt_pbl(:,:) + dvdt_gwd(:,:) + dvdt_SCNV(:,:)   + &
                                 dvdt_DCNV(:,:)) * dtp 
     gq1(:,:,1) = qgrs(:,:,1) + (dqdt_pbl(:,:) + dqdt_SCNV(:,:,1) + dqdt_DCNV(:,:,1)) * dtp
     do iTracer=2,size(gq0(1,1,:))
-       gq1(:,:,iTracer) = qgrs(:,:,iTracer) + (dqdt_SCNV(:,:,iTracer) + dqdt_DCNV(:,:,iTracer)) * dtp
+       gq1(:,:,iTracer) = qgrs(:,:,iTracer) + (dqdt_SCNV(:,:,iTracer) + dqdt_DCNV(:,:,iTracer) + dqdt_cldMP(:,:,iTracer)) * dtp
     enddo
 
     do iCol=1,size(gq0(:,1,1))
        do iLay=1,size(gq0(1,:,1))
-          write(*,'(i5,3f8.3)') iLay,gt0(iCol,iLay),gt1(iCol,iLay),gt0(iCol,iLay)-gt1(iCol,iLay)
+          write(*,'(i5,4f8.3)') iLay,tgrs(iCol,iLay),gt0(iCol,iLay),gt1(iCol,iLay),gt0(iCol,iLay)-gt1(iCol,iLay)
        enddo
     enddo
 
