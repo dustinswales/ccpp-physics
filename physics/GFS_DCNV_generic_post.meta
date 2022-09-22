@@ -469,6 +469,38 @@
   dimensions = ()
   type = integer
   intent = in
+[dTdt_DCNV]
+  standard_name = tendency_of_air_temperature_due_to_DCNV_scheme
+  long_name = tendency of air temperature due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+[dqdt_DCNV]
+  standard_name = tendency_of_moisture_due_to_DCNV_scheme
+  long_name = tendency of moisture  due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = out
+[dudt_DCNV]
+  standard_name = tendency_of_zondal_wind_due_to_DCNV_scheme
+  long_name = tendency of zonal wind  due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+[dvdt_DCNV]
+  standard_name = tendency_of_meridional_wind_due_to_DCNV_scheme
+  long_name = tendency of meridional wind  due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP

@@ -147,6 +147,70 @@
   type = real
   kind = kind_phys
   intent = in
+[dTdt_DCNV]
+  standard_name = tendency_of_air_temperature_due_to_DCNV_scheme
+  long_name = tendency of air temperature due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dqdt_DCNV]
+  standard_name = tendency_of_moisture_due_to_DCNV_scheme
+  long_name = tendency of moisture  due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = in
+[dudt_DCNV]
+  standard_name = tendency_of_zondal_wind_due_to_DCNV_scheme
+  long_name = tendency of zonal wind  due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dvdt_DCNV]
+  standard_name = tendency_of_meridional_wind_due_to_DCNV_scheme
+  long_name = tendency of meridional wind  due to the DCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dTdt_SCNV]
+  standard_name = tendency_of_air_temperature_due_to_SCNV_scheme
+  long_name = tendency of air temperature due to the SCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dqdt_SCNV]
+  standard_name = tendency_of_moisture_due_to_SCNV_scheme
+  long_name = tendency of moisture  due to the SCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  type = real
+  kind = kind_phys
+  intent = in
+[dudt_SCNV]
+  standard_name = tendency_of_zondal_wind_due_to_SCNV_scheme
+  long_name = tendency of zonal wind  due to the SCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[dvdt_SCNV]
+  standard_name = tendency_of_meridional_wind_due_to_SCNV_scheme
+  long_name = tendency of meridional wind  due to the SCNV scheme
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
 [gt0]
   standard_name = air_temperature_of_new_state
   long_name = temperature updated by physics
