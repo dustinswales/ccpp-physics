@@ -1,8 +1,6 @@
 !>  \file samfshalcnv.f
 !!  This file contains the Scale-Aware mass flux Shallow Convection scheme.
 
-!> This module contains the CCPP-compliant scale-aware mass-flux 
-!! shallow convection scheme.
       module samfshalcnv
 
       use samfcnv_aerosols, only : samfshalcnv_aerosols
@@ -28,14 +26,10 @@
       end if
       end subroutine samfshalcnv_init
 
-      subroutine samfshalcnv_finalize()
-      end subroutine samfshalcnv_finalize
-
-!> \defgroup SAMF_shal GFS Scale-Aware Mass-Flux Shallow Convection Scheme Module
-!! @{
-!>  \brief This subroutine contains the entirety of the SAMF shallow convection
+!> \defgroup SAMF_shal GFS saSAS Shallow Convection Module
+!>  This subroutine contains the entirety of the SAMF shallow convection
 !!  scheme.
-!!
+!> @{
 !!  This routine follows the \ref SAMFdeep quite closely, although it
 !!  can be interpreted as only having the "static" and "feedback" control
 !!  portions, since the "dynamic" control is not necessary to find the cloud
@@ -54,7 +48,6 @@
 !!  -# Calculate the tendencies of the state variables (per unit cloud base mass flux) and the cloud base mass flux.
 !!  -# For the "feedback control", calculate updated values of the state variables by multiplying the cloud base mass flux and the tendencies calculated per unit cloud base mass flux from the static control.
 !!  \section det_samfshalcnv GFS samfshalcnv Detailed Algorithm
-!!  @{
       subroutine samfshalcnv_run(im,km,itc,ntc,cliq,cp,cvap,            &
      &     eps,epsm1,fv,grav,hvap,rd,rv,                                &
      &     t0c,delt,ntk,ntr,delp,first_time_step,restart,               & 
@@ -167,7 +160,7 @@ cc
      &                     omegac(im),zeta(im,km),dbyo1(im,km),
      &                     sigmab(im)
       real(kind=kind_phys) gravinv,dxcrtas
-
+      logical flag_shallow
 c  physical parameters
 !     parameter(g=grav,asolfac=0.89)
 !     parameter(g=grav)
@@ -1936,7 +1929,8 @@ c     updraft velcoity
 c
 c Prognostic closure
       if(progsigma)then
-         call progsigma_calc(im,km,first_time_step,restart,
+         flag_shallow = .true.
+         call progsigma_calc(im,km,first_time_step,restart,flag_shallow,
      &        del,tmf,qmicro,dbyo1,zdqca,omega_u,zeta,hvap,delt,
      &        prevsq,q,kbcon1,ktcon,cnvflg,
      &        sigmain,sigmaout,sigmab,errmsg,errflg)
@@ -2469,6 +2463,5 @@ c
       return
       end subroutine samfshalcnv_run
 !> @}
-!! @}
       end module samfshalcnv
 
