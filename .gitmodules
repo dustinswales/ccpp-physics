@@ -2,3 +2,7 @@
   path = physics/rte-rrtmgp
   url = https://github.com/earth-system-radiation/rte-rrtmgp
   branch = dtc/ccpp
+[submodule "physics/cosp"]
+  path = physics/cosp
+  url = https://github.com/CFMIP/COSPv2.0
+  branch = master
