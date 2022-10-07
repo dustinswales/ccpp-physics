@@ -88,19 +88,16 @@
         if (ldiag3d) then
           idtend = dtidx(index_of_temperature, index_of_process_scnv)
           if(idtend>=1) then
-             dTdt_SCNV(:,:)    = (gt0 - save_t) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gt0 - save_t) * frain
           endif
 
           idtend = dtidx(index_of_x_wind, index_of_process_scnv)
           if(idtend>=1) then
-             dudt_SCNV(:,:)    = (gu0 - save_u) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gu0 - save_u) * frain
           endif
 
           idtend = dtidx(index_of_y_wind, index_of_process_scnv)
           if(idtend>=1) then
-             dvdt_SCNV(:,:)    = (gv0 - save_v) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gv0 - save_v) * frain
           endif
 
@@ -113,7 +110,6 @@
                    tracers = tracers + 1
                    idtend = dtidx(100+n,index_of_process_scnv)
                    if(idtend>0) then
-                      dqdt_SCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) / dtp
                       dtend(:,:,idtend) = dtend(:,:,idtend) + clw(:,:,tracers)-save_q(:,:,n) * frain
                    endif
                 endif
@@ -122,18 +118,49 @@
             do n=2,ntrac
                idtend = dtidx(100+n,index_of_process_scnv)
                if(idtend>0) then
-                  dqdt_SCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n)) / dtp
                   dtend(:,:,idtend) = dtend(:,:,idtend) + (gq0(:,:,n)-save_q(:,:,n))*frain
                endif
             enddo
           endif
           idtend = dtidx(100+ntqv, index_of_process_scnv)
           if(idtend>=1) then
-             dqdt_SCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) / dtp
              dtend(:,:,idtend) = dtend(:,:,idtend) + (gq0(:,:,ntqv) - save_q(:,:,ntqv)) * frain
           endif
         endif
       endif
+
+      !
+      ! Save physics tendencies from scheme.
+      !
+      dTdt_SCNV(:,:)    = (gt0-save_t) / dtp
+      dudt_SCNV(:,:)    = (gu0-save_u) / dtp
+      dvdt_SCNV(:,:)    = (gv0-save_v) / dtp
+      if (cscnv .or. satmedmf .or. trans_trac .or. ras) then
+         tracers = 2
+         do n=2,ntrac
+            if ( n /= ntcw  .and. n /= ntiw  .and. n /= ntclamt .and. &
+                 n /= ntrw  .and. n /= ntsw  .and. n /= ntrnc   .and. &
+                 n /= ntsnc .and. n /= ntgl  .and. n /= ntgnc   .and. n /= ntsigma) then
+               tracers = tracers + 1
+               idtend = dtidx(100+n,index_of_process_scnv)
+               if(idtend>0) then
+                  dqdt_SCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) / dtp
+               endif
+            endif
+         enddo
+      else
+         do n=2,ntrac
+            idtend = dtidx(100+n,index_of_process_scnv)
+            if(idtend>0) then
+               dqdt_SCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n)) / dtp
+            endif
+         enddo
+      endif
+      idtend = dtidx(100+ntqv, index_of_process_scnv)
+      if(idtend>=1) then
+         dqdt_SCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) / dtp
+      endif
+
 
       end subroutine GFS_SCNV_generic_post_run
 

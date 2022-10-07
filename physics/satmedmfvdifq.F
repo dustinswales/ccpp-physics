@@ -2148,7 +2148,6 @@ c
         if(idtend>=1) then
           do  k = 1,km
             do i = 1,im
-              ttend(i,k)        = (f1(i,k)-t1(i,k))*rdt
               dtend(i,k,idtend) = dtend(i,k,idtend)+ttend(i,k)*delt
             enddo
           enddo
@@ -2158,7 +2157,6 @@ c
         if(idtend>=1) then
           do  k = 1,km
             do i = 1,im
-              qtend(i,k)        = (f2(i,k)-q1(i,k,1))*rdt
               dtend(i,k,idtend) = dtend(i,k,idtend)+qtend(i,k)*delt
             enddo
           enddo
@@ -2304,7 +2302,6 @@ c
         if(idtend>=1) then
           do k = 1,km
             do i = 1,im
-              utend(i,k)        = (f1(i,k)-u1(i,k))*rdt
               dtend(i,k,idtend) = dtend(i,k,idtend) + utend(i,k)*delt
             enddo
           enddo
@@ -2314,7 +2311,6 @@ c
         if(idtend>=1) then
           do k = 1,km
             do i = 1,im
-              vtend(i,k)        = (f2(i,k)-v1(i,k))*rdt
               dtend(i,k,idtend) = dtend(i,k,idtend) + vtend(i,k)*delt
             enddo
           enddo
