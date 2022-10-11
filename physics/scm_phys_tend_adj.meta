@@ -7,6 +7,35 @@
 [ccpp-arg-table]
   name = scm_phys_tend_adj_init
   type = scheme
+[me]
+  standard_name = mpi_rank
+  long_name = MPI rank of current process
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
+[master]
+  standard_name = mpi_root
+  long_name = MPI rank of master process
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
+[nlunit]
+  standard_name = iounit_of_namelist
+  long_name = fortran unit number for opening nameliust file
+  units = none
+  dimensions = ()
+  type = integer
+  intent = in
+[nml_file]
+  standard_name = filename_of_namelist
+  long_name = namelist filename
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -27,6 +56,21 @@
 [ccpp-arg-table]
   name = scm_phys_tend_adj_run
   type = scheme
+[solhr]
+  standard_name = forecast_utc_hour
+  long_name = time in hours after 00z at the current timestep
+  units = h
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[kdt]
+  standard_name = index_of_timestep
+  long_name = current forecast iteration
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
 [dtp]
   standard_name = timestep_for_physics
   long_name = physics timestep
