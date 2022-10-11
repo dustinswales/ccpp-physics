@@ -82,29 +82,44 @@ contains
     if (.not. exists) then
         errmsg = 'SCM data tendency :: namelist file: '//trim(nml_file)//' does not exist'
         errflg = 1
+        return
     else
-        open (unit = nlunit, file = nml_file, action = 'read' , status = 'old', iostat = ios)
+        open (unit = nlunit, file = nml_file, action = 'read', status = 'old', iostat = ios)
     endif
     rewind (nlunit)
     read (nlunit, nml = scm_data_nml)
     close (nlunit)
 
     !
-    ! Open file
+    ! Open file (required)
     !
     status = nf90_open(trim(fileIN), NF90_NOWRITE, ncid)
+    if (status /= nf90_noerror) then
+       call nf90_error_reporting(status, errmsg, errflg)
+       return
+    endif
 
     !
-    ! Dimensions
+    ! Dimensions (required)
     !
     status = nf90_inq_dimid(ncid, 'lev', dimid)
-    status = nf90_inquire_dimension(ncid, dimid, len = nlev)
+    if (status /= nf90_noerror) then
+       call nf90_error_reporting(status, errmsg, errflg)
+       return
+    else
+       status = nf90_inquire_dimension(ncid, dimid, len = nlev)
+    endif
+    !
     status = nf90_inq_dimid(ncid, 'time', dimid)
-    status = nf90_inquire_dimension(ncid, dimid, len = ntime)
-
+    if (status /= nf90_noerror) then
+       call nf90_error_reporting(status, errmsg, errflg)
+       return
+    else
+       status = nf90_inquire_dimension(ncid, dimid, len = ntime)
+    endif
 
     !
-    ! Temporal info
+    ! Temporal info (not required)
     !
     status = nf90_inq_varid(ncid, 'init_year', varID)
     if (status == nf90_noerror) status = nf90_get_var(  ncid, varID, init_year)
@@ -117,6 +132,10 @@ contains
     !
     status = nf90_inq_varid(ncid, 'init_hour', varID)
     if (status == nf90_noerror) status = nf90_get_var(  ncid, varID, init_hour)
+
+
+    !
+    ! Temporal info (required)
     !
     status = nf90_inq_varid(ncid, 'time', varID)
     if (status == nf90_noerror) then
@@ -125,7 +144,7 @@ contains
     endif
 
     !
-    ! Read in physics data tendencies, if present.
+    ! Read in physics data tendencies (if present)
     !
     status = nf90_inq_varid(ncid, 'dtend_temp_lw', varID)
     if (status == nf90_noerror) then
@@ -345,6 +364,9 @@ contains
     ! Allocate temporaries
     allocate(gt1(nCol,nLay), gu1(nCol,nLay), gv1(nCol,nLay),gq1(nCol,nLay,nTrc))
 
+    !
+    ! Determine temporal interpolation weights for data-tendecies.
+    !
     ti = findloc(abs(time_data-kdt*dtp),minval(abs(time_data-kdt*dtp)))
     if (kdt*dtp - time_data(ti(1)) .le. 0) ti = ti-1
     tf = ti + 1
@@ -493,5 +515,17 @@ contains
     enddo
 
   end subroutine scm_phys_tend_adj_run
+
+  subroutine nf90_error_reporting(status, errmsg, errflg)
+    integer,          intent(in ) :: status
+    integer,          intent(out) :: errflg
+    character(len=*), intent(out) :: errmsg
+    !
+    if (status /= nf90_noerr) then
+       errflg = 1
+       errmsg = trim(nf90_strerror(status))
+    endif
+    !
+  end subroutine nf90_error_reporting
 
 end module scm_phys_tend_adj
