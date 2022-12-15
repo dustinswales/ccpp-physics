@@ -115,7 +115,27 @@ set(SCHEMES_OPENMP_OFF ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rrtmgp/mo_
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rte/kernels/mo_optical_props_kernels.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rte/mo_rte_kind.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rte/mo_optical_props.F90)
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rte/mo_optical_props.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp_constants.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp_config.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp_stats.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_isccp_interface.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/icarus/icarus.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_misr_interface.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/MISR_simulator/MISR_simulator.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_modis_interface.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/MODIS_simulator/modis_simulator.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_parasol_interface.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/parasol/parasol.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/actsim/lidar_simulator.F90
+    		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_cloudsat_interface.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/quickbeam/quickbeam.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_atlid_interface.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_calipso_interface.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_grLidar532_interface.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_rttov_interfaceSTUB.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/rttov/cosp_rttovSTUB.F90)
 
 # List of files that need to be compiled with different precision
 set(SCHEMES_DYNAMICS)
