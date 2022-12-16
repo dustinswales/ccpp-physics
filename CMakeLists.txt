@@ -141,8 +141,13 @@ if(SCHEMES_OPENMP_OFF)
 endif()
 
 # Assign standard floating point precision flags to all remaining schemes and caps
-SET_PROPERTY(SOURCE ${SCHEMES} ${CAPS}
-             APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS}")
+if($ENV{DISABLE_CCPP_OPENMP})
+  SET_PROPERTY(SOURCE ${SCHEMES} ${CAPS}
+               APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS}")
+else($ENV{DISABLE_CCPP_OPENMP})
+  SET_PROPERTY(SOURCE ${SCHEMES} ${CAPS}
+               APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS}")
+endif()
 
 # Lower optimization for certain schemes when compiling with Intel in Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
@@ -152,9 +157,15 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL
     set(SCHEMES_TMP ${SCHEMES})
     # Need to determine the name of the scheme with its path
     list(FILTER SCHEMES_TMP INCLUDE REGEX ".*${SCHEME_NAME}$")
-    SET_SOURCE_FILES_PROPERTIES(${SCHEMES_TMP}
-                                APPEND_STRING PROPERTY COMPILE_FLAGS
-                                " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS} -O1")
+    if($ENV{DISABLE_CCPP_OPENMP})
+      SET_SOURCE_FILES_PROPERTIES(${SCHEMES_TMP}
+                                  APPEND_STRING PROPERTY COMPILE_FLAGS
+                                  " ${CMAKE_Fortran_FLAGS_PHYSICS} -O1")
+    else($ENV{DISABLE_CCPP_OPENMP})
+      SET_SOURCE_FILES_PROPERTIES(${SCHEMES_TMP}
+                                  APPEND_STRING PROPERTY COMPILE_FLAGS
+                                  " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS} -O1")
+    endif()
   endforeach()
 endif()
 
@@ -166,8 +177,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL
     set(SCHEMES_TMP ${SCHEMES})
     # Need to determine the name of the scheme with its path
     list(FILTER SCHEMES_TMP INCLUDE REGEX ".*${SCHEME_NAME}$")
-    SET_SOURCE_FILES_PROPERTIES(${SCHEMES_TMP}
-                                APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS} -O0")
+    if($ENV{DISABLE_CCPP_OPENMP})
+      SET_SOURCE_FILES_PROPERTIES(${SCHEMES_TMP}
+                                  APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS} -O0")
+    else($ENV{DISABLE_CCPP_OPENMP})
+      SET_SOURCE_FILES_PROPERTIES(${SCHEMES_TMP}
+                                  APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS} -O0")
+    endif()
   endforeach()
 endif()
 
