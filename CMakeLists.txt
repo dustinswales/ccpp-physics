@@ -139,7 +139,18 @@ set(SCHEMES_OPENMP_OFF ${LOCAL_CURRENT_SOURCE_DIR}/physics/rte-rrtmgp/rrtmgp/mo_
                    ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_calipso_interface.F90
                    ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_grLidar532_interface.F90
                    ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_rttov_interfaceSTUB.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/rttov/cosp_rttovSTUB.F90)
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/rttov/cosp_rttovSTUB.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/array_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/math_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/mrgrnk.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/optics_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/cosp_optics.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/cosp_utils.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/subcol/scops.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/subcol/prec_scops.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/subcol/rng/mo_rng.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/model-interface/cosp_errorHandling.F90)
   list(APPEND SCHEMES ${SCHEMES_COSP})
 #endif()
 

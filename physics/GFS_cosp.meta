@@ -1,12 +1,89 @@
 [ccpp-table-properties]
   name = GFS_cosp
   type = scheme
-  dependencies = machine.F,cosp_kinds.F90,cosp/src/cosp.F90,cosp/src/cosp_constants.F90,cosp/src/cosp_config.F90,cosp/src/cosp_stats.F90,cosp/src/simulator/cosp_isccp_interface.F90,cosp/src/simulator/icarus/icarus.F90,cosp/src/simulator/cosp_misr_interface.F90,cosp/src/simulator/MISR_simulator/MISR_simulator.F90,cosp/src/simulator/cosp_modis_interface.F90,cosp/src/simulator/MODIS_simulator/modis_simulator.F90,cosp/src/simulator/cosp_parasol_interface.F90,cosp/src/simulator/parasol/parasol.F90,cosp/src/simulator/actsim/lidar_simulator.F90,cosp/src/simulator/cosp_cloudsat_interface.F90,cosp/src/simulator/quickbeam/quickbeam.F90,cosp/src/simulator/cosp_atlid_interface.F90,cosp/src/simulator/cosp_calipso_interface.F90,cosp/src/simulator/cosp_grLidar532_interface.F90,cosp/src/simulator/cosp_rttov_interface.F90,cosp/src/simulator/rttov/cosp_rttovSTUB.F90
+  dependencies = cosp_kinds.F90,cosp/src/cosp_config.F90,cosp/src/cosp.F90,cosp/src/cosp_stats.F90,cosp/src/simulator/quickbeam/quickbeam.F90,cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
 
 ########################################################################
 [ccpp-arg-table]
   name = GFS_cosp_init
   type = scheme
+[do_cosp_isccp]
+  standard_name = flag_for_cosp_isccp_simulator
+  long_name = flag for COSP ISCCP simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_modis]
+  standard_name = flag_for_cosp_modis_simulator
+  long_name = flag for COSP MODIS simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_misr]
+  standard_name = flag_for_cosp_misr_simulator
+  long_name = flag for COSP MODIS simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_cloudsat]
+  standard_name = flag_for_cosp_cloudsat_radar_simulator
+  long_name = flag for COSP CloudSat RADAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_calipso]
+  standard_name = flag_for_cosp_calipso_lidar_simulator
+  long_name = flag for COSP Calipso LIDAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_grLidar532]
+  standard_name = flag_for_cosp_532nm_ground_lidar_simulator
+  long_name = flag for COSP 532nm ground based LIDAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_atlid]
+  standard_name = flag_for_cosp_earthcare_lidar_simulator
+  long_name = flag for COSP EarthCare LIDAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_parasol]
+  standard_name = flag_for_cosp_parasol_simulator
+  long_name = flag for COSP Parasol simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[imp_physics]
+  standard_name = control_for_microphysics_scheme
+  long_name = choice of microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[imp_physics_thompson]
+  standard_name = identifier_for_thompson_microphysics_scheme
+  long_name = choice of Thompson microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[imp_physics_gfdl]
+  standard_name = identifier_for_gfdl_microphysics_scheme
+  long_name = choice of GFDL microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
