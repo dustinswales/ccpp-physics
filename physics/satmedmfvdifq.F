@@ -132,7 +132,7 @@
       real(kind=kind_phys), intent(out) ::                              &
      &                     dkt(:,:), dku(:,:)
       real(kind=kind_phys),intent(out) ::  ttend(:,:),   utend(:,:),    &
-     &                     vtend(:,:),  qtend(:,:)
+     &                     vtend(:,:),  qtend(:,:,:)
 !
       logical, intent(in)  :: dspheat
       character(len=*), intent(out) :: errmsg
@@ -1763,8 +1763,8 @@ c
       do k = 1,km
          do i = 1,im
 !           f1(i,k) = max(f1(i,k), tkmin)
-            qtend(i,k)    = (f1(i,k)-q1(i,k,ntke))*rdt
-            rtg(i,k,ntke) = rtg(i,k,ntke)+qtend(i,k)
+            qtend(i,k,ntke) = (f1(i,k)-q1(i,k,ntke))*rdt
+            rtg(i,k,ntke)   = rtg(i,k,ntke)+qtend(i,k,ntke)
          enddo
       enddo
       if(ldiag3d) then
@@ -2198,10 +2198,10 @@ c
 c
       do  k = 1,km
          do i = 1,im
-            ttend(i,k) = (f1(i,k)-t1(i,k))*rdt
-            qtend(i,k) = (f2(i,k)-q1(i,k,1))*rdt
-            tdt(i,k)   = tdt(i,k)+ttend(i,k)
-            rtg(i,k,1) = rtg(i,k,1)+qtend(i,k)
+            ttend(i,k)   = (f1(i,k)-t1(i,k))*rdt
+            qtend(i,k,1) = (f2(i,k)-q1(i,k,1))*rdt
+            tdt(i,k)     = tdt(i,k)+ttend(i,k)
+            rtg(i,k,1)   = rtg(i,k,1)+qtend(i,k,1)
 !           dtsfc(i)   = dtsfc(i)+cont*del(i,k)*ttend(i,k)
 !           dqsfc(i)   = dqsfc(i)+conq*del(i,k)*qtend(i,k)
          enddo
@@ -2234,7 +2234,7 @@ c
         if(idtend>=1) then
           do  k = 1,km
             do i = 1,im
-              dtend(i,k,idtend) = dtend(i,k,idtend)+qtend(i,k)*delt
+              dtend(i,k,idtend) = dtend(i,k,idtend)+qtend(i,k,1)*delt
             enddo
           enddo
         endif
@@ -2245,8 +2245,8 @@ c
           is = (n-1) * km
           do k = 1, km
             do i = 1, im
-              qtend(i,k) = (f2(i,k+is)-q1(i,k,n))*rdt
-              rtg(i,k,n) = rtg(i,k,n)+qtend(i,k)
+              qtend(i,k,n) = (f2(i,k+is)-q1(i,k,n))*rdt
+              rtg(i,k,n)   = rtg(i,k,n)+qtend(i,k,n)
             enddo
           enddo
         enddo
@@ -2259,9 +2259,8 @@ c
               if(n/=ntke) then
                 do k = 1, km
                   do i = 1, im
-                    qtend(i,k)        = (f2(i,k+is)-q1(i,k,n))*rdt
                     dtend(i,k,idtend) = dtend(i,k,idtend)+              &
-     &                   qtend(i,k)*delt
+     &                   qtend(i,k,n)*delt
                   enddo
                 enddo
               endif

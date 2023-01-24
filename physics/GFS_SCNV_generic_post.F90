@@ -135,6 +135,7 @@
       dTdt_SCNV(:,:)    = (gt0-save_t) / dtp
       dudt_SCNV(:,:)    = (gu0-save_u) / dtp
       dvdt_SCNV(:,:)    = (gv0-save_v) / dtp
+      dqdt_SCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) / dtp
       if (cscnv .or. satmedmf .or. trans_trac .or. ras) then
          tracers = 2
          do n=2,ntrac
@@ -142,26 +143,14 @@
                  n /= ntrw  .and. n /= ntsw  .and. n /= ntrnc   .and. &
                  n /= ntsnc .and. n /= ntgl  .and. n /= ntgnc   .and. n /= ntsigma) then
                tracers = tracers + 1
-               idtend = dtidx(100+n,index_of_process_scnv)
-               if(idtend>0) then
-                  dqdt_SCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) / dtp
-               endif
+               dqdt_SCNV(:,:,n)  = clw(:,:,tracers)-save_q(:,:,n) / dtp
             endif
          enddo
       else
          do n=2,ntrac
-            idtend = dtidx(100+n,index_of_process_scnv)
-            if(idtend>0) then
-               dqdt_SCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n)) / dtp
-            endif
+            dqdt_SCNV(:,:,n)  = (gq0(:,:,n)-save_q(:,:,n)) / dtp
          enddo
       endif
-      idtend = dtidx(100+ntqv, index_of_process_scnv)
-      if(idtend>=1) then
-         dqdt_SCNV(:,:,1)  = (gq0(:,:,ntqv) - save_q(:,:,ntqv)) / dtp
-      endif
 
-
-      end subroutine GFS_SCNV_generic_post_run
-
-      end module GFS_SCNV_generic_post
+    end subroutine GFS_SCNV_generic_post_run
+  end module GFS_SCNV_generic_post

@@ -419,7 +419,12 @@
             enddo
          enddo
       endif
-      do itrac=1,ntrac
+      do k=1,levs
+         do i=1,im
+            dqdt_cldMP(i,k,1) = (gq0(i,k,1)-save_q(i,k,1)) / dtp
+         enddo
+      enddo
+      do itrac=2,ntrac
          idtend = dtidx(itrac+100,index_of_process_mp)
          if(idtend>=1) then
             do k=1,levs

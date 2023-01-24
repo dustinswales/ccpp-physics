@@ -114,7 +114,7 @@
 !
       logical, intent(in)  :: dspheat
       real(kind=kind_phys),intent(out) ::  ttend(:,:),   utend(:,:),    &
-     &                     vtend(:,:),  qtend(:,:)
+     &                     vtend(:,:),  qtend(:,:,:)
       character(len=*), intent(out) :: errmsg
       integer,          intent(out) :: errflg
 
@@ -1281,8 +1281,8 @@
       do k = 1,km
          do i = 1,im
 !           f1(i,k) = max(f1(i,k), tkmin)
-            qtend(i,k)    = (f1(i,k)-q1(i,k,ntke))*rdt
-            rtg(i,k,ntke) = rtg(i,k,ntke)+qtend(i,k)
+            qtend(i,k,ntke) = (f1(i,k)-q1(i,k,ntke))*rdt
+            rtg(i,k,ntke)   = rtg(i,k,ntke)+qtend(i,k,ntke)
          enddo
       enddo
 !
@@ -1403,12 +1403,12 @@
 !
       do  k = 1,km
          do i = 1,im
-            ttend(i,k) = (f1(i,k)-t1(i,k))*rdt
-            qtend(i,k) = (f2(i,k)-q1(i,k,1))*rdt
-            tdt(i,k)   = tdt(i,k)+ttend(i,k)
-            rtg(i,k,1) = rtg(i,k,1)+qtend(i,k)
-            dtsfc(i)   = dtsfc(i)+cont*del(i,k)*ttend(i,k)
-            dqsfc(i)   = dqsfc(i)+conq*del(i,k)*qtend(i,k)
+            ttend(i,k)   = (f1(i,k)-t1(i,k))*rdt
+            qtend(i,k,1) = (f2(i,k)-q1(i,k,1))*rdt
+            tdt(i,k)     = tdt(i,k)+ttend(i,k)
+            rtg(i,k,1)   = rtg(i,k,1)+qtend(i,k,1)
+            dtsfc(i)     = dtsfc(i)+cont*del(i,k)*ttend(i,k)
+            dqsfc(i)     = dqsfc(i)+conq*del(i,k)*qtend(i,k,1)
          enddo
       enddo
       if (ldiag3d .and. .not. gen_tend) then
@@ -1427,8 +1427,8 @@
           is = (kk-1) * km
           do k = 1, km
             do i = 1, im
-              qtend(i,k)  = (f2(i,k+is)-q1(i,k,kk))*rdt
-              rtg(i,k,kk) = rtg(i,k,kk)+qtend(i,k)
+              qtend(i,k,kk) = (f2(i,k+is)-q1(i,k,kk))*rdt
+              rtg(i,k,kk)   = rtg(i,k,kk)+qtend(i,k,kk)
             enddo
           enddo
         enddo

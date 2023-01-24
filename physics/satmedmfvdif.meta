@@ -579,7 +579,7 @@
   standard_name = tendency_of_moisture_due_to_PBL_scheme
   long_name = tendency of moisture  due to the PBL scheme
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_vertical_diffusion_tracers)
   type = real
   kind = kind_phys
   intent = out
