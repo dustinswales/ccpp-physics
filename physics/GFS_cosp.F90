@@ -227,8 +227,13 @@ contains
 !! \section arg_table_GFS_cosp_run
 !! \htmlinclude GFS_cosp_run.html
 !!
-  subroutine GFS_cosp_run(do_cosp, do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat,&
-       do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, nCol, nLev, nSubCol, nLvgrid, errmsg, errflg)
+  subroutine GFS_cosp_run(nCol, nLev, nSubCol, nLvgrid, do_cosp, do_cosp_isccp,             &
+       do_cosp_modis, do_cosp_misr, do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532,  &
+       do_cosp_atlid, do_cosp_parasol, &
+       cosp_isccp_f1, cosp_isccp_cldtot, cosp_isccp_meancldalb, cosp_isccp_meanptop,        &
+       cosp_isccp_meantau, cosp_isccp_meantb, cosp_isccp_meantbclr, cosp_isccp_tau,         &
+       cosp_isccp_cldptop, &
+       errmsg, errflg)
     implicit none
 
     ! Inputs
@@ -250,6 +255,18 @@ contains
          nLvgrid    ! Number of vertical levels in COSP statistical output (Cloudsat/Calipso)
 
     ! Outputs
+    real(kind_phys), intent(inout), dimension(:,:,:) :: &
+         cosp_isccp_f1            !
+    real(kind_phys), intent(inout), dimension(:) :: &
+         cosp_isccp_cldtot,     & !
+         cosp_isccp_meancldalb, & !
+         cosp_isccp_meanptop,   & !
+         cosp_isccp_meantau,    & !
+         cosp_isccp_meantb,     & !
+         cosp_isccp_meantbclr     !
+    real(kind_phys), intent(inout), dimension(:,:) :: &
+         cosp_isccp_tau,        & !
+         cosp_isccp_cldptop       !    
     character(len=*), intent(out) :: &
          errmsg
     integer, intent(out) :: &
@@ -267,7 +284,7 @@ contains
     !
     call construct_cosp_outputs(do_cosp_isccp, do_cosp_modis, do_cosp_misr,              &
          do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid,           &
-         do_cosp_parasol,nCol, nSubCol, nLev, Nlvgrid, 0, cospOUT)
+         do_cosp_parasol, nCol, nSubCol, nLev, Nlvgrid, 0, cospOUT)
 
   end subroutine GFS_cosp_run
 
@@ -334,9 +351,9 @@ contains
        allocate(x%modis_Cloud_Top_Pressure_Total_Mean(nCol))
        allocate(x%modis_Liquid_Water_Path_Mean(nCol))
        allocate(x%modis_Ice_Water_Path_Mean(nCol))
-       allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nPoints,numModisTauBins,numMODISPresBins))
-       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))   
-       allocate(x%modis_Optical_Thickness_vs_ReffICE(nPoints,numMODISTauBins,numMODISReffIceBins))
+       allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nCol,numModisTauBins,numMODISPresBins))
+       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nCol,numMODISTauBins,numMODISReffLiqBins))   
+       allocate(x%modis_Optical_Thickness_vs_ReffICE(nCol,numMODISTauBins,numMODISReffIceBins))
     endif
     
     ! CALIPSO simulator
