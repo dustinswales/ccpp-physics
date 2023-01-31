@@ -41,12 +41,9 @@ module GFS_cosp
   real(kind_phys) :: reffLIQ_binCenters_cosp(numMODISReffLiqBins)
 
   ! Note: Unless otherwise specified, these are parameters that cannot be set by the CAM namelist.
-  integer, parameter :: Npoints_it = 10000       ! Max # gridpoints to be processed in one iteration (10,000)
-  integer :: ncolumns = 50                       ! Number of subcolumns in SCOPS (50), can be changed from default by CAM namelist
-  integer :: nlr = 40                            ! Number of levels in statistical outputs 
-                                                 ! (only used if USE_VGRID=.true.)  (40)
+  integer, parameter :: nCol_it = 10000       ! Max # gridpoints to be processed in one iteration (10,000)
   logical :: use_vgrid = .true.                  ! Use fixed vertical grid for outputs? 
-                                                 ! (if .true. then define # of levels with nlr)  (.true.)
+                                                 ! (if .true. then define # of levels with nlvgrid)  (.true.)
   logical :: csat_vgrid = .true.                 ! CloudSat vertical grid? 
                                                  ! (if .true. then the CloudSat standard grid is used.
                                                  ! If set, overides use_vgrid.) (.true.)
@@ -104,7 +101,7 @@ contains
 !! \section arg_table_GFS_cosp_init
 !! \htmlinclude GFS_cosp_init.html
 !!
-  subroutine GFS_cosp_init(do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat,    &
+  subroutine GFS_cosp_init(me, nSubCol, do_cosp, do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat,&
        do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, imp_physics,    &
        imp_physics_thompson, imp_physics_gfdl, errmsg, errflg)
     USE mod_cosp_modis_interface,      ONLY: cosp_modis_init
@@ -115,9 +112,11 @@ contains
     USE mod_cosp_grlidar532_interface, ONLY: cosp_grLidar532_init
     USE mod_cosp_parasol_interface,    ONLY: cosp_parasol_init
     USE mod_cosp_cloudsat_interface,   ONLY: cosp_cloudsat_init
+    implicit none
 
     ! Inputs
     logical, intent(in)    :: &
+         do_cosp,              & !
          do_cosp_isccp,        & !
          do_cosp_modis,        & !
          do_cosp_misr,         & !
@@ -127,6 +126,8 @@ contains
          do_cosp_atlid,        & !
          do_cosp_parasol
     integer, intent(in)    ::  &
+         me,                   & ! Current MPI rank
+         nSubcol,              & ! Number of subcoumns used in COSP
          imp_physics,          & ! Choice of microphysics scheme
          imp_physics_thompson, & ! Choice of Thompson
          imp_physics_gfdl        ! Choice of GFDL
@@ -135,6 +136,8 @@ contains
          errmsg
     integer, intent(out) :: &
          errflg
+
+    if (.not. do_cosp) return
 
     ! Initialize CCPP error handling variables
     errmsg = ''
@@ -160,6 +163,7 @@ contains
     reffLIQ_binEdges_cosp   = reffLIQ_binEdges
 
     ! Initialize the distributional parameters for hydrometeors in radar simulator
+    ! DJS: This is clumsy and needs to be revisited.
     if (imp_physics == imp_physics_thompson) then
        call hydro_class_init(.false., .true., sd)
        cloudsat_micro_scheme = 'MMF_v3.5_double_moment'
@@ -169,7 +173,8 @@ contains
        cloudsat_micro_scheme = 'MMF_v3.5_single_moment'
     endif
 
-    !
+    ! Initialize requested simulators
+    ! DJS: In CAM cosp_init(), see src/cosp.F90, is called instead of the indivdual simulators.
     if (do_cosp_cloudsat .or. do_cosp_grLidar532) then
        call quickbeam_optics_init()
     endif
@@ -199,24 +204,182 @@ contains
        call cosp_parasol_init()
     endif
 
+    if (me == 0) then
+       if (do_cosp) then 
+          print*,'COSP configuration:'
+          print*,'  Number of COSP subcolumns                   = ', nSubcol
+          print*,'  Enable Cloudsat RADAR simulator             = ', do_cosp_cloudsat
+          print*,'  Enable Calipso LIDAR simulator              = ', do_cosp_calipso
+          print*,'  Enable EarthCare LIDAR simulator            = ', do_cosp_atlid
+          print*,'  Enable Ground-based (532nm) LIDAR simulator = ', do_cosp_grLidar532
+          print*,'  Enable ISCCP simulator                      = ', do_cosp_isccp
+          print*,'  Enable MISR simulator                       = ', do_cosp_misr
+          print*,'  Enable MODIS simulator                      = ', do_cosp_modis
+          print*,'  RADAR_SIM microphysics scheme               = ', trim(cloudsat_micro_scheme)
+       else
+          print*, 'COSP not enabled'
+       endif
+    endif
+
   end subroutine GFS_cosp_init
 
   ! #########################################################################################
 !! \section arg_table_GFS_cosp_run
 !! \htmlinclude GFS_cosp_run.html
 !!
-  subroutine GFS_cosp_run(errmsg, errflg)
+  subroutine GFS_cosp_run(do_cosp, do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat,&
+       do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, nCol, nLev, nSubCol, nLvgrid, errmsg, errflg)
+    implicit none
+
     ! Inputs
+    logical, intent(in) ::   &
+         do_cosp,            & !
+         do_cosp_isccp,      & !
+         do_cosp_modis,      & !
+         do_cosp_misr,       & !
+         do_cosp_cloudsat,   & !
+         do_cosp_calipso,    & !
+         do_cosp_grLidar532, & !
+         do_cosp_atlid,      & !
+         do_cosp_parasol       !
+
+    integer, intent(in)    :: &
+         nCol,    & ! Number of horizontal grid points
+         nLev,    & ! Number of vertical layers
+         nSubCol, & ! Number od COSP subcolumns
+         nLvgrid    ! Number of vertical levels in COSP statistical output (Cloudsat/Calipso)
+
     ! Outputs
     character(len=*), intent(out) :: &
          errmsg
     integer, intent(out) :: &
          errflg
 
+    ! Local
+    type(cosp_outputs) :: cospOUT
+
+    if (.not. do_cosp) return
+
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
 
+    !
+    call construct_cosp_outputs(do_cosp_isccp, do_cosp_modis, do_cosp_misr,              &
+         do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid,           &
+         do_cosp_parasol,nCol, nSubCol, nLev, Nlvgrid, 0, cospOUT)
+
   end subroutine GFS_cosp_run
+
+  ! ######################################################################################
+  ! SUBROUTINE construct_cosp_outputs
+  !
+  ! This subroutine allocates output fields based on input logical flag switches.
+  ! ######################################################################################  
+  subroutine construct_cosp_outputs(do_cosp_isccp, do_cosp_modis, do_cosp_misr,          &
+       do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid,             &
+       do_cosp_parasol, nCol, nSubCol, nLev, Nlvgrid, Nchan, x)
+
+    ! Inputs
+    logical, intent(in) :: &
+         do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat,&
+         do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol
+    integer, intent(in) :: &
+         nCol, nSubCol, nLev, Nlvgrid, Nchan
+    
+    ! Outputs
+    type(cosp_outputs),intent(out) :: &
+         x           ! COSP output structure  
+  
+     ! ISCCP simulator outputs
+    if (do_cosp_isccp) then
+       allocate(x%isccp_boxtau(nCol,nSubCol)) 
+       allocate(x%isccp_boxptop(nCol,nSubCol))
+       allocate(x%isccp_fq(nCol,numISCCPTauBins,numISCCPPresBins))
+       allocate(x%isccp_totalcldarea(nCol))
+       allocate(x%isccp_meanptop(nCol))
+       allocate(x%isccp_meantaucld(nCol))
+       allocate(x%isccp_meantb(nCol))
+       allocate(x%isccp_meantbclr(nCol))
+       allocate(x%isccp_meanalbedocld(nCol))
+    endif
+
+    ! MISR simulator
+    if (do_cosp_misr) then 
+       allocate(x%misr_fq(nCol,numMISRTauBins,numMISRHgtBins))
+       ! *NOTE* These 3 fields are not output, but were part of the v1.4.0 cosp_misr, so
+       !        they are still computed. Should probably have a logical to control these
+       !        outputs.
+       allocate(x%misr_dist_model_layertops(nCol,numMISRHgtBins))
+       allocate(x%misr_meanztop(nCol))
+       allocate(x%misr_cldarea(nCol))    
+    endif
+    
+    ! MODIS simulator
+    if (do_cosp_modis) then
+       allocate(x%modis_Cloud_Fraction_Total_Mean(nCol))
+       allocate(x%modis_Cloud_Fraction_Water_Mean(nCol))
+       allocate(x%modis_Cloud_Fraction_Ice_Mean(nCol))
+       allocate(x%modis_Cloud_Fraction_High_Mean(nCol))
+       allocate(x%modis_Cloud_Fraction_Mid_Mean(nCol))
+       allocate(x%modis_Cloud_Fraction_Low_Mean(nCol))
+       allocate(x%modis_Optical_Thickness_Total_Mean(nCol))
+       allocate(x%modis_Optical_Thickness_Water_Mean(nCol))
+       allocate(x%modis_Optical_Thickness_Ice_Mean(nCol))
+       allocate(x%modis_Optical_Thickness_Total_LogMean(nCol))
+       allocate(x%modis_Optical_Thickness_Water_LogMean(nCol))
+       allocate(x%modis_Optical_Thickness_Ice_LogMean(nCol))
+       allocate(x%modis_Cloud_Particle_Size_Water_Mean(nCol))
+       allocate(x%modis_Cloud_Particle_Size_Ice_Mean(nCol))
+       allocate(x%modis_Cloud_Top_Pressure_Total_Mean(nCol))
+       allocate(x%modis_Liquid_Water_Path_Mean(nCol))
+       allocate(x%modis_Ice_Water_Path_Mean(nCol))
+       allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nPoints,numModisTauBins,numMODISPresBins))
+       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))   
+       allocate(x%modis_Optical_Thickness_vs_ReffICE(nPoints,numMODISTauBins,numMODISReffIceBins))
+    endif
+    
+    ! CALIPSO simulator
+    if (do_cosp_calipso) then
+       allocate(x%calipso_beta_mol(nCol,nLev))
+       allocate(x%calipso_beta_tot(nCol,nSubCol,nLev))
+       allocate(x%calipso_srbval(SR_BINS+1))
+       allocate(x%calipso_cfad_sr(nCol,SR_BINS,Nlvgrid))
+       allocate(x%calipso_betaperp_tot(nCol,nSubCol,nLev))  
+       allocate(x%calipso_lidarcld(nCol,Nlvgrid))
+       allocate(x%calipso_cldlayer(nCol,LIDAR_NCAT))        
+       allocate(x%calipso_lidarcldphase(nCol,Nlvgrid,6))
+       allocate(x%calipso_lidarcldtmp(nCol,LIDAR_NTEMP,5))
+       allocate(x%calipso_cldlayerphase(nCol,LIDAR_NCAT,6))     
+       ! These 2 outputs are part of the calipso output type, but are not controlled by an 
+       ! logical switch in the output namelist, so if all other fields are on, then allocate
+       allocate(x%calipso_tau_tot(nCol,nSubCol,nLev))       
+       allocate(x%calipso_temp_tot(nCol,nLev))               
+       ! Calipso opaque cloud diagnostics
+       allocate(x%calipso_cldtype(nCol,LIDAR_NTYPE))
+       allocate(x%calipso_cldtypetemp(nCol,LIDAR_NTYPE))  
+       allocate(x%calipso_cldtypemeanz(nCol,2)) 
+       allocate(x%calipso_cldtypemeanzse(nCol,3)) 
+       allocate(x%calipso_cldthinemis(nCol))
+       allocate(x%calipso_lidarcldtype(nCol,Nlvgrid,LIDAR_NTYPE+1))
+    endif 
+      
+    ! PARASOL
+    if (do_cosp_parasol) then
+       allocate(x%parasolPix_refl(nCol,nSubCol,PARASOL_NREFL))
+       allocate(x%parasolGrid_refl(nCol,PARASOL_NREFL))
+    endif
+
+    ! Cloudsat simulator
+    if (do_cosp_cloudsat) then
+       allocate(x%cloudsat_Ze_tot(nCol,nSubCol,nLev))
+       allocate(x%cloudsat_cfad_ze(nCol,CLOUDSAT_DBZE_BINS,Nlvgrid))
+       allocate(x%lidar_only_freq_cloud(nCol,Nlvgrid))
+       allocate(x%radar_lidar_tcc(nCol))
+       allocate(x%cloudsat_precip_cover(nCol,nCloudsatPrecipClass))
+       allocate(x%cloudsat_pia(nCol))
+    endif
+
+  end subroutine construct_cosp_outputs
 
 end module GFS_cosp

@@ -7,6 +7,27 @@
 [ccpp-arg-table]
   name = GFS_cosp_init
   type = scheme
+[me]
+  standard_name = mpi_rank
+  long_name = current MPI-rank
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
+[nSubCol]
+  standard_name = number_of_sub_columns_in_cosp
+  long_name = number of subcolumns used in COSP
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[do_cosp]
+  standard_name = flag_for_cosp_diagnostics
+  long_name = flag for COSP diagnostics
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
 [do_cosp_isccp]
   standard_name = flag_for_cosp_isccp_simulator
   long_name = flag for COSP ISCCP simulator
@@ -104,6 +125,97 @@
 [ccpp-arg-table]
   name = GFS_cosp_run
   type = scheme
+[do_cosp]
+  standard_name = flag_for_cosp_diagnostics
+  long_name = flag for COSP diagnostics
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_isccp]
+  standard_name = flag_for_cosp_isccp_simulator
+  long_name = flag for COSP ISCCP simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_modis]
+  standard_name = flag_for_cosp_modis_simulator
+  long_name = flag for COSP MODIS simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_misr]
+  standard_name = flag_for_cosp_misr_simulator
+  long_name = flag for COSP MODIS simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_cloudsat]
+  standard_name = flag_for_cosp_cloudsat_radar_simulator
+  long_name = flag for COSP CloudSat RADAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_calipso]
+  standard_name = flag_for_cosp_calipso_lidar_simulator
+  long_name = flag for COSP Calipso LIDAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_grLidar532]
+  standard_name = flag_for_cosp_532nm_ground_lidar_simulator
+  long_name = flag for COSP 532nm ground based LIDAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_atlid]
+  standard_name = flag_for_cosp_earthcare_lidar_simulator
+  long_name = flag for COSP EarthCare LIDAR simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp_parasol]
+  standard_name = flag_for_cosp_parasol_simulator
+  long_name = flag for COSP Parasol simulator
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[nCol]
+  standard_name = horizontal_loop_extent
+  long_name = horizontal dimension
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[nLev]
+  standard_name = vertical_layer_dimension
+  long_name = number of vertical levels
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[nSubCol]
+  standard_name = number_of_sub_columns_in_cosp
+  long_name = number of subcolumns used in COSP
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[nLvgrid]
+  standard_name = number_of_vertical_levels_in_COSP_statistical_output
+  long_name = number of	vertical levels	in COSP	CloudSat and Calipso diagnostics
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
