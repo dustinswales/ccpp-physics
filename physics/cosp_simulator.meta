@@ -1,11 +1,11 @@
 [ccpp-table-properties]
-  name = GFS_cosp
+  name = cosp_simulator
   type = scheme
   dependencies = cosp_kinds.F90,cosp/src/cosp_config.F90,cosp/src/cosp.F90,cosp/src/cosp_stats.F90,cosp/src/simulator/quickbeam/quickbeam.F90,cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
 
 ########################################################################
 [ccpp-arg-table]
-  name = GFS_cosp_init
+  name = cosp_simulator_init
   type = scheme
 [mpirank]
   standard_name = mpi_rank
@@ -75,7 +75,7 @@
 
 ########################################################################
 [ccpp-arg-table]
-  name = GFS_cosp_run
+  name = cosp_simulator_run
   type = scheme
 [nCol]
   standard_name = horizontal_loop_extent

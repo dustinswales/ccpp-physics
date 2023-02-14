@@ -1,6 +1,6 @@
-!> \file GFS_cosp.F90
+!> \file cosp_simulator.F90
   ! #########################################################################################
-module GFS_cosp
+module cosp_simulator
   use machine,              only: kind_phys
   use quickbeam,            only: radar_cfg
   use mod_quickbeam_optics, only: size_distribution, hydro_class_init, quickbeam_optics_init
@@ -100,13 +100,13 @@ module GFS_cosp
 
 contains
 
-!! \section arg_table_GFS_cosp_init
-!! \htmlinclude GFS_cosp_init.html
+!! \section arg_table_cosp_simulator_init
+!! \htmlinclude cosp_simulator_init.html
 !!
   ! #########################################################################################
   ! 
   ! #########################################################################################
-  subroutine GFS_cosp_init(mpirank, mpiroot, nlunit, nml_file, imp_physics, imp_physics_thompson, imp_physics_gfdl, errmsg, errflg)
+  subroutine cosp_simulator_init(mpirank, mpiroot, nlunit, nml_file, imp_physics, imp_physics_thompson, imp_physics_gfdl, errmsg, errflg)
     USE mod_cosp_modis_interface,      ONLY: cosp_modis_init
     USE mod_cosp_misr_interface,       ONLY: cosp_misr_init
     USE mod_cosp_isccp_interface,      ONLY: cosp_isccp_init
@@ -236,13 +236,13 @@ contains
        endif
     endif
 
-  end subroutine GFS_cosp_init
+  end subroutine cosp_simulator_init
 
   ! #########################################################################################
-!! \section arg_table_GFS_cosp_run
-!! \htmlinclude GFS_cosp_run.html
+!! \section arg_table_cosp_simulator_run
+!! \htmlinclude cosp_simulator_run.html
 !!
-  subroutine GFS_cosp_run(nCol, nLev, tsfc, coszen, slmsk, prsl, prsi, phil, phii, tgrs,    &
+  subroutine cosp_simulator_run(nCol, nLev, tsfc, coszen, slmsk, prsl, prsi, phil, phii, tgrs,    &
        qgrs, cld_frac, ccld_frac, top_at_1, con_g, iSFC, iTOA, errmsg, errflg)
     use mod_cosp,  only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs
     implicit none
@@ -321,15 +321,15 @@ contains
          do_grLidar532, do_atlid, do_parasol, nCol, cosp_nsubcol, nLev, cospIN)
 
     ! Call subsample_and_optics
-    call subsample_and_optics(nCol, cosp_nsubcol, nLev, prsi(:,iSFC), cld_frac,          &
+    call subsample_and_optics_CAM6(nCol, cosp_nsubcol, nLev, prsi(:,iSFC), cld_frac,     &
          ccld_frac, cospIN)
 
-  end subroutine GFS_cosp_run
+  end subroutine cosp_simulator_run
 
   ! ######################################################################################
-  ! SUBROUTINE subsample_and_optics
+  ! SUBROUTINE subsample_and_optics_CAM6
   ! ######################################################################################
-  subroutine subsample_and_optics(nCol, nSubCol, nLev, sfcP, cld_frac, ccld_frac, cospIN)
+  subroutine subsample_and_optics_CAM6(nCol, nSubCol, nLev, sfcP, cld_frac, ccld_frac, cospIN)
     use mod_scops,      only: scops
     use mod_prec_scops, only: prec_scops
     use mod_rng,        only: rng_state, init_rng
@@ -360,8 +360,17 @@ contains
     
     ! Call prec_scops
 
+  end subroutine subsample_and_optics_CAM6
 
-  end subroutine subsample_and_optics
+  ! ######################################################################################
+  ! SUBROUTINE subsample_and_optics_UFS
+  ! ######################################################################################
+  subroutine subsample_and_optics_UFS(cospIN)
+    use mod_cosp,       only: cosp_optical_inputs
+    implicit none
+    type(cosp_optical_inputs), intent(inout) :: cospIN
+
+  end subroutine subsample_and_optics_UFS
 
   ! ######################################################################################
   ! SUBROUTINE construct_cosp_outputs
@@ -550,4 +559,4 @@ contains
 
   end subroutine construct_cospIN
 
-end module GFS_cosp
+end module cosp_simulator
