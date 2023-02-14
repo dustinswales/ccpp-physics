@@ -20,75 +20,6 @@ module cosp_simulator
   implicit none
 
   ! #########################################################################################
-  ! COSP configuration (controlled by namelist; defaults listed below)
-  ! #########################################################################################
-  logical :: &
-       do_cosp = .false.       !< If true, using COSP
-  logical :: &
-       do_isccp = .false.      !< If true, create COSP ISCCP simulator diagnostics
-  logical :: &
-       do_modis = .false.      !< If true, create COSP MODIS simulator diagnostics
-  logical :: &
-       do_misr = .false.       !< If true, create COSP MISR simulator diagnostics
-  logical :: &
-       do_cloudsat = .false.   !< If true, create COSP Cloudsat RADAR simulator diagnostics
-  logical :: &
-       do_calipso = .false.    !< If true, create COSP Calipso LIDAR simulator diagnostics
-  logical :: &
-       do_grLidar532 = .false. !< If true, create COSP Ground-based 532nm Lidar simulator diagnostics
-  logical :: &
-       do_atlid = .false.      !< If true, create COSP EarthCase Lidar simulator diagnostics
-  logical :: &
-       do_parasol = .false.    !< If true, create COSP PARASOL simulator diagnostics
-  integer :: &
-       cosp_nsubcol = 50       !< Number of subcolumns in SCOPS, COSP internal subcolumn generator
-  integer :: &
-       cosp_nlvgrid = 40       !< Number of levels in COSP cloudsat/calipso statistical outputs
-  logical :: &
-       use_vgrid = .true.      !< Use fixed vertical grid, cosp_nlvgrid, for outputs? 
-  logical :: &
-       csat_vgrid = .true.     !< CloudSat vertical grid? (if .true. then the CloudSat native grid is used.)
-  real(kind_phys) :: &
-       csat_freq = 94.0        !< CloudSat radar frequency (GHz)
-  integer :: &
-       csat_gas_abs = 1        !< Cloudsat: Include gaseous absorption? yes=1,no=0
-  integer :: &
-       csat_do_ray = 0         !< Cloudsat: Calculate/output Rayleigh refl=1, not=0
-  real(kind_phys) :: &
-       csat_k2 = -1            !< Cloudsat |K|^2, -1=use frequency dependent default
-  integer :: &
-       Nprmts_max_hydro = 12   !< Max # params for hydrometeor size distributions
-  integer :: &
-       lidar_ice_type = 0      !< Ice particle shape in lidar calculations (0=ice-spheres ; 1=ice-non-spherical)
-  integer :: &
-       overlap = 3             !< Cloud ooverlap type: 1=max, 2=rand, 3=max/rand
-  integer :: &
-       isccp_topht =  1        !< 1 = adjust top height using both a computed infrared
-                               !<     brightness temperature and the visible optical depth to adjust 
-                               !<     cloud top pressure. Note that this calculation is most 
-                               !<     appropriate to compare  to ISCCP data during sunlit hours.
-                               !< 2 = do not adjust top height, that is cloud top pressure
-                               !<     is the actual cloud top pressure in the model
-                               !< 3 = adjust top height using only the computed infrared
-                               !<     brightness temperature. Note that this calculation is most
-                               !<     appropriate to compare to ISCCP IR only algortihm (i.e.
-                               !<     you can compare to nighttime ISCCP data with this option)
-  integer :: &
-       isccp_topht_dir = 2     !< Direction for finding atmosphere pressure level with
-                               !< interpolated temperature equal to the radiance determined 
-                               !< cloud-top temperature
-                               !< 1 = find the *lowest* altitude (highest pressure) level
-                               !<     with interpolated temperature equal to the radiance
-                               !<     determined cloud-top temperature
-                               !< 2 = find the *highest* altitude (lowest pressure) level
-                               !<     with interpolated temperature equal to the radiance 
-                               !<     determined cloud-top temperature
-                               !< ONLY APPLICABLE IF top_height EQUALS 1 or 3
-                               !< 1 = default setting in COSP v1.1, matches all versions of
-                               !< ISCCP simulator with versions numbers 3.5.1 and lower
-                               !< 2 = default setting in COSP v1.3. default since V4.0 of ISCCP simulator
-
-  ! #########################################################################################
   ! module types
   ! #########################################################################################
   type(radar_cfg) :: &
@@ -106,7 +37,10 @@ contains
   ! #########################################################################################
   ! 
   ! #########################################################################################
-  subroutine cosp_simulator_init(mpirank, mpiroot, nlunit, nml_file, imp_physics, imp_physics_thompson, imp_physics_gfdl, errmsg, errflg)
+  subroutine cosp_simulator_init(mpirank, mpiroot, do_cosp, do_cosp_isccp, do_cosp_misr,    &
+       do_cosp_modis, do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, &
+       do_cosp_parasol, cosp_nsubcol, imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht,   &
+       isccp_topht_dir, errmsg, errflg)
     USE mod_cosp_modis_interface,      ONLY: cosp_modis_init
     USE mod_cosp_misr_interface,       ONLY: cosp_misr_init
     USE mod_cosp_isccp_interface,      ONLY: cosp_isccp_init
@@ -118,15 +52,25 @@ contains
     implicit none
 
     ! Inputs
+    logical, intent(in)    :: &
+         do_cosp,              &
+         do_cosp_isccp,        &
+         do_cosp_misr,         &
+         do_cosp_modis,        &
+         do_cosp_cloudsat,     &
+         do_cosp_calipso,      &
+         do_cosp_grLidar532,   &
+         do_cosp_atlid,        &
+         do_cosp_parasol
     integer, intent(in)    ::  &
          mpirank,              & ! Current MPI rank 
          mpiroot,              & ! 
          imp_physics,          & ! Choice of microphysics scheme
          imp_physics_thompson, & ! Choice of Thompson
          imp_physics_gfdl,     & ! Choice of GFDL
-         nlunit                  !
-    character(len=*), intent (in) :: &
-         nml_file
+         isccp_topht,          & !
+         isccp_topht_dir,      & !
+         cosp_nsubcol
     ! Outputs
     character(len=*), intent(out) :: &
          errmsg
@@ -138,39 +82,12 @@ contains
     integer, parameter :: spaceborne_radar  = 0
     integer, parameter :: groundbased_radar = 1
 
-    ! Namelist
-    namelist / cosp_diag_nml / &
-         do_isccp, do_misr, do_modis, do_cloudsat, do_calipso, do_grLidar532, do_atlid,    &
-         do_parasol, cosp_nsubcol, cosp_nlvgrid , use_vgrid, csat_vgrid, csat_freq,        &
-         csat_gas_abs, csat_do_ray, csat_k2, Nprmts_max_hydro,  &
-         lidar_ice_type, overlap, isccp_topht, isccp_topht_dir
-
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
 
-    ! ######################################################################################
-    ! Read in namelist
-    ! ######################################################################################
-    inquire (file = trim (nml_file), exist = exists)
-    if (.not. exists) then
-        errmsg = 'COSP namelist file: '//trim(nml_file)//' does not exist'
-        errflg = 1
-        return
-    else
-        open (unit = nlunit, file = nml_file, action = 'read', status = 'old', iostat = ios)
-    endif
-    rewind (nlunit)
-    read (nlunit, nml = cosp_diag_nml)
-    close (nlunit)
-
     ! Has COSP been requested?
-    if (do_isccp .or. do_misr .or. do_modis .or. do_cloudsat .or. do_calipso .or.          &
-         do_grLidar532 .or. do_atlid .or. do_parasol) then
-       do_cosp = .true.
-    else
-       return
-    endif
+    if (.not. do_cosp) return
 
     ! ######################################################################################
     ! Initialize COSP
@@ -189,32 +106,32 @@ contains
 
     ! Initialize requested simulators
     ! DJS: In CAM cosp_init(), see src/cosp.F90, is called instead of the indivdual simulators.
-    if (do_cloudsat .or. do_grLidar532) then
+    if (do_cosp_cloudsat .or. do_cosp_grLidar532) then
        call quickbeam_optics_init()
     endif
-    if (do_isccp) then
+    if (do_cosp_isccp) then
        call cosp_isccp_init(isccp_topht, isccp_topht_dir)
        endif
-    if (do_modis) then
+    if (do_cosp_modis) then
        call cosp_modis_init()
     endif
-    if (do_misr) then
+    if (do_cosp_misr) then
        call cosp_misr_init()
     endif
-    if (do_cloudsat) then
-       call cosp_radar_init(csat_freq, csat_k2, csat_gas_abs, csat_do_ray, R_UNDEF, N_HYDRO,      &
-            spaceborne_radar, csat_rcfg, csat_micro_scheme)
+    if (do_cosp_cloudsat) then
+!       call cosp_radar_init(csat_freq, csat_k2, csat_gas_abs, csat_do_ray, R_UNDEF, N_HYDRO,      &
+!            spaceborne_radar, csat_rcfg, csat_micro_scheme)
     endif
-    if (do_calipso) then
+    if (do_cosp_calipso) then
        call cosp_calipso_init()
     endif
-    if (do_grLidar532) then
+    if (do_cosp_grLidar532) then
        call cosp_grLidar532_init()
     endif
-    if (do_atlid) then
+    if (do_cosp_atlid) then
        call cosp_atlid_init()
     endif
-    if (do_parasol) then
+    if (do_cosp_parasol) then
        call cosp_parasol_init()
     endif
 
@@ -223,13 +140,13 @@ contains
        if (do_cosp) then 
           print*,'COSP configuration:'
           print*,'  Number of COSP subcolumns                   = ', cosp_nsubcol
-          print*,'  Enable Cloudsat RADAR simulator             = ', do_cloudsat
-          print*,'  Enable Calipso LIDAR simulator              = ', do_calipso
-          print*,'  Enable EarthCare LIDAR simulator            = ', do_atlid
-          print*,'  Enable Ground-based (532nm) LIDAR simulator = ', do_grLidar532
-          print*,'  Enable ISCCP simulator                      = ', do_isccp
-          print*,'  Enable MISR simulator                       = ', do_misr
-          print*,'  Enable MODIS simulator                      = ', do_modis
+          print*,'  Enable Cloudsat RADAR simulator             = ', do_cosp_cloudsat
+          print*,'  Enable Calipso LIDAR simulator              = ', do_cosp_calipso
+          print*,'  Enable EarthCare LIDAR simulator            = ', do_cosp_atlid
+          print*,'  Enable Ground-based (532nm) LIDAR simulator = ', do_cosp_grLidar532
+          print*,'  Enable ISCCP simulator                      = ', do_cosp_isccp
+          print*,'  Enable MISR simulator                       = ', do_cosp_misr
+          print*,'  Enable MODIS simulator                      = ', do_cosp_modis
           print*,'  RADAR_SIM microphysics scheme               = ', trim(csat_micro_scheme)
        else
           print*, 'COSP not enabled'
@@ -242,8 +159,10 @@ contains
 !! \section arg_table_cosp_simulator_run
 !! \htmlinclude cosp_simulator_run.html
 !!
-  subroutine cosp_simulator_run(nCol, nLev, tsfc, coszen, slmsk, prsl, prsi, phil, phii, tgrs,    &
-       qgrs, cld_frac, ccld_frac, top_at_1, con_g, iSFC, iTOA, errmsg, errflg)
+  subroutine cosp_simulator_run(nCol, nLev, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk, prsl, prsi, phil, phii, tgrs,    &
+       qgrs, cld_frac, ccld_frac, top_at_1, con_g, iSFC, iTOA, do_cosp, do_cosp_isccp, do_cosp_misr,    &
+       do_cosp_modis, do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, &
+       do_cosp_parasol, overlap, errmsg, errflg)
     use mod_cosp,  only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs
     implicit none
 
@@ -251,9 +170,21 @@ contains
     integer, intent(in)    :: &
          nCol,    & ! Number of horizontal grid points
          nLev,    & ! Number of vertical layers
+         cosp_nlvgrid, & !
+         cosp_nsubcol, & ! Number of COSP subcolumns
+         overlap,      & !
          iSFC,    & ! Vertical index for surface
          iTOA       ! Vertical index for TOA
     logical, intent(in) :: &
+         do_cosp,              &
+         do_cosp_isccp,        &
+         do_cosp_misr,         &
+         do_cosp_modis,        &
+         do_cosp_cloudsat,     &
+         do_cosp_calipso,      &
+         do_cosp_grLidar532,   &
+         do_cosp_atlid,        &
+         do_cosp_parasol,      &
          top_at_1   ! Vertical ordering flag
     real(kind_phys), intent(in) :: &
          con_g      ! Physical constant: gravitational constant
@@ -300,8 +231,8 @@ contains
     enddo
 
     ! Type containing COSP outputs.
-    call construct_cosp_outputs(do_isccp, do_modis, do_misr, do_cloudsat, do_calipso,    &
-         do_grLidar532, do_atlid, do_parasol, nCol, cosp_nsubcol, nLev, cosp_nlvgrid,    &
+    call construct_cosp_outputs(do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat, do_cosp_calipso,    &
+         do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, nCol, cosp_nsubcol, nLev, cosp_nlvgrid,    &
          cospOUT)
 
     ! Host-model state for COSP (toa-2-sfc vertical ordering).
@@ -317,19 +248,19 @@ contains
     cospstateIN%hgt_matrix_half = phii/con_g
 
     ! Derived (optical) inputs for COSP.
-    call construct_cospIN(do_isccp, do_modis, do_misr, do_cloudsat, do_calipso,          &
-         do_grLidar532, do_atlid, do_parasol, nCol, cosp_nsubcol, nLev, cospIN)
+    call construct_cospIN(do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat, do_cosp_calipso,          &
+         do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, nCol, cosp_nsubcol, nLev, cospIN)
 
     ! Call subsample_and_optics
     call subsample_and_optics_CAM6(nCol, cosp_nsubcol, nLev, prsi(:,iSFC), cld_frac,     &
-         ccld_frac, cospIN)
+         ccld_frac, overlap, cospIN)
 
   end subroutine cosp_simulator_run
 
   ! ######################################################################################
   ! SUBROUTINE subsample_and_optics_CAM6
   ! ######################################################################################
-  subroutine subsample_and_optics_CAM6(nCol, nSubCol, nLev, sfcP, cld_frac, ccld_frac, cospIN)
+  subroutine subsample_and_optics_CAM6(nCol, nSubCol, nLev, sfcP, cld_frac, ccld_frac, overlap, cospIN)
     use mod_scops,      only: scops
     use mod_prec_scops, only: prec_scops
     use mod_rng,        only: rng_state, init_rng
@@ -337,7 +268,7 @@ contains
     implicit none
 
     ! Inputs
-    integer, intent(in) :: nCol, nSubCol, nLev
+    integer, intent(in) :: nCol, nSubCol, nLev, overlap
     real(kind_phys), dimension(nCol), intent(in) :: sfcP
     real(kind_phys), dimension(nCol,nLev), intent(in) :: cld_frac, ccld_frac
     type(cosp_optical_inputs) :: cospIN

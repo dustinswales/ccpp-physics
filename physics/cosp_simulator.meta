@@ -21,21 +21,6 @@
   dimensions = ()
   type = integer
   intent = in
-[nlunit]
-  standard_name = iounit_of_namelist
-  long_name = fortran unit number for opening nameliust file
-  units = none
-  dimensions = ()
-  type = integer
-  intent = in
-[nml_file]
-  standard_name = filename_of_namelist
-  long_name = namelist filename
-  units = none
-  dimensions = ()
-  type = character
-  kind = len=*
-  intent = in
 [imp_physics]
   standard_name = control_for_microphysics_scheme
   long_name = choice of microphysics scheme
@@ -54,6 +39,90 @@
   standard_name = identifier_for_gfdl_microphysics_scheme
   long_name = choice of GFDL microphysics scheme
   units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[cosp_nsubcol]
+  standard_name = number_of_cosp_subcolumns
+  long_name = number of cosp subcolumns
+  units = count
+  dimensions =  ()
+  type = integer
+  intent = in
+[do_cosp]
+  standard_name = flag_for_cosp_diagnostics
+  long_name = flag for cosp diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_isccp]
+  standard_name = flag_for_cosp_isccp_diagnostics
+  long_name = flag for cosp ISCCP diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_misr]
+  standard_name = flag_for_cosp_misr_diagnostics
+  long_name = flag for cosp MISR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_modis]
+  standard_name = flag_for_cosp_modis_diagnostics
+  long_name = flag for cosp MODIS diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_cloudsat]
+  standard_name = flag_for_cosp_Cloudsat_diagnostics
+  long_name = flag for cosp Cloudsat RADAR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_calipso]
+  standard_name = flag_for_cosp_Calipso_diagnostics
+  long_name = flag for cosp Calipso LIDAR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_grLidar532]
+  standard_name = flag_for_cosp_grLidar532_diagnostics
+  long_name = flag for cosp ground-based LIDAR (532nm) diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_atlid]
+  standard_name = flag_for_cosp_atlid_diagnostics
+  long_name = flag for cosp EarthCare LIDAR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_parasol]
+  standard_name = flag_for_cosp_parasol_diagnostics
+  long_name = flag for cosp parasol diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[isccp_topht]
+  standard_name = cloud_top_height_adjustment_in_cosp_isccp_simulator
+  long_name = cloud top height adjustment in cosp isccp simulator
+  units     = 1
+  dimensions = ()
+  type = integer
+  intent = in
+[isccp_topht_dir]
+  standard_name = cloud_top_height_direction_in_cosp_isccp_simulator
+  long_name = cloud top height direction in cosp isccp simulator
+  units     = 1
   dimensions = ()
   type = integer
   intent = in
@@ -88,6 +157,27 @@
   standard_name = vertical_layer_dimension
   long_name = number of vertical levels
   units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[cosp_nsubcol]
+  standard_name = number_of_cosp_subcolumns
+  long_name = number of cosp subcolumns
+  units = count
+  dimensions =  ()
+  type = integer
+  intent = in
+[cosp_nlvgrid]
+  standard_name = number_of_cosp_vertical_levels_for_statistical_grid
+  long_name = number of cosp vertical levels for statistical grid
+  units = count
+  dimensions =  ()
+  type = integer
+  intent = in
+[overlap]
+  standard_name = cloud_overlap_in_cosp
+  long_name = cloud overlap assumption used in cosp
+  units     = 1
   dimensions = ()
   type = integer
   intent = in
@@ -199,6 +289,69 @@
   units = flag
   dimensions = ()
   type = integer
+  intent = in
+[do_cosp]
+  standard_name = flag_for_cosp_diagnostics
+  long_name = flag for cosp diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_isccp]
+  standard_name = flag_for_cosp_isccp_diagnostics
+  long_name = flag for cosp ISCCP diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_misr]
+  standard_name = flag_for_cosp_misr_diagnostics
+  long_name = flag for cosp MISR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_modis]
+  standard_name = flag_for_cosp_modis_diagnostics
+  long_name = flag for cosp MODIS diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_cloudsat]
+  standard_name = flag_for_cosp_Cloudsat_diagnostics
+  long_name = flag for cosp Cloudsat RADAR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_calipso]
+  standard_name = flag_for_cosp_Calipso_diagnostics
+  long_name = flag for cosp Calipso LIDAR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_grLidar532]
+  standard_name = flag_for_cosp_grLidar532_diagnostics
+  long_name = flag for cosp ground-based LIDAR (532nm) diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_atlid]
+  standard_name = flag_for_cosp_atlid_diagnostics
+  long_name = flag for cosp EarthCare LIDAR diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[do_cosp_parasol]
+  standard_name = flag_for_cosp_parasol_diagnostics
+  long_name = flag for cosp parasol diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
   intent = in
 [con_g]
   standard_name = gravitational_acceleration
