@@ -37,10 +37,10 @@ contains
   ! #########################################################################################
   ! 
   ! #########################################################################################
-  subroutine cosp_simulator_init(mpirank, mpiroot, do_cosp, do_cosp_isccp, do_cosp_misr,    &
-       do_cosp_modis, do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, &
-       do_cosp_parasol, cosp_nsubcol, imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht,   &
-       isccp_topht_dir, errmsg, errflg)
+  subroutine cosp_simulator_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,    &
+       do_cloudsat, do_calipso, do_grLidar532, do_atlid, do_parasol, cosp_nsubcol,          &
+       imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht, isccp_topht_dir,   &
+       errmsg, errflg)
     USE mod_cosp_modis_interface,      ONLY: cosp_modis_init
     USE mod_cosp_misr_interface,       ONLY: cosp_misr_init
     USE mod_cosp_isccp_interface,      ONLY: cosp_isccp_init
@@ -53,18 +53,11 @@ contains
 
     ! Inputs
     logical, intent(in)    :: &
-         do_cosp,              &
-         do_cosp_isccp,        &
-         do_cosp_misr,         &
-         do_cosp_modis,        &
-         do_cosp_cloudsat,     &
-         do_cosp_calipso,      &
-         do_cosp_grLidar532,   &
-         do_cosp_atlid,        &
-         do_cosp_parasol
+         do_cosp, do_isccp, do_misr, do_modis, do_cloudsat, do_calipso, do_grLidar532,      &
+         do_atlid, do_parasol
     integer, intent(in)    ::  &
          mpirank,              & ! Current MPI rank 
-         mpiroot,              & ! 
+         mpiroot,              & ! Master MPI
          imp_physics,          & ! Choice of microphysics scheme
          imp_physics_thompson, & ! Choice of Thompson
          imp_physics_gfdl,     & ! Choice of GFDL
@@ -73,9 +66,10 @@ contains
          cosp_nsubcol
     ! Outputs
     character(len=*), intent(out) :: &
-         errmsg
+         errmsg              !
     integer, intent(out) :: &
-         errflg
+         errflg              !
+
     ! Local
     logical :: exists
     integer :: ios
@@ -106,47 +100,47 @@ contains
 
     ! Initialize requested simulators
     ! DJS: In CAM cosp_init(), see src/cosp.F90, is called instead of the indivdual simulators.
-    if (do_cosp_cloudsat .or. do_cosp_grLidar532) then
+    if (do_cloudsat .or. do_grLidar532) then
        call quickbeam_optics_init()
     endif
-    if (do_cosp_isccp) then
+    if (do_isccp) then
        call cosp_isccp_init(isccp_topht, isccp_topht_dir)
        endif
-    if (do_cosp_modis) then
+    if (do_modis) then
        call cosp_modis_init()
     endif
-    if (do_cosp_misr) then
+    if (do_misr) then
        call cosp_misr_init()
     endif
-    if (do_cosp_cloudsat) then
+    if (do_cloudsat) then
 !       call cosp_radar_init(csat_freq, csat_k2, csat_gas_abs, csat_do_ray, R_UNDEF, N_HYDRO,      &
 !            spaceborne_radar, csat_rcfg, csat_micro_scheme)
     endif
-    if (do_cosp_calipso) then
+    if (do_calipso) then
        call cosp_calipso_init()
     endif
-    if (do_cosp_grLidar532) then
+    if (do_grLidar532) then
        call cosp_grLidar532_init()
     endif
-    if (do_cosp_atlid) then
+    if (do_atlid) then
        call cosp_atlid_init()
     endif
-    if (do_cosp_parasol) then
+    if (do_parasol) then
        call cosp_parasol_init()
     endif
 
     !
     if (mpirank .eq. mpiroot) then
        if (do_cosp) then 
-          print*,'COSP configuration:'
+          print*,'COSP enabled:'
           print*,'  Number of COSP subcolumns                   = ', cosp_nsubcol
-          print*,'  Enable Cloudsat RADAR simulator             = ', do_cosp_cloudsat
-          print*,'  Enable Calipso LIDAR simulator              = ', do_cosp_calipso
-          print*,'  Enable EarthCare LIDAR simulator            = ', do_cosp_atlid
-          print*,'  Enable Ground-based (532nm) LIDAR simulator = ', do_cosp_grLidar532
-          print*,'  Enable ISCCP simulator                      = ', do_cosp_isccp
-          print*,'  Enable MISR simulator                       = ', do_cosp_misr
-          print*,'  Enable MODIS simulator                      = ', do_cosp_modis
+          print*,'  Enable Cloudsat RADAR simulator             = ', do_cloudsat
+          print*,'  Enable Calipso LIDAR simulator              = ', do_calipso
+          print*,'  Enable EarthCare LIDAR simulator            = ', do_atlid
+          print*,'  Enable Ground-based (532nm) LIDAR simulator = ', do_grLidar532
+          print*,'  Enable ISCCP simulator                      = ', do_isccp
+          print*,'  Enable MISR simulator                       = ', do_misr
+          print*,'  Enable MODIS simulator                      = ', do_modis
           print*,'  RADAR_SIM microphysics scheme               = ', trim(csat_micro_scheme)
        else
           print*, 'COSP not enabled'
@@ -159,68 +153,84 @@ contains
 !! \section arg_table_cosp_simulator_run
 !! \htmlinclude cosp_simulator_run.html
 !!
-  subroutine cosp_simulator_run(nCol, nLev, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk, prsl, prsi, phil, phii, tgrs,    &
-       qgrs, cld_frac, ccld_frac, top_at_1, con_g, iSFC, iTOA, do_cosp, do_cosp_isccp, do_cosp_misr,    &
-       do_cosp_modis, do_cosp_cloudsat, do_cosp_calipso, do_cosp_grLidar532, do_cosp_atlid, &
-       do_cosp_parasol, overlap, errmsg, errflg)
-    use mod_cosp,  only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs
+  subroutine cosp_simulator_run(nCol, nLev, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,&
+       prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
+       top_at_1, con_g, iSFC, iTOA, do_cosp, do_isccp, do_misr, do_modis, do_cloudsat,      &
+       do_calipso, do_grLidar532, do_atlid, do_parasol, overlap,                            &
+       f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
+       meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
+    use mod_cosp,  only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs, cosp_simulator
     implicit none
 
     ! Inputs
-    integer, intent(in)    :: &
-         nCol,    & ! Number of horizontal grid points
-         nLev,    & ! Number of vertical layers
-         cosp_nlvgrid, & !
-         cosp_nsubcol, & ! Number of COSP subcolumns
-         overlap,      & !
-         iSFC,    & ! Vertical index for surface
-         iTOA       ! Vertical index for TOA
     logical, intent(in) :: &
-         do_cosp,              &
-         do_cosp_isccp,        &
-         do_cosp_misr,         &
-         do_cosp_modis,        &
-         do_cosp_cloudsat,     &
-         do_cosp_calipso,      &
-         do_cosp_grLidar532,   &
-         do_cosp_atlid,        &
-         do_cosp_parasol,      &
-         top_at_1   ! Vertical ordering flag
+         do_cosp, do_isccp, do_misr, do_modis, do_cloudsat, do_calipso, do_grLidar532,      &
+         do_atlid, do_parasol, &
+         top_at_1              ! Vertical ordering flag
+    integer, intent(in) :: &
+         nCol,               & ! Number of horizontal grid points
+         nLev,               & ! Number of vertical layers
+         cosp_nlvgrid,       & !
+         cosp_nsubcol,       & ! Number of COSP subcolumns
+         overlap,            & ! Cloud overlap assumption
+         iSFC,               & ! Vertical index for surface
+         iTOA                  ! Vertical index for TOA
     real(kind_phys), intent(in) :: &
-         con_g      ! Physical constant: gravitational constant
+         con_g                 ! Physical constant: gravitational constant
     real(kind_phys), dimension(:), intent(in) :: & 
-         tsfc,    & ! Surface skin temperature (K)
-         coszen,  & ! Cosine of SZA
-         slmsk      ! Area type
+         tsfc,               & ! Surface skin temperature (K)
+         coszen,             & ! Cosine of SZA
+         slmsk                 ! Area type
     real(kind_phys), dimension(:,:), intent(in) :: & 
-         prsl,    & ! Pressure at model-layer centers (Pa)
-         tgrs,    & ! Temperature at model-layer centers (K)
-         prsi,    & ! Pressure at model-interfaces (Pa)
-         phii,    & ! Geopotential at model-interface (m2/s2)
-         phil,    & ! Geopotential at model-layer centers
-         cld_frac,& ! Total cloud fraction
-         ccld_frac  ! Convective cloud fraction
+         prsl,               & ! Pressure at model-layer centers (Pa)
+         tgrs,               & ! Temperature at model-layer centers (K)
+         prsi,               & ! Pressure at model-interfaces (Pa)
+         phii,               & ! Geopotential at model-interface (m2/s2)
+         phil,               & ! Geopotential at model-layer centers
+         cld_frac,           & ! Total cloud fraction
+         ccld_frac,          & ! Convective cloud fraction
+         cldtau_lw,          & ! In-cloud 10 micron optical depth
+         cldtau_sw             ! In-cloud 0.67 micron optical depth
     real(kind_phys), dimension(:,:,:), intent(in) :: & 
-         qgrs       ! Tracer concentrations (kg/kg)
+         qgrs                  ! Tracer concentrations (kg/kg)
 
     ! Outputs
     character(len=*), intent(out) :: &
          errmsg
     integer, intent(out) :: &
          errflg
+    real(kind_phys), dimension(:,:,:), intent(inout) :: &
+         f1isccp_cosp        ! ISCCP CFAD
+    real(kind_phys), dimension(:,:), intent(inout) :: &
+         tau_isccp,        & ! ISCCP subcolumn optical-depth
+         cldptop_isccp       ! ISCCP subcolumn cloud-top pressure
+    real(kind_phys), dimension(:), intent(inout) :: &
+         cldtot_isccp,     & ! ISCCP mean cloud-fraction
+         meancldalb_isccp, & ! ISCCP mean cloud albedo
+         meanptop_isccp,   & ! ISCCP mean cloud-top pressure
+         meantau_isccp,    & ! ISCCP mean optical-depth
+         meantb_isccp,     & ! ISCCP mean brightness temperature
+         meantbclr_isccp     ! ISCCP mean brightness temperature (clear-sky)
 
     ! Local
     type(cosp_outputs)        :: cospOUT
     type(cosp_optical_inputs) :: cospIN
     type(cosp_column_inputs)  :: cospstateIN
     integer, dimension(nCol)  :: sunlit
-    integer :: iCol
+    integer :: iCol, nerror, iErr, vs, iprs, itau, iSubCol
+    character(len=256),dimension(100) :: cosp_status
+    integer :: iSFCa = 1, iTOAa = 127
+    logical :: top_at_1a = .false.
 
     if (.not. do_cosp) return
 
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
+
+    ! Vertical stride direction
+    if (top_at_1a)       vs = 1
+    if (.not. top_at_1a) vs = -1
     
     ! Compute sunlit flag.
     sunlit(:) = 0
@@ -231,8 +241,8 @@ contains
     enddo
 
     ! Type containing COSP outputs.
-    call construct_cosp_outputs(do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat, do_cosp_calipso,    &
-         do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, nCol, cosp_nsubcol, nLev, cosp_nlvgrid,    &
+    call construct_cosp_outputs(do_isccp, do_modis, do_misr, do_cloudsat, do_calipso,    &
+         do_grLidar532, do_atlid, do_parasol, nCol, cosp_nsubcol, nLev, cosp_nlvgrid,    &
          cospOUT)
 
     ! Host-model state for COSP (toa-2-sfc vertical ordering).
@@ -240,27 +250,81 @@ contains
     cospstateIN%sunlit          = sunlit(:)
     cospstateIN%skt             = tsfc(:)
     cospstateIN%land            = slmsk(:)
-    cospstateIN%at              = tgrs(:,iTOA:iSFC)
-    cospstateIN%pfull           = prsl(:,iTOA:iSFC)
-    cospstateIN%phalf           = prsi(:,iTOA+1:iSFC)
-    cospstateIN%qv              = qgrs(:,iTOA:iSFC,1)
+    cospstateIN%at              = tgrs(:,iTOAa:iSFCa:vs)
+    cospstateIN%pfull           = prsl(:,iTOAa:iSFCa:vs)
+    cospstateIN%phalf           = prsi(:,iTOAa+1:iSFCa:vs)
+    cospstateIN%qv              = qgrs(:,iTOAa:iSFCa:vs,1)
     cospstateIN%hgt_matrix      = phil/con_g
     cospstateIN%hgt_matrix_half = phii/con_g
 
     ! Derived (optical) inputs for COSP.
-    call construct_cospIN(do_cosp_isccp, do_cosp_modis, do_cosp_misr, do_cosp_cloudsat, do_cosp_calipso,          &
-         do_cosp_grLidar532, do_cosp_atlid, do_cosp_parasol, nCol, cosp_nsubcol, nLev, cospIN)
+    call construct_cospIN(do_isccp, do_modis, do_misr, do_cloudsat, do_calipso,          &
+         do_grLidar532, do_atlid, do_parasol, nCol, cosp_nsubcol, nLev, cospIN)
 
     ! Call subsample_and_optics
-    call subsample_and_optics_CAM6(nCol, cosp_nsubcol, nLev, prsi(:,iSFC), cld_frac,     &
-         ccld_frac, overlap, cospIN)
+    call subsample_and_optics_CAM6(nCol, cosp_nsubcol, nLev, do_isccp, do_misr, do_modis,&
+         prsi(:,iSFCa), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
+
+    ! Call COSP
+    cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT, start_idx=1,              &
+         stop_idx=nCol, debug=.false.)
+
+    ! Error checking
+    nerror = 0
+    do iErr = 1, ubound(cosp_status, 1)
+       if (len_trim(cosp_status(iErr)) > 0) then
+          errmsg = "cosp_simulator: ERROR: "//trim(cosp_status(iErr))
+          nerror = nerror + 1
+       end if
+    end do
+    if (nerror > 0) errflg = -1
+
+    ! Set dark-scenes to fill value. Only done for passive simulators
+    if (do_isccp) then
+       ! 1D
+       where(sunlit(1:nCol) .eq. 0)
+          cospOUT%isccp_totalcldarea(1:nCol)  = R_UNDEF
+          cospOUT%isccp_meanptop(1:nCol)      = R_UNDEF
+          cospOUT%isccp_meantaucld(1:nCol)    = R_UNDEF
+          cospOUT%isccp_meanalbedocld(1:nCol) = R_UNDEF
+          cospOUT%isccp_meantb(1:nCol)        = R_UNDEF
+          cospOUT%isccp_meantbclr(1:nCol)     = R_UNDEF
+       end where
+       ! 2D
+       do iSubCol=1,cosp_nsubcol
+          where (sunlit(1:nCol) .eq. 0)
+             cospOUT%isccp_boxtau(1:nCol,iSubCol)  = R_UNDEF
+             cospOUT%isccp_boxptop(1:nCol,iSubCol) = R_UNDEF
+          end where
+       enddo
+       ! 3D
+       do iprs=1,nprs_cosp
+          do itau=1,ntau_cosp
+             where(sunlit(1:nCol) .eq. 0)
+                cospOUT%isccp_fq(1:nCol,iprs,itau) = R_UNDEF
+             end where
+          end do
+       end do
+    endif
+
+    ! Copy COSP outputs to host interstitials
+    f1isccp_cosp     = cospOUT%isccp_fq
+    tau_isccp        = cospOUT%isccp_boxtau
+    cldptop_isccp    = cospOUT%isccp_boxptop
+    cldtot_isccp     = cospOUT%isccp_totalcldarea
+    meanptop_isccp   = cospOUT%isccp_meanptop
+    meantau_isccp    = cospOUT%isccp_meantaucld
+    meancldalb_isccp = cospOUT%isccp_meanalbedocld
+    meantb_isccp     = cospOUT%isccp_meantb
+    meantbclr_isccp  = cospOUT%isccp_meantbclr
 
   end subroutine cosp_simulator_run
-
+     
   ! ######################################################################################
   ! SUBROUTINE subsample_and_optics_CAM6
   ! ######################################################################################
-  subroutine subsample_and_optics_CAM6(nCol, nSubCol, nLev, sfcP, cld_frac, ccld_frac, overlap, cospIN)
+  subroutine subsample_and_optics_CAM6(nCol, nSubCol, nLev, do_isccp, do_misr, do_modis, &
+       sfcP, cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
     use mod_scops,      only: scops
     use mod_prec_scops, only: prec_scops
     use mod_rng,        only: rng_state, init_rng
@@ -268,28 +332,63 @@ contains
     implicit none
 
     ! Inputs
+    logical, intent(in) :: do_isccp, do_misr, do_modis
     integer, intent(in) :: nCol, nSubCol, nLev, overlap
     real(kind_phys), dimension(nCol), intent(in) :: sfcP
-    real(kind_phys), dimension(nCol,nLev), intent(in) :: cld_frac, ccld_frac
+    real(kind_phys), dimension(nCol,nLev), intent(in) :: cld_frac, ccld_frac, cldtau_lw, &
+         cldtau_sw
     type(cosp_optical_inputs) :: cospIN
 
     ! Outputs
 
     ! Locals
-    type(rng_state),allocatable,dimension(:) :: rngs
-    integer,dimension(:),allocatable         :: seed
+    integer :: iSub
+    type(rng_state), dimension(nCol)      :: rngs
+    integer,         dimension(nCol)      :: seed
+    real(kind_phys), dimension(nCol,nLev) :: cldemis_lw_strat, cldemis_lw_conv,          &
+         cldtau_sw_strat, cldtau_sw_conv
 
     ! RNG used for subcolumn generation
-    allocate(rngs(nCol),seed(nCol))
     seed = int(sfcP)
     if (nCol .gt. 1) seed=(sfcP-int(sfcP))*1000000 
     call init_rng(rngs, seed)
 
     ! Call scops
     call scops(nCol, nLev, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
-    deallocate(seed,rngs)
     
     ! Call prec_scops
+
+    ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
+    if (do_isccp) then
+       cldemis_lw_strat = 1._kind_phys - exp(-cldtau_lw)
+       cldemis_lw_conv  = cldemis_lw_strat
+       !
+       cospIN%emiss_11(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             cospIN%emiss_11(:,iSub,:) = cldemis_lw_conv
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             cospIN%emiss_11(:,iSub,:) = cldemis_lw_strat
+          endwhere
+       enddo
+    endif
+
+    ! 0.67 micron optical-depth (in-cloud), needed by ISCCP, MISR and MODIS simulators.
+    if (do_isccp .or. do_modis .or. do_misr) then
+       cldtau_sw_strat = cldtau_sw
+       cldtau_sw_conv  = cldtau_sw
+       !
+       cospIN%tau_067(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             cospIN%tau_067(:,iSub,:) = cldtau_sw_conv
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             cospIN%tau_067(:,iSub,:) = cldtau_sw_strat
+          endwhere
+       enddo
+    endif
 
   end subroutine subsample_and_optics_CAM6
 
@@ -444,7 +543,7 @@ contains
     integer,intent(in) :: &
          nCol, nSubCol, nLev
     logical, intent(in) :: &
-         do_isccp, do_modis, do_misr, do_cloudsat, do_calipso, do_grLidar532, do_atlid,   &
+         do_isccp, do_modis, do_misr, do_cloudsat, do_calipso, do_grLidar532, do_atlid,  &
          do_parasol
     ! Outputs 
     type(cosp_optical_inputs),intent(out) :: y

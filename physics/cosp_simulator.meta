@@ -56,56 +56,56 @@
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_isccp]
+[do_isccp]
   standard_name = flag_for_cosp_isccp_diagnostics
   long_name = flag for cosp ISCCP diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_misr]
+[do_misr]
   standard_name = flag_for_cosp_misr_diagnostics
   long_name = flag for cosp MISR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_modis]
+[do_modis]
   standard_name = flag_for_cosp_modis_diagnostics
   long_name = flag for cosp MODIS diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_cloudsat]
+[do_cloudsat]
   standard_name = flag_for_cosp_Cloudsat_diagnostics
   long_name = flag for cosp Cloudsat RADAR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_calipso]
+[do_calipso]
   standard_name = flag_for_cosp_Calipso_diagnostics
   long_name = flag for cosp Calipso LIDAR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_grLidar532]
+[do_grLidar532]
   standard_name = flag_for_cosp_grLidar532_diagnostics
   long_name = flag for cosp ground-based LIDAR (532nm) diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_atlid]
+[do_atlid]
   standard_name = flag_for_cosp_atlid_diagnostics
   long_name = flag for cosp EarthCare LIDAR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_parasol]
+[do_parasol]
   standard_name = flag_for_cosp_parasol_diagnostics
   long_name = flag for cosp parasol diagnostics
   units = flag
@@ -233,7 +233,7 @@
   standard_name = total_cloud_fraction
   long_name = layer total cloud fraction
   units = frac
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -241,6 +241,22 @@
   standard_name = convective_cloud_fraction_for_RRTMGP
   long_name = layer convective cloud fraction
   units = frac
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[cldtau_lw]
+  standard_name = cloud_optical_depth_layers_at_10mu_band
+  long_name = approx 10mu band layer cloud optical depth
+  units = none
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[cldtau_sw]
+  standard_name = cloud_optical_depth_layers_at_0p55mu_band
+  long_name = approx .55mu band layer cloud optical depth
+  units = none
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
@@ -297,56 +313,56 @@
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_isccp]
+[do_isccp]
   standard_name = flag_for_cosp_isccp_diagnostics
   long_name = flag for cosp ISCCP diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_misr]
+[do_misr]
   standard_name = flag_for_cosp_misr_diagnostics
   long_name = flag for cosp MISR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_modis]
+[do_modis]
   standard_name = flag_for_cosp_modis_diagnostics
   long_name = flag for cosp MODIS diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_cloudsat]
+[do_cloudsat]
   standard_name = flag_for_cosp_Cloudsat_diagnostics
   long_name = flag for cosp Cloudsat RADAR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_calipso]
+[do_calipso]
   standard_name = flag_for_cosp_Calipso_diagnostics
   long_name = flag for cosp Calipso LIDAR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_grLidar532]
+[do_grLidar532]
   standard_name = flag_for_cosp_grLidar532_diagnostics
   long_name = flag for cosp ground-based LIDAR (532nm) diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_atlid]
+[do_atlid]
   standard_name = flag_for_cosp_atlid_diagnostics
   long_name = flag for cosp EarthCare LIDAR diagnostics
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[do_cosp_parasol]
+[do_parasol]
   standard_name = flag_for_cosp_parasol_diagnostics
   long_name = flag for cosp parasol diagnostics
   units = flag
@@ -361,6 +377,78 @@
   type = real
   kind = kind_phys
   intent = in
+[f1isccp_cosp]
+  standard_name = isccp_cloud_frequency_by_height_diagram
+  long_name = ISCCP cloud frequency by height diagram
+  units = 1
+  dimensions = (horizontal_loop_extent,7,7)
+  type = real
+  kind = kind_phys
+  intent = inout
+[cldtot_isccp]
+  standard_name = isccp_mean_cloud_fraction
+  long_name = ISCCP mean cloud fraction
+  units = 1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+[meancldalb_isccp]
+  standard_name = isccp_mean_cloud_albedo
+  long_name = ISCCP mean cloud albedo
+  units = 1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+[meanptop_isccp]
+  standard_name = isccp_mean_cloud_top_pressure
+  long_name = ISCCP mean cloud top pressure
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+[meantau_isccp]
+  standard_name = isccp_mean_cloud_optical_depth
+  long_name = ISCCP mean cloud optical depth
+  units = 1
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+[meantb_isccp]
+  standard_name = isccp_mean_cloud_brightness_temperature
+  long_name = ISCCP mean cloud brightness temperature
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+[meantbclr_isccp]
+  standard_name = isccp_mean_cloud_brightness_temperature_for_clear_sky_conditions
+  long_name = ISCCP mean cloud brightness temperature for clear sky conditions
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = inout
+[tau_isccp]
+  standard_name = isccp_cloud_optical_depth
+  long_name = ISCCP cloud optical depth
+  units = 1
+  dimensions = (horizontal_loop_extent,number_of_cosp_subcolumns)
+  type = real
+  kind = kind_phys
+  intent = inout
+[cldptop_isccp]
+  standard_name = isccp_cloud_top_pressure
+  long_name = ISCCP cloud top pressure
+  units = Pa
+  dimensions = (horizontal_loop_extent,number_of_cosp_subcolumns)
+  type = real
+  kind = kind_phys
+  intent = inout
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
