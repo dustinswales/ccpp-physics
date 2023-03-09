@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = cosp_simulator
   type = scheme
-  dependencies = cosp_kinds.F90,cosp/src/cosp_config.F90,cosp/src/cosp.F90,cosp/src/cosp_stats.F90,cosp/src/simulator/quickbeam/quickbeam.F90,cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
+  dependencies = cosp_kinds.F90,module_cosp.F90,cosp/src/cosp_config.F90,cosp/src/cosp.F90,cosp/src/cosp_stats.F90,cosp/src/simulator/quickbeam/quickbeam.F90,cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
 
 ########################################################################
 [ccpp-arg-table]
