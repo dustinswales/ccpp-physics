@@ -377,6 +377,27 @@
   type = real
   kind = kind_phys
   intent = in
+[cosp_mp]
+  standard_name = flag_for_cloud_microphysics_used_in_cosp
+  long_name = flag for cloud microphysics used to create COSP diagnostics
+  units     = 1
+  dimensions = ()
+  type = integer
+  intent = in
+[cosp_mp_cam6]
+  standard_name = flag_for_CAM6_cloud_microphysics_used_in_cosp
+  long_name = flag for CAM6 cloud microphysics used to create COSP diagnostics
+  units     = 1
+  dimensions = ()
+  type = integer
+  intent = in
+[cosp_mp_ufs]
+  standard_name = flag_for_UFS_cloud_microphysics_used_in_cosp
+  long_name = flag for UFS cloud microphysics used to create COSP diagnostics
+  units     = 1
+  dimensions = ()
+  type = integer
+  intent = in
 [f1isccp_cosp]
   standard_name = isccp_cloud_frequency_by_height_diagram
   long_name = ISCCP cloud frequency by height diagram

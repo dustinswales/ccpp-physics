@@ -157,6 +157,7 @@ contains
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
        top_at_1, con_g, iSFC, iTOA, do_cosp, do_isccp, do_misr, do_modis, do_cloudsat,      &
        do_calipso, do_grLidar532, do_atlid, do_parasol, overlap,                            &
+       cosp_mp, cosp_mp_cam6, cosp_mp_ufs,                                                  &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
        meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
     use mod_cosp,  only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs, cosp_simulator
@@ -174,7 +175,10 @@ contains
          cosp_nsubcol,       & ! Number of COSP subcolumns
          overlap,            & ! Cloud overlap assumption
          iSFC,               & ! Vertical index for surface
-         iTOA                  ! Vertical index for TOA
+         iTOA,               & ! Vertical index for TOA
+         cosp_mp,            & ! Choice of subsampling and optics.
+         cosp_mp_cam6,       & ! Choice of subsampling and optics CAM6 method.
+         cosp_mp_ufs           ! Choice of subsampling and optics UFS method.
     real(kind_phys), intent(in) :: &
          con_g                 ! Physical constant: gravitational constant
     real(kind_phys), dimension(:), intent(in) :: & 
@@ -261,11 +265,23 @@ contains
     call construct_cospIN(do_isccp, do_modis, do_misr, do_cloudsat, do_calipso,          &
          do_grLidar532, do_atlid, do_parasol, nCol, cosp_nsubcol, nLev, cospIN)
 
+    !
     ! Call subsample_and_optics
-    call subsample_and_optics_CAM6(nCol, cosp_nsubcol, nLev, do_isccp, do_misr, do_modis,&
-         prsi(:,iSFCa), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
+    !
+    ! Couple COSP to CAM6 microphysics.
+    if (cosp_mp == cosp_mp_cam6) then
+       call subsample_and_optics_CAM6(nCol, cosp_nsubcol, nLev, do_isccp, do_misr,       &
+            do_modis, prsi(:,iSFCa), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, &
+            cospIN)
+    endif
+    ! Couple COSP to UFS microphysics.
+    if (cosp_mp == cosp_mp_ufs) then
+       call subsample_and_optics_UFS(cospIN)
+    endif
 
+    !
     ! Call COSP
+    !
     cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT, start_idx=1,              &
          stop_idx=nCol, debug=.false.)
 
