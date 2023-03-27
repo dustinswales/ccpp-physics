@@ -20,11 +20,10 @@
               lslwr, lsswr, isubc_lw, isubc_sw, icsdsw, icsdlw, cnx, cny, isc, jsc,    &
               imap, jmap, sec, kdt, imp_physics, imp_physics_zhao_carr, ipsd0, ipsdlim,&
               ps_2delt, ps_1delt, t_2delt, t_1delt, qv_2delt, qv_1delt, t, qv, ps,     &
-              errmsg, errflg)
+              qmin, errmsg, errflg)
 
          use mersenne_twister,          only: random_setseed, random_index, random_stat
          use machine,                   only: kind_phys
-         use radcons,                   only: qmin, con_100
 
          implicit none
 
@@ -36,7 +35,7 @@
          logical,                intent(in)    :: lslwr, lsswr
          integer,                intent(inout) :: icsdsw(:), icsdlw(:)
          integer,                intent(in)    :: imap(:), jmap(:)
-         real(kind_phys),        intent(in)    :: sec
+         real(kind_phys),        intent(in)    :: sec, qmin
          real(kind_phys),        intent(inout) :: ps_2delt(:)
          real(kind_phys),        intent(inout) :: ps_1delt(:)
          real(kind_phys),        intent(inout) :: t_2delt(:,:)
@@ -69,7 +68,7 @@
                  icsdlw(ix) = rseeds(ix,2)
                enddo
              else
-               ipseed = mod(nint(con_100*sqrt(sec)), ipsdlim) + 1 + ipsd0
+               ipseed = mod(nint(100.0_kind_phys*sqrt(sec)), ipsdlim) + 1 + ipsd0
                call random_setseed (ipseed, stat)
                call random_index (ipsdlim, numrdm, stat)
 

@@ -45,11 +45,11 @@
         clouds9, cldsa, cldfra, cldfra2d, lwp_ex,iwp_ex, lwp_fc,iwp_fc,        &
         faersw1, faersw2, faersw3, faerlw1, faerlw2, faerlw3, alpha,           &
         aero_dir_fdb, smoke_ext, dust_ext,                                     &
-        spp_wts_rad, spp_rad, rrfs_smoke_band, ico2, errmsg, errflg)
+        spp_wts_rad, spp_rad, rrfs_smoke_band, ico2, itsfc, qmin, qme5, qme6,  &
+        epsq, prsmin, errmsg, errflg)
 
       use machine,                   only: kind_phys
 
-      use radcons,                   only: itsfc, qmin, qme5, qme6, epsq, prsmin
       use funcphys,                  only: fpvs
 
       use module_radiation_astronomy,only: coszmn                      ! sol_init, sol_update

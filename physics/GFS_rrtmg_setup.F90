@@ -10,27 +10,8 @@ module GFS_rrtmg_setup
 
    implicit none
 
-   public GFS_rrtmg_setup_init, GFS_rrtmg_setup_timestep_init, GFS_rrtmg_setup_finalize
-
+   public GFS_rrtmg_setup_init, GFS_rrtmg_setup_timestep_init
    private
-
-   logical :: is_initialized = .false.
-
-   !  ---  version tag and last revision date
-   character(40), parameter ::                                       &
-        &   VTAGRAD='NCEP-Radiation_driver    v5.2  Jan 2013 '
-   !    &   VTAGRAD='NCEP-Radiation_driver    v5.1  Nov 2012 '
-   !    &   VTAGRAD='NCEP-Radiation_driver    v5.0  Aug 2012 '
-
-   !> new data input control variables (set/reset in subroutine radupdate):
-   integer :: month0 = 0
-   integer :: iyear0 = 0
-   integer :: monthd = 0
-
-   !> control flag for the first time of reading climatological ozone data
-   !! (set/reset in subroutines radinit/radupdate, it is used only if the
-   !! control parameter ntoz=0)
-   logical :: loz1st = .true.
 
    contains
 
@@ -172,8 +153,6 @@ module GFS_rrtmg_setup
       errmsg = ''
       errflg = 0
 
-      if (is_initialized) return
-      
       if (do_RRTMGP) then
         write(errmsg,'(*(a))') "Logic error: do_RRTMGP must be set to .false."
         errflg = 1
@@ -234,8 +213,6 @@ module GFS_rrtmg_setup
         print *,' return from rad_initialize (GFS_rrtmg_setup_init) - after calling RRTMG initialization'
       endif
 !
-      is_initialized = .true.
-!
       return
 
    end subroutine GFS_rrtmg_setup_init
@@ -245,8 +222,11 @@ module GFS_rrtmg_setup
 !!
    subroutine GFS_rrtmg_setup_timestep_init (idate, jdate, deltsw, deltim, &
         lsswr, me, iaermdl, iaerflg, isol, aeros_file, slag, sdec, cdec,   &
-        solcon, con_pi, co2dat_file, co2gbl_file, ictm, ico2, ntoz, errmsg, errflg)
-
+        solcon, con_pi, co2dat_file, co2gbl_file, month0, monthd, iyear0,  &
+        loz1st, ictm, ico2, ntoz, errmsg, errflg)
+      use module_radiation_astronomy, only : sol_update
+      use module_radiation_aerosols,  only : aer_update
+      use module_radiation_gases,     only : gas_update
       implicit none
 
       ! interface variables
@@ -265,131 +245,15 @@ module GFS_rrtmg_setup
       real(kind=kind_phys), intent(out) :: solcon
       character(len=*),     intent(out) :: errmsg
       integer,              intent(out) :: errflg
+      integer,              intent(inout) :: month0, monthd, iyear0
+      logical,              intent(inout) :: loz1st
 
-      ! Check initialization state
-      if (.not.is_initialized) then
-         write(errmsg, fmt='((a))') 'GFS_rrtmg_setup_timestep_init called before GFS_rrtmg_setup_init'
-         errflg = 1
-         return
-      end if
-
-      ! Initialize the CCPP error handling variables
-      errmsg = ''
-      errflg = 0
-
-      call radupdate(idate,jdate,deltsw,deltim,lsswr,me,iaermdl, iaerflg,isol,aeros_file,&
-           slag,sdec,cdec,solcon,con_pi,co2dat_file,co2gbl_file,ictm,ico2,ntoz,errflg,errmsg)
-
-   end subroutine GFS_rrtmg_setup_timestep_init
-
-!> \section arg_table_GFS_rrtmg_setup_finalize Argument Table
-!! \htmlinclude GFS_rrtmg_setup_finalize.html
-!!
-   subroutine GFS_rrtmg_setup_finalize (errmsg, errflg)
-
-      implicit none
-
-      character(len=*),          intent(  out) :: errmsg
-      integer,                   intent(  out) :: errflg
-
-      ! Initialize the CCPP error handling variables
-      errmsg = ''
-      errflg = 0
-
-      if (.not.is_initialized) return
-
-      ! do finalization stuff if needed
-
-      is_initialized = .false.
-
-   end subroutine GFS_rrtmg_setup_finalize
-
-!> This subroutine checks and updates time sensitive data used by
-!! radiation computations. This subroutine needs to be placed inside
-!! the time advancement loop but outside of the horizontal grid loop.
-!! It is invoked at radiation calling frequncy but before any actual
-!! radiative transfer computations.
-!! \param idate          NCEP absolute date and time of intial condition
-!!                       (year,month,day,time-zone,hour,minute,second,
-!!                        mil-second)
-!! \param jdate          NCEP absolute date and time at forecast time
-!!                       (year,month,day,time-zone,hour,minute,second,
-!!                        mil-second)
-!! \param deltsw         SW radiation calling time interval in seconds
-!! \param deltim         model advancing time-step duration in seconds
-!! \param lsswr          logical control flag for SW radiation calculations
-!! \param me             print control flag
-!! \param slag           equation of time in radians
-!! \param sdec,cdec      sine and cosine of the solar declination angle
-!! \param solcon         solar constant adjusted by sun-earth distance \f$(W/m^2)\f$
-!> \section gen_radupdate General Algorithm
-!-----------------------------------
-      subroutine radupdate( idate,jdate,deltsw,deltim,lsswr,me, iaermdl,&
-           iaerflg, isol, aeros_file, slag,sdec,cdec,solcon, con_pi,    &
-           co2dat_file,co2gbl_file, ictm, ico2, ntoz, errflg, errmsg)
-!...................................
-
-! =================   subprogram documentation block   ================ !
-!                                                                       !
-! subprogram:   radupdate   calls many update subroutines to check and  !
-!   update radiation required but time varying data sets and module     !
-!   variables.                                                          !
-!                                                                       !
-! usage:        call radupdate                                          !
-!                                                                       !
-! attributes:                                                           !
-!   language:  fortran 90                                               !
-!   machine:   ibm sp                                                   !
-!                                                                       !
-!  ====================  definition of variables  ====================  !
-!                                                                       !
-! input parameters:                                                     !
-!   idate(8)       : ncep absolute date and time of initial condition   !
-!                    (yr, mon, day, t-zone, hr, min, sec, mil-sec)      !
-!   jdate(8)       : ncep absolute date and time at fcst time           !
-!                    (yr, mon, day, t-zone, hr, min, sec, mil-sec)      !
-!   deltsw         : sw radiation calling frequency in seconds          !
-!   deltim         : model timestep in seconds                          !
-!   lsswr          : logical flags for sw radiation calculations        !
-!   me             : print control flag                                 !
-!                                                                       !
-!  outputs:                                                             !
-!   slag           : equation of time in radians                        !
-!   sdec, cdec     : sin and cos of the solar declination angle         !
-!   solcon         : sun-earth distance adjusted solar constant (w/m2)  !
-!                                                                       !
-!  subroutines called: sol_update, aer_update, gas_update               !
-!                                                                       !
-!  ===================================================================  !
-!
-      use module_radiation_astronomy, only : sol_update
-      use module_radiation_aerosols,  only : aer_update
-      use module_radiation_gases,     only : gas_update
-
-      implicit none
-
-!  ---  inputs:
-      integer, intent(in) :: idate(:), jdate(:), me, iaermdl, iaerflg, isol, ictm, ntoz, ico2
-      logical, intent(in) :: lsswr
-      character(len=26),intent(in) :: aeros_file,co2dat_file,co2gbl_file
-
-      real (kind=kind_phys), intent(in) :: deltsw, deltim, con_pi
-
-!  ---  outputs:
-      real (kind=kind_phys), intent(out) :: slag, sdec, cdec, solcon
-      character(len=*),     intent(out) :: errmsg
-      integer,              intent(out) :: errflg
-
-!  ---  locals:
+      ! Locals
       integer :: iyear, imon, iday, ihour
       integer :: kyear, kmon, kday, khour
-
       logical :: lmon_chg       ! month change flag
       logical :: lco2_chg       ! cntrl flag for updating co2 data
       logical :: lsol_chg       ! cntrl flag for updating solar constant
-!
-!===> ...  begin here
-!
 
       ! Initialize the CCPP error handling variables
       errmsg = ''
@@ -475,7 +339,7 @@ module GFS_rrtmg_setup
 !
       return
 !...................................
-      end subroutine radupdate
+    end subroutine GFS_rrtmg_setup_timestep_init
 !-----------------------------------
 !> @}
 

@@ -2,7 +2,7 @@
   name = GFS_rrtmg_pre
   type = scheme
   dependencies = funcphys.f90,iounitdef.f,machine.F,module_bfmicrophysics.f,module_mp_radar.F90,module_mp_thompson.F90
-  dependencies = module_mp_thompson_make_number_concentrations.F90,radcons.f90,radiation_aerosols.f
+  dependencies = module_mp_thompson_make_number_concentrations.F90,radiation_aerosols.f
   dependencies = radiation_astronomy.f,radiation_clouds.f,radiation_gases.f,radlw_param.f,radsw_param.f,surface_perturbation.F90,radiation_cloud_overlap.F90
 
 ########################################################################
@@ -1474,6 +1474,53 @@
   units = count
   dimensions = ()
   type = integer
+  intent = in
+[itsfc]
+  standard_name = flag_to_control_longwave_radiation_surface_temperature_interface
+  long_name = control flag for LW surface temperature at air/ground interface
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[qmin]
+  standard_name = lower_limit_of_saturation_vapor_pressure
+  long_name = lower limit of saturation vapor pressure
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[qme5]
+  standard_name = lower_limit_of_specific_humidity_1
+  long_name = lower limit of specific humidity 1
+  units = kg kg-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[qme6]
+  standard_name = lower_limit_of_specific_humidity_2
+  long_name = lower limit of specific humidity 2
+  units = kg kg-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[epsq]
+  standard_name = lower_limit_of_change_in_specific_humidity
+  long_name = lower limit of change in specific humidity
+  units = kg kg-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[prsmin]
+  standard_name = lower_limit_of_toa_pressure_in_radiation
+  long_name = lower limit of toa pressure value
+  units = mb
+  dimensions = ()
+  type = real
+  kind = kind_phys
   intent = in
 [errmsg]
   standard_name = ccpp_error_message

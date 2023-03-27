@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = sgscloud_radpre
   type = scheme
-  dependencies = funcphys.f90,iounitdef.f,machine.F,module_bfmicrophysics.f,physcons.F90,radcons.f90,radiation_clouds.f,module_mp_thompson.F90
+  dependencies = funcphys.f90,iounitdef.f,machine.F,module_bfmicrophysics.f,radiation_clouds.f,module_mp_thompson.F90
 
 ########################################################################
 [ccpp-arg-table]
@@ -433,6 +433,14 @@
   units = flag
   dimensions = ()
   type = integer
+  intent = in
+[qmin]
+  standard_name = lower_limit_of_saturation_vapor_pressure
+  long_name = lower limit of saturation vapor pressure
+  units = Pa
+  dimensions = ()
+  type = real
+  kind = kind_phys
   intent = in
 [errmsg]
   standard_name = ccpp_error_message

@@ -53,18 +53,17 @@
            nlay, plyr, xlat, dz,de_lgth, &
            cldsa,mtopa,mbota,            &
            imp_physics, imp_physics_gfdl,&
-           iovr,                         &
+           iovr, qmin,                   &
            errmsg, errflg                )
 
       use machine , only : kind_phys
       use module_radiation_clouds, only : gethml
-      use radcons,  only: qmin          ! Minimum values for various calculations
       use funcphys, only: fpvs          ! Function to compute sat. vapor pressure over liq.
 !------------------------------------------------------------------- 
       implicit none
 !------------------------------------------------------------------- 
       ! Interface variables
-      real(kind=kind_phys), intent(in) :: con_g, con_pi, eps, epsm1
+      real(kind=kind_phys), intent(in) :: con_g, con_pi, eps, epsm1, qmin
       real(kind=kind_phys), intent(in) :: r_v, cpv, rcp
       real(kind=kind_phys), intent(in) :: xlv, xlf, cp
       real(kind=kind_phys), intent(in) :: dt
