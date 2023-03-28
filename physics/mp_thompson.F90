@@ -20,8 +20,6 @@ module mp_thompson
 
       private
 
-      logical :: is_initialized = .False.
-
       integer, parameter :: ext_ndiag3d = 37
 
    contains
@@ -31,7 +29,7 @@ module mp_thompson
 !! \htmlinclude mp_thompson_init.html
 !!
       subroutine mp_thompson_init(ncol, nlev, con_g, con_rd, con_eps,      &
-                                  restart, imp_physics,                    &
+                                  restart, imp_physics, is_initialized,    &
                                   imp_physics_thompson, convert_dry_rho,   &
                                   spechum, qc, qr, qi, qs, qg, ni, nr,     &
                                   is_aerosol_aware,  merra2_aerosol_aware, &
@@ -48,6 +46,7 @@ module mp_thompson
          integer,                   intent(in   ) :: nlev
          real(kind_phys),           intent(in   ) :: con_g, con_rd, con_eps
          logical,                   intent(in   ) :: restart
+         logical,                   intent(inout) :: is_initialized
          integer,                   intent(in   ) :: imp_physics
          integer,                   intent(in   ) :: imp_physics_thompson
          ! Hydrometeors
@@ -327,7 +326,7 @@ module mp_thompson
                               first_time_step, istep, nsteps,      &
                               prcp, rain, graupel, ice, snow, sr,  &
                               refl_10cm, reset_dBZ, do_radar_ref,  &
-                              aerfld,                              &
+                              aerfld, is_initialized,              &
                               mpicomm, mpirank, mpiroot, blkno,    &
                               ext_diag, diag3d, reset_diag3d,      &
                               spp_wts_mp, spp_mp, n_var_spp,       &
@@ -339,7 +338,7 @@ module mp_thompson
          implicit none
 
          ! Interface variables
-
+         logical,                   intent(in   ) :: is_initialized
          ! Dimensions and constants
          integer,                   intent(in   ) :: ncol
          integer,                   intent(in   ) :: nlev
@@ -861,12 +860,13 @@ module mp_thompson
 !> \section arg_table_mp_thompson_finalize Argument Table
 !! \htmlinclude mp_thompson_finalize.html
 !!
-      subroutine mp_thompson_finalize(errmsg, errflg)
+      subroutine mp_thompson_finalize(is_initialized, errmsg, errflg)
 
          implicit none
 
          character(len=*),          intent(  out) :: errmsg
          integer,                   intent(  out) :: errflg
+         logical,                   intent(inout) :: is_initialized
 
          ! Initialize the CCPP error handling variables
          errmsg = ''
