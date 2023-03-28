@@ -14,7 +14,6 @@
 
       use mersenne_twister, only: random_setseed, random_number
 
-      use ozne_def, only : levozp, oz_coeff, oz_lat, oz_pres, oz_time, ozplin
       use ozinterp, only : read_o3data, setindxoz, ozinterpol
 
       use h2o_def,   only : levh2o, h2o_coeff, h2o_lat, h2o_pres, h2o_time, h2oplin
@@ -80,6 +79,7 @@
               zwtxy, xlaixy, xsaixy, lfmassxy, stmassxy, rtmassxy, woodxy, stblcpxy, fastcpxy,     &
               smcwtdxy, deeprechxy, rechxy, snowxy, snicexy, snliqxy, tsnoxy , smoiseq, zsnsoxy,   &
               slc, smc, stc, tsfcl, snowd, canopy, tg3, stype, con_t0c, lsm_cold_start, nthrds,    &
+              kozpl, latsozp, levozp, timeoz, oz_coeff, oz_lat, oz_pres, oz_time, ozplin,          &
               errmsg, errflg)
 
          implicit none
@@ -90,6 +90,8 @@
          integer,              intent(in)    :: idate(:)
          real(kind_phys),      intent(in)    :: fhour
          real(kind_phys),      intent(in)    :: xlat_d(:), xlon_d(:)
+         integer,              intent(in)    :: kozpl, latsozp, levozp, timeoz, oz_coeff
+         real(kind_phys),      intent(inout) :: oz_lat(:), oz_pres(:), oz_time(:), ozplin(:,:,:,:)
 
          integer,              intent(inout) :: jindx1_o3(:), jindx2_o3(:), jindx1_h(:), jindx2_h(:)
          real(kind_phys),      intent(inout) :: ddy_o3(:),  ddy_h(:)
@@ -214,7 +216,8 @@
 
 !$OMP section
 !> - Call read_o3data() to read ozone data
-         call read_o3data (ntoz, me, master)
+         call read_o3data (ntoz, kozpl, latsozp, levozp, timeoz, oz_coeff, oz_lat,  &
+              oz_pres, oz_time, ozplin)
 
          ! Consistency check that the hardcoded values for levozp and
          ! oz_coeff in GFS_typedefs.F90 match what is set by read_o3data
@@ -298,7 +301,7 @@
 !$OMP section
 !> - Call setindxoz() to initialize ozone data
          if (ntoz > 0) then
-           call setindxoz (im, xlat_d, jindx1_o3, jindx2_o3, ddy_o3)
+           call setindxoz (im, latsozp, oz_lat, xlat_d, jindx1_o3, jindx2_o3, ddy_o3)
          endif
 
 !$OMP section
@@ -718,6 +721,7 @@
             tsfc, tsfco, tisfc, hice, fice, facsf, facwf, alvsf, alvwf, alnsf, alnwf, zorli, zorll, &
             zorlo, weasd, slope, snoalb, canopy, vfrac, vtype, stype, shdmin, shdmax, snowd,        &
             cv, cvb, cvt, oro, oro_uf, xlat_d, xlon_d, slmsk, landfrac,                             &
+            latsozp, levozp, timeoz, oz_coeff, ozplin, oz_time, oz_pres, oz_lat,                    &
             do_ugwp_v1, jindx1_tau, jindx2_tau, ddy_j1tau, ddy_j2tau, tau_amf, errmsg, errflg)
 
          implicit none
@@ -742,6 +746,9 @@
          real(kind_phys),      intent(in)    :: prsl(:,:)
          integer,              intent(in)    :: seed0
          real(kind_phys),      intent(inout) :: rann(:,:)
+
+         integer,              intent(in)    :: latsozp, levozp, timeoz, oz_coeff
+         real(kind_phys),      intent(in)    :: ozplin(:,:,:,:), oz_time(:), oz_pres(:), oz_lat(:)
 
          logical,              intent(in)    :: do_ugwp_v1
          integer,              intent(in)    :: jindx1_tau(:), jindx2_tau(:)
@@ -845,9 +852,9 @@
 !$OMP section
 !> - Call ozinterpol() to make ozone interpolation
          if (ntoz > 0) then
-           call ozinterpol (me, im, idate, fhour, &
-                            jindx1_o3, jindx2_o3, &
-                            ozpl, ddy_o3)
+            call ozinterpol (me, im, idate, fhour, jindx1_o3, jindx2_o3, &
+                 latsozp, levozp, oz_coeff, timeoz, ozplin, oz_time,     &
+                 oz_pres, oz_lat, ddy_o3, ozpl)
          endif
 
 !$OMP section
@@ -945,10 +952,10 @@
          if (.not.is_initialized) return
 
          ! Deallocate ozone arrays
-         if (allocated(oz_lat)  ) deallocate(oz_lat)
-         if (allocated(oz_pres) ) deallocate(oz_pres)
-         if (allocated(oz_time) ) deallocate(oz_time)
-         if (allocated(ozplin)  ) deallocate(ozplin)
+         !if (allocated(oz_lat)  ) deallocate(oz_lat)
+         !if (allocated(oz_pres) ) deallocate(oz_pres)
+         !if (allocated(oz_time) ) deallocate(oz_time)
+         !if (allocated(ozplin)  ) deallocate(ozplin)
 
          ! Deallocate h2o arrays
          if (allocated(h2o_lat) ) deallocate(h2o_lat)

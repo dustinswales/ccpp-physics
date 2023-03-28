@@ -90,7 +90,7 @@
                                            ntrnc, ntsnc,ntccn,                 &
                                            ntrw, ntsw, ntgl, nthl, ntwa, ntoz, &
                                            ntclamt, nleffr, nieffr, nseffr,    &
-                                           lndp_type,                          &
+                                           lndp_type, itsfc,                   &
                                            kdt, imp_physics,                   &
                                            imp_physics_thompson,               &
                                            imp_physics_gfdl,                   &
@@ -132,7 +132,8 @@
       integer,              intent(in) :: spp_rad
       real(kind_phys),      intent(in) :: spp_wts_rad(:,:)
 
-      real(kind=kind_phys), intent(in) :: fhswr, fhlwr, solhr, sup, julian, sppt_amp, dcorr_con
+      real(kind=kind_phys), intent(in) :: fhswr, fhlwr, solhr, sup, julian, sppt_amp, dcorr_con, qmin, qme5, qme6,  &
+        epsq, prsmin
       real(kind=kind_phys), intent(in) :: con_eps, epsm1, fvirt, rog, rocp, con_rd, con_pi, con_g, con_ttp, con_thgni
 
       real(kind=kind_phys), dimension(:), intent(in) :: xlat_d, xlat, xlon,    &
