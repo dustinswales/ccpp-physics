@@ -11,7 +11,7 @@
 
       use mersenne_twister, only: random_setseed, random_number
 
-      use ozinterp, only : read_o3data, setindxoz, ozinterpol
+      use ozinterp, only : setindxoz, ozinterpol
 
       use h2o_def,   only : levh2o, h2o_coeff, h2o_lat, h2o_pres, h2o_time, h2oplin
       use h2ointerp, only : read_h2odata, setindxh2o, h2ointerpol
@@ -85,7 +85,7 @@
          real(kind_phys),      intent(in)    :: fhour
          real(kind_phys),      intent(in)    :: xlat_d(:), xlon_d(:)
          integer,              intent(in)    :: kozpl, latsozp, levozp, timeoz, oz_coeff
-         real(kind_phys),      intent(inout) :: oz_lat(:), oz_pres(:), po3(:), oz_time(:), ozplin(:,:,:,:)
+         real(kind_phys),      intent(in)    :: oz_lat(:), oz_pres(:), po3(:), oz_time(:), ozplin(:,:,:,:)
 
          integer,              intent(inout) :: jindx1_o3(:), jindx2_o3(:), jindx1_h(:), jindx2_h(:)
          real(kind_phys),      intent(inout) :: ddy_o3(:),  ddy_h(:)
@@ -190,10 +190,6 @@
          iamax=-999
          jamin=999
          jamax=-999
-
-!> - Call read_o3data() to read ozone data 
-         call read_o3data (ntoz, kozpl, latsozp, levozp, timeoz, oz_coeff, oz_lat,  &
-              oz_pres, po3, oz_time, ozplin)
 
 !> - Call read_h2odata() to read stratospheric water vapor data
          call read_h2odata (h2o_phys, me, master)

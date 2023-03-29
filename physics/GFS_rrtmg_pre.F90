@@ -46,7 +46,7 @@
         faersw1, faersw2, faersw3, faerlw1, faerlw2, faerlw3, alpha,           &
         aero_dir_fdb, smoke_ext, dust_ext,                                     &
         spp_wts_rad, spp_rad, rrfs_smoke_band, ico2, itsfc, qmin, qme5, qme6,  &
-        epsq, prsmin, latsozc, levozc, blatc, dphiozc, errmsg, errflg)
+        epsq, prsmin, latsozp, levozp, blatc, dphiozc, errmsg, errflg)
 
       use machine,                   only: kind_phys
 
@@ -100,7 +100,7 @@
                                            imp_physics_nssl,                   &
                                            imp_physics_fer_hires,              &
                                            yearlen, icloud, iaermdl, iaerflg,  &
-                                           latsozc, levozc
+                                           latsozp, levozp
 
       integer,              intent(in)  ::                                     &
          iovr,                             & ! choice of cloud-overlap method
@@ -429,7 +429,7 @@
           enddo
         enddo
       else                                ! climatological ozone
-        call getozn (prslk1, xlat, im, lmk, top_at_1, latsozc, levozc, blatc, dphiozc,  &
+        call getozn (prslk1, xlat, im, lmk, top_at_1, latsozp, levozp, blatc, dphiozc,  &
                      olyr)                                     !  ---  outputs
       endif                               ! end_if_ntoz
 

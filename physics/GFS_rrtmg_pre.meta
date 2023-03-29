@@ -1522,14 +1522,14 @@
   type = real
   kind = kind_phys
   intent = in
-[latsozc]
+[latsozp]
   standard_name = number_of_latitudes_in_ozone_data
   long_name = number of latitude in ozone data
   units = count
   dimensions = ()
   type = integer
   intent = in
-[levozc]
+[levozp]
   standard_name = vertical_dimension_of_ozone_forcing_data
   long_name = number of levels in ozone data
   units = count

@@ -114,7 +114,8 @@ contains
     integer,         intent(in)  :: me, idate(4), latsozp, levozp,      &
          oz_coeff, timeoz, JINDX1(npts), JINDX2(npts)
     real(kind_phys), intent(in)  :: fhour,  ddy(npts), oz_lat(latsozp), &
-         oz_pres(levozp), oz_time(timeoz), ozplin(latsozp,levozp,oz_coeff,timeoz)
+         oz_pres(levozp), oz_time(timeoz),                              &
+         ozplin(latsozp,levozp,oz_coeff,timeoz)
 
     ! Outputs
     real(kind_phys), intent(out) :: ozplout(npts,levozp,oz_coeff)
