@@ -1003,7 +1003,7 @@ MODULE module_mp_thompson
                               ids,ide, jds,jde, kds,kde,              &  ! domain dims
                               ims,ime, jms,jme, kms,kme,              &  ! memory dims
                               its,ite, jts,jte, kts,kte,              &  ! tile dims
-                              fullradar_diag, istep, nsteps,          &
+                              reset_dBZ, istep, nsteps,               &
                               errmsg, errflg,                         &
                               ! Extended diagnostics, array pointers
                               ! only associated if ext_diag flag is .true.
@@ -1070,7 +1070,7 @@ MODULE module_mp_thompson
       INTEGER, INTENT(IN) :: decfl
       ! To support subcycling: current step and maximum number of steps
       INTEGER, INTENT (IN) :: istep, nsteps
-      LOGICAL, INTENT (IN) :: fullradar_diag 
+      LOGICAL, INTENT (IN) :: reset_dBZ
       ! Extended diagnostics, array pointers only associated if ext_diag flag is .true.
       LOGICAL, INTENT (IN) :: ext_diag
       LOGICAL, OPTIONAL, INTENT(IN):: aero_ind_fdb
@@ -1677,7 +1677,7 @@ MODULE module_mp_thompson
            if (diagflag .and. do_radar_ref == 1) then
 !
              ! Only set melti to true at the output times
-             if (fullradar_diag) then
+             if (reset_dBZ) then
                melti=.true.
              else
                melti=.false.

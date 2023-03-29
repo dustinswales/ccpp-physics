@@ -325,8 +325,8 @@ module mp_thompson
                               dt_inner,                            &
                               first_time_step, istep, nsteps,      &
                               prcp, rain, graupel, ice, snow, sr,  &
-                              refl_10cm, fullradar_diag,           &
-                              do_radar_ref, aerfld, is_initialized,&
+                              refl_10cm, reset_dBZ, do_radar_ref,  &
+                              aerfld, is_initialized,              &
                               mpicomm, mpirank, mpiroot, blkno,    &
                               ext_diag, diag3d, reset_diag3d,      &
                               spp_wts_mp, spp_mp, n_var_spp,       &
@@ -356,7 +356,7 @@ module mp_thompson
          real(kind_phys),           intent(inout) :: ni(:,:)
          real(kind_phys),           intent(inout) :: nr(:,:)
          ! Aerosols
-         logical,                   intent(in)    :: is_aerosol_aware, fullradar_diag 
+         logical,                   intent(in)    :: is_aerosol_aware, reset_dBZ
          logical,                   intent(in)    :: merra2_aerosol_aware
          real(kind_phys), optional, intent(inout) :: nc(:,:)
          real(kind_phys), optional, intent(inout) :: nwfa(:,:)
@@ -704,7 +704,7 @@ module mp_thompson
                               ids=ids, ide=ide, jds=jds, jde=jde, kds=kds, kde=kde,          &
                               ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,          &
                               its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte,          &
-                              fullradar_diag=fullradar_diag, istep=istep, nsteps=nsteps,     &
+                              reset_dBZ=reset_dBZ, istep=istep, nsteps=nsteps,               &
                               first_time_step=first_time_step, errmsg=errmsg, errflg=errflg, &
                               ! Extended diagnostics
                               ext_diag=ext_diag,                                             &
@@ -743,7 +743,7 @@ module mp_thompson
                               ids=ids, ide=ide, jds=jds, jde=jde, kds=kds, kde=kde,          &
                               ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,          &
                               its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte,          &
-                              fullradar_diag=fullradar_diag, istep=istep, nsteps=nsteps,     &
+                              reset_dBZ=reset_dBZ, istep=istep, nsteps=nsteps,               &
                               first_time_step=first_time_step, errmsg=errmsg, errflg=errflg, &
                               ! Extended diagnostics
                               ext_diag=ext_diag,                                             &
