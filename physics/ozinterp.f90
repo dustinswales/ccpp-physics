@@ -16,7 +16,7 @@ contains
   !**********************************************************************
   !
   SUBROUTINE read_o3data (ntoz, kozpl, latsozp, levozp, timeoz,oz_coeff,&
-       oz_lat, oz_pres, oz_time, ozplin)
+       oz_lat, oz_pres, po3, oz_time, ozplin)
     use machine, only: kind_phys
     
     ! Inputs
@@ -24,7 +24,8 @@ contains
 
     ! In/outs
     real(kind_phys), dimension(latsozp), intent(inout) :: oz_lat(latsozp),&
-         oz_pres(levozp), oz_time(timeoz), ozplin(latsozp,levozp,oz_coeff,timeoz)
+         oz_pres(levozp), po3(levozp), oz_time(timeoz+1),                 &
+         ozplin(latsozp,levozp,oz_coeff,timeoz)
   
     ! Locals
     integer :: i, n, k, a1, a2, a3, a4
@@ -42,7 +43,7 @@ contains
 
     ! Store
     oz_pres(:) = oz_pres4(:)
-    oz_pres(:) = log(100.0*oz_pres(:)) ! from mb to ln(Pa) 
+    po3(:)     = log(100.0*oz_pres(:)) ! from mb to ln(Pa) 
     oz_lat(:)  = oz_lat4(:)
     oz_time(:) = oz_time4(:)
 

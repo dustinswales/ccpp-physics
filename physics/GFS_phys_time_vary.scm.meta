@@ -124,14 +124,6 @@
   type = real
   kind = kind_phys
   intent = inout
-[ozpl]
-  standard_name = ozone_forcing
-  long_name = ozone forcing data
-  units = mixed
-  dimensions = (horizontal_dimension,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_forcing_data)
-  type = real
-  kind = kind_phys
-  intent = in
 [jindx1_h]
   standard_name = lower_latitude_index_of_stratospheric_water_vapor_forcing_for_interpolation
   long_name = interpolation low index for stratospheric water vapor
@@ -895,13 +887,6 @@
   dimensions = ()
   type = integer
   intent = in
-[oz_coeff]
-  standard_name = number_of_coefficients_in_ozone_data
-  long_name = number of coefficients in ozone data
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
 [latsozp]
   standard_name = number_of_latitudes_in_ozone_data
   long_name = number of latitude in ozone data
@@ -910,9 +895,16 @@
   type = integer
   intent = in
 [levozp]
-  standard_name = number_of_levels_in_ozone_data
-  long_name = number of levels in ozone data
+  standard_name = vertical_dimension_of_ozone_forcing_data
+  long_name = number of vertical layers in ozone forcing data
   units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[oz_coeff]
+  standard_name = number_of_coefficients_in_ozone_forcing_data
+  long_name = number of coefficients in ozone forcing data
+  units = index
   dimensions = ()
   type = integer
   intent = in
@@ -927,7 +919,7 @@
   standard_name = ozone_data_latitude
   long_name = ozone data latitude
   units = deg
-  dimensions = ()
+  dimensions = (number_of_latitudes_in_ozone_data)
   type = real
   kind = kind_phys
   intent = inout
@@ -935,7 +927,15 @@
   standard_name = ozone_data_level_pressure
   long_name = ozone data level pressure
   units = Pa
-  dimensions = ()
+  dimensions = (vertical_dimension_of_ozone_forcing_data)
+  type = real
+  kind = kind_phys
+  intent = inout
+[po3]
+  standard_name = natural_log_of_ozone_forcing_data_pressure_levels
+  long_name = natural log of ozone forcing data pressure levels in Pa
+  units = 1
+  dimensions = (vertical_dimension_of_ozone_forcing_data)
   type = real
   kind = kind_phys
   intent = inout
@@ -943,7 +943,7 @@
   standard_name = ozone_data_time
   long_name = ozone data time
   units = none
-  dimensions = ()
+  dimensions = (13)
   type = real
   kind = kind_phys
   intent = inout
@@ -951,7 +951,7 @@
   standard_name = ozone_data
   long_name = ozone data
   units = 1
-  dimensions = (number_of_latitudes_in_ozone_data,number_of_levels_in_ozone_data,number_of_coefficients_in_ozone_data,number_of_times_in_ozone_data)
+  dimensions = (number_of_latitudes_in_ozone_data,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_forcing_data,number_of_times_in_ozone_data)
   type = real
   kind = kind_phys
   intent = inout
@@ -1427,13 +1427,6 @@
   dimensions = ()
   type = integer
   intent = in
-[oz_coeff]
-  standard_name = number_of_coefficients_in_ozone_data
-  long_name = number of coefficients in ozone data
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
 [latsozp]
   standard_name = number_of_latitudes_in_ozone_data
   long_name = number of latitude in ozone data
@@ -1442,9 +1435,16 @@
   type = integer
   intent = in
 [levozp]
-  standard_name = number_of_levels_in_ozone_data
-  long_name = number of levels in ozone data
+  standard_name = vertical_dimension_of_ozone_forcing_data
+  long_name = number of vertical layers in ozone forcing data
   units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[oz_coeff]
+  standard_name = number_of_coefficients_in_ozone_forcing_data
+  long_name = number of coefficients in ozone forcing data
+  units = index
   dimensions = ()
   type = integer
   intent = in
@@ -1459,7 +1459,7 @@
   standard_name = ozone_data
   long_name = ozone data
   units = 1
-  dimensions = (number_of_latitudes_in_ozone_data,number_of_levels_in_ozone_data,number_of_coefficients_in_ozone_data,number_of_times_in_ozone_data)
+  dimensions = (number_of_latitudes_in_ozone_data,vertical_dimension_of_ozone_forcing_data,number_of_coefficients_in_ozone_forcing_data,number_of_times_in_ozone_data)
   type = real
   kind = kind_phys
   intent = in
@@ -1467,7 +1467,7 @@
   standard_name = ozone_data_latitude
   long_name = ozone data latitude
   units = deg
-  dimensions = ()
+  dimensions = (number_of_latitudes_in_ozone_data)
   type = real
   kind = kind_phys
   intent = in
@@ -1475,7 +1475,7 @@
   standard_name = ozone_data_level_pressure
   long_name = ozone data level pressure
   units = Pa
-  dimensions = ()
+  dimensions = (vertical_dimension_of_ozone_forcing_data)
   type = real
   kind = kind_phys
   intent = in
@@ -1483,7 +1483,7 @@
   standard_name = ozone_data_time
   long_name = ozone data time
   units = none
-  dimensions = ()
+  dimensions = (13)
   type = real
   kind = kind_phys
   intent = in

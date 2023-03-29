@@ -61,7 +61,7 @@
 !! @{
       subroutine GFS_phys_time_vary_init (                                                         &
               me, master, ntoz, h2o_phys, iaerclm, iccn, iflip, im, nx, ny, idate, xlat_d, xlon_d, &
-              jindx1_o3, jindx2_o3, ddy_o3, ozpl, jindx1_h, jindx2_h, ddy_h, h2opl,fhour,          &
+              jindx1_o3, jindx2_o3, ddy_o3, jindx1_h, jindx2_h, ddy_h, h2opl,fhour,          &
               jindx1_aer, jindx2_aer, ddy_aer, iindx1_aer, iindx2_aer, ddx_aer, aer_nm,            &
               jindx1_ci, jindx2_ci, ddy_ci, iindx1_ci, iindx2_ci, ddx_ci, imap, jmap,              &
               do_ugwp_v1, jindx1_tau, jindx2_tau, ddy_j1tau, ddy_j2tau,                            &
@@ -73,7 +73,7 @@
               zwtxy, xlaixy, xsaixy, lfmassxy, stmassxy, rtmassxy, woodxy, stblcpxy, fastcpxy,     &
               smcwtdxy, deeprechxy, rechxy, snowxy, snicexy, snliqxy, tsnoxy , smoiseq, zsnsoxy,   &
               slc, smc, stc, tsfcl, snowd, canopy, tg3, stype, con_t0c, lsm_cold_start, nthrds,    &
-              kozpl, latsozp, levozp, timeoz, oz_coeff, oz_lat, oz_pres, oz_time, ozplin,          &
+              kozpl, latsozp, levozp, timeoz, oz_coeff, oz_lat, oz_pres, po3, oz_time, ozplin,     &
               errmsg, errflg)
 
          implicit none
@@ -85,11 +85,11 @@
          real(kind_phys),      intent(in)    :: fhour
          real(kind_phys),      intent(in)    :: xlat_d(:), xlon_d(:)
          integer,              intent(in)    :: kozpl, latsozp, levozp, timeoz, oz_coeff
-         real(kind_phys),      intent(inout) :: oz_lat(:), oz_pres(:), oz_time(:), ozplin(:,:,:,:)
+         real(kind_phys),      intent(inout) :: oz_lat(:), oz_pres(:), po3(:), oz_time(:), ozplin(:,:,:,:)
 
          integer,              intent(inout) :: jindx1_o3(:), jindx2_o3(:), jindx1_h(:), jindx2_h(:)
          real(kind_phys),      intent(inout) :: ddy_o3(:),  ddy_h(:)
-         real(kind_phys),      intent(in)    :: ozpl(:,:,:), h2opl(:,:,:)
+         real(kind_phys),      intent(in)    :: h2opl(:,:,:)
          integer,              intent(inout) :: jindx1_aer(:), jindx2_aer(:), iindx1_aer(:), iindx2_aer(:)
          real(kind_phys),      intent(inout) :: ddy_aer(:), ddx_aer(:)
          real(kind_phys),      intent(in)    :: aer_nm(:,:,:)
@@ -193,23 +193,7 @@
 
 !> - Call read_o3data() to read ozone data 
          call read_o3data (ntoz, kozpl, latsozp, levozp, timeoz, oz_coeff, oz_lat,  &
-              oz_pres, oz_time, ozplin)
-
-         ! Consistency check that the hardcoded values for levozp and
-         ! oz_coeff in GFS_typedefs.F90 match what is set by read_o3data
-         ! in GFS_typedefs.F90: allocate (Tbd%ozpl (IM,levozp,oz_coeff))
-         if (size(ozpl, dim=2).ne.levozp) then
-            write(errmsg,'(2a,i0,a,i0)') "Value error in GFS_phys_time_vary_init: ",    &
-                  "levozp from read_o3data does not match value in GFS_typedefs.F90: ", &
-                  levozp, " /= ", size(ozpl, dim=2)
-            errflg = 1
-         end if
-         if (size(ozpl, dim=3).ne.oz_coeff) then
-            write(errmsg,'(2a,i0,a,i0)') "Value error in GFS_phys_time_vary_init: ",      &
-                  "oz_coeff from read_o3data does not match value in GFS_typedefs.F90: ", &
-                  oz_coeff, " /= ", size(ozpl, dim=3)
-            errflg = 1
-         end if
+              oz_pres, po3, oz_time, ozplin)
 
 !> - Call read_h2odata() to read stratospheric water vapor data
          call read_h2odata (h2o_phys, me, master)
