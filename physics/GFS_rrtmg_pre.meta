@@ -1520,7 +1520,6 @@
   units = mb
   dimensions = ()
   type = real
-  kind = kind_phys
   intent = in
 [latsozp]
   standard_name = number_of_latitudes_in_ozone_data

@@ -134,7 +134,8 @@
       real(kind_phys),      intent(in) :: spp_wts_rad(:,:)
 
       real(kind=kind_phys), intent(in) :: fhswr, fhlwr, solhr, sup, julian, sppt_amp, dcorr_con, qmin, qme5, qme6,  &
-        epsq, prsmin, blatc, dphiozc
+        epsq, blatc, dphiozc
+      real, intent(in) :: prsmin
       real(kind=kind_phys), intent(in) :: con_eps, epsm1, fvirt, rog, rocp, con_rd, con_pi, con_g, con_ttp, con_thgni
 
       real(kind=kind_phys), dimension(:), intent(in) :: xlat_d, xlat, xlon,    &
