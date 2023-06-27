@@ -132,6 +132,18 @@ endif()
 SET_PROPERTY(SOURCE ${SCHEMES} ${CAPS}
              APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS} ${OpenMP_Fortran_FLAGS}")
 
+# Search for any machine learning schemes using ECMWF Inferno library
+# If any, link scheme to Inferno.
+if(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90 IN_LIST SCHEMES)
+  message(STATUS "Adding Infero flags")
+  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90
+                              APPEND_STRING PROPERTIES INCLUDE_DIRECTORIES "${INFERO_LIB_DIR}/module")
+  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90
+                              APPEND_STRING PROPERTIES LINK_DIRECTORIES "${INFERO_LIB_DIR}/lib")
+  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90
+                              APPEND_STRING PROPERTIES COMPILE_FLAGS " ${INFERO_FORTRAN_FLAGS}")
+endif()
+
 # Lower optimization for certain schemes when compiling with Intel in Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
   # Define a list of schemes that need lower optimization with Intel in Release mode
@@ -175,6 +187,7 @@ foreach(source_f90 ${CAPS})
     string(REGEX REPLACE ".F90" ".mod" tmp_module_f90 ${tmp_source_f90})
     string(TOLOWER ${tmp_module_f90} module_f90)
     list(APPEND MODULES_F90 ${CMAKE_CURRENT_BINARY_DIR}/${module_f90})
+    SET_SOURCE_FILES_PROPERTIES(${source_f90} APPEND_STRING PROPERTIES INCLUDE_DIRECTORIES "${INFERO_LIB_DIR}/module")
 endforeach()
 
 set_target_properties(ccpp_physics PROPERTIES VERSION ${PROJECT_VERSION}
