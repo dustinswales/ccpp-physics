@@ -7,6 +7,40 @@
 [ccpp-arg-table]
   name = ml_rad_phys_init
   type = scheme
+[do_ml_rad]
+  standard_name = flag_for_machine_learning_radiation_scheme
+  long_name = flag for machine learning	radiation scheme
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[errmsg]
+  standard_name = ccpp_error_message
+  long_name = error message for error handling in CCPP
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
+  intent = out
+[errflg]
+  standard_name = ccpp_error_code
+  long_name = error code for error handling in CCPP
+  units = 1
+  dimensions = ()
+  type = integer
+  intent = out
+
+########################################################################
+[ccpp-arg-table]
+  name = ml_rad_phys_finalize
+  type = scheme
+[do_ml_rad]
+  standard_name = flag_for_machine_learning_radiation_scheme
+  long_name = flag for machine learning radiation scheme
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -27,6 +61,37 @@
 [ccpp-arg-table]
   name = ml_rad_phys_run
   type = scheme
+[do_ml_rad]
+  standard_name = flag_for_machine_learning_radiation_scheme
+  long_name = flag for machine learning radiation scheme
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
+[predictor_matrix]
+  standard_name = predictor_matrix_for_ML_radiation
+  long_name = predictor matrix for ML radiation
+  units = none
+  dimensions = (number_of_predictor_variables_for_ml_radiation,number_of_levels_for_ml_radiation,number_of_cases_for_ml_radiation)
+  type = real
+  kind = kind_phys
+  intent = in
+[vector_prediction_matrix]
+  standard_name = vector_prediction_matrix_for_ML_radiation
+  long_name = vector prediction matrix for ML radiation
+  units = none
+  dimensions = (number_of_vector_target_variables_for_ml_radiation,number_of_levels_for_ml_radiation,number_of_cases_for_ml_radiation)
+  type = real
+  kind = kind_phys
+  intent = in
+[scalar_prediction_matrix]
+  standard_name = scalar_prediction_matrix_for_ML_radiation
+  long_name = scalar prediction	matrix for ML radiation
+  units = none
+  dimensions = (number_of_scalar_target_variables_for_ml_radiation,number_of_cases_for_ml_radiation)
+  type = real
+  kind = kind_phys
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
