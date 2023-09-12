@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = ml_rad_phys
   type = scheme
-  dependencies = machine.F,funcphys.f90,radiation_gases.f
+  dependencies = machine.F,funcphys.f90,radiation_gases.f,module_rad_ml.F90,radlw_param.f,radsw_param.f,mersenne_twister.f
 
 ########################################################################
 [ccpp-arg-table]
@@ -30,6 +30,13 @@
   type = character
   kind = len=128
   intent = in
+[rad_ml_data]
+  standard_name = training_data_used_in_machine_learning_longwave_radiation
+  long_name = training data used in machine learning longwave radiation
+  units = mixed
+  dimensions = ()
+  type = ty_rad_ml_data
+  intent = inout
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -83,6 +90,20 @@
   units = flag
   dimensions =  ()
   type = logical
+  intent = in
+[rad_ml_data]
+  standard_name = training_data_used_in_machine_learning_longwave_radiation
+  long_name = training data used in machine learning longwave radiation
+  units = mixed
+  dimensions = ()
+  type = ty_rad_ml_data
+  intent = in
+[ref_data]
+  standard_name = reference_data_for_machine_learning_longwave_radiation
+  long_name = reference data for machine learning longwave radiation
+  units = mixed
+  dimensions = ()
+  type = ty_rad_ml_ref_data
   intent = in
 [effr_in]
   standard_name = flag_for_cloud_effective_radii
@@ -196,6 +217,20 @@
   dimensions = ()
   type = integer
   intent = in
+[isubc]
+  standard_name = flag_for_lw_clouds_sub_grid_approximation
+  long_name = flag for lw clouds sub-grid approximation
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[icseed]
+  standard_name = random_number_seed_for_mcica_longwave
+  long_name = seed for random number generation for longwave radiation
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  intent = in
 [lat]
   standard_name = latitude
   long_name = latitude
@@ -276,29 +311,41 @@
   type = real
   kind = kind_phys
   intent = in
-[predictor_matrix]
-  standard_name = predictor_matrix_for_ML_radiation
-  long_name = predictor matrix for ML radiation
-  units = none
-  dimensions = (number_of_predictor_variables_for_ml_radiation,number_of_levels_for_ml_radiation,number_of_cases_for_ml_radiation)
+[htrlw]
+  standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep
+  long_name = total sky lw heating rate
+  units = K s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
-[vector_prediction_matrix]
-  standard_name = vector_prediction_matrix_for_ML_radiation
-  long_name = vector prediction matrix for ML radiation
-  units = none
-  dimensions = (number_of_vector_target_variables_for_ml_radiation,number_of_levels_for_ml_radiation,number_of_cases_for_ml_radiation)
-  type = real
-  kind = kind_phys
+[sfcflw]
+  standard_name = surface_lw_fluxes_assuming_total_and_clear_sky_on_radiation_timestep
+  long_name = lw radiation fluxes at sfc
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = sfcflw_type
   intent = in
-[scalar_prediction_matrix]
-  standard_name = scalar_prediction_matrix_for_ML_radiation
-  long_name = scalar prediction	matrix for ML radiation
-  units = none
-  dimensions = (number_of_scalar_target_variables_for_ml_radiation,number_of_cases_for_ml_radiation)
-  type = real
-  kind = kind_phys
+[sfcfsw]
+  standard_name = surface_sw_fluxes_assuming_total_and_clear_sky_on_radiation_timestep
+  long_name = sw radiation fluxes at sfc
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = sfcfsw_type
+  intent = in
+[topflw]
+  standard_name = lw_fluxes_top_atmosphere
+  long_name = lw radiation fluxes at top
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = topflw_type
+  intent = in
+[topfsw]
+  standard_name = sw_fluxes_top_atmosphere
+  long_name = sw radiation fluxes at toa
+  units = W m-2
+  dimensions = (horizontal_loop_extent)
+  type = topfsw_type
   intent = in
 [errmsg]
   standard_name = ccpp_error_message
