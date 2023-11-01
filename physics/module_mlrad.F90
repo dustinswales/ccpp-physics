@@ -1,6 +1,6 @@
-module module_rad_ml
-!> \section arg_table_module_rad_ml Argument table
-!! \htmlinclude module_rad_ml.html
+module module_mlrad
+!> \section arg_table_module_mlrad Argument table
+!! \htmlinclude module_mlrad.html
 !!
   use machine, only : kind_phys
   use netcdf
@@ -11,8 +11,12 @@ module module_rad_ml
   ! Predictor varaible names, from training data, in order expected by emulator.
   !
   ! #####################################################################################
-  integer,parameter :: nPredictors = 24
-  character(len=32),dimension(nPredictors) :: predictor_names =  &
+  integer,parameter :: nPredictors_lw = 24
+  integer, dimension(nPredictors_lw) :: &
+       ip2io_lw   ! Index mapping from vector/scalar inputs into predictor matrix
+  logical, dimension(nPredictors_lw) :: &
+       is2D_lw    ! Are input predictors 2 dimensional?
+  character(len=32),dimension(nPredictors_lw) :: predictor_names_lw =  &
        (/'pressure_pascals                 ','temperature_kelvins             ',        &
          'specific_humidity_kg_kg01        ','relative_humidity_unitless      ',        &
          'liquid_water_content_kg_m03      ','ice_water_content_kg_m03        ',        &
@@ -25,11 +29,6 @@ module module_rad_ml
          'height_m_agl                     ','height_thickness_metres         ',        &
          'pressure_thickness_pascals       ','zenith_angle_radians            ',        &
          'surface_temperature_kelvins      ','surface_emissivity              '/)
-  integer, dimension(nPredictors) :: &
-       ip2io   ! Index mapping from vector/scalar inputs into predictor matrix
-  logical, dimension(nPredictors) :: &
-       is2D    ! Are input predictors 2 dimensional?
-
   public ty_rad_ml_data, ty_rad_ml_ref_data
 
 ! ########################################################################################
@@ -41,14 +40,16 @@ module module_rad_ml
 ! ########################################################################################
   type ty_rad_ml_data
      integer :: &
-          nCol,                   & ! Number of training columns in training data 
+          nCol,                   & ! Number of training columns OR piecewise linear fit
+                                    ! of training data 
           nLev,                   & ! Number of vertical layers in training data
           npred_scalar,           & ! Number of predictor variables (1D)
           npred_vector,           & ! Number of predictor variables (2D)
           field_id_char             ! Character length
-     character(len=32),dimension(:), allocatable :: &
+     character(len=31),dimension(:), allocatable :: &
           scalar_predictor_names, & ! Name for scalar predictors  [npred_scalar]
           vector_predictor_names    ! Name for vector predictors  [npred_vector]
+     ! Used when reading in full training data
      real(kind_phys),dimension(:,:), allocatable :: &
           scalar_predictor          ! Scalar predictors           [npred_scalar, nCol]
      real(kind_phys),dimension(:,:,:), allocatable :: &
@@ -59,9 +60,18 @@ module module_rad_ml
      real(kind_phys),dimension(:,:), allocatable :: &
           vector_predictor_mean,  & ! Mean of vector predictors   [npred_vector, nLev]
           vector_predictor_stdev    ! Stdev of vector predictors  [npred_vector, nLev]
+     ! Used for piecewise discretization of traning data
+     real(kind_phys),dimension(:,:), allocatable :: &
+          scalar_slope,           & ! [nCol,   npred_scalar]
+          scalar_intercept,       & ! [nCol,   npred_scalar]
+          scalar_breakpoint         ! [nCol+1, npred_scalar]
+     real(kind_phys),dimension(:,:,:), allocatable :: &
+          vector_slope,           & ! [nCol,   nLev, npred_vector]
+          vector_intercept,       & ! [nCol,   nLev, npred_vector]
+          vector_breakpoint         ! [nCol+1, nLev, npred_vector]
    contains
-     procedure, public :: load => load_training_data
-     procedure, public :: vert_int
+     generic,   public  :: load => load_training_data_piecewise
+     procedure, private :: load_training_data_piecewise
   end type ty_rad_ml_data
 
 ! ########################################################################################
@@ -93,24 +103,24 @@ contains
 
   ! ######################################################################################
   !
-  ! Type-bound procedure to load training data into ty_rad_ml_data from input file.
+  ! Type-bound procedure to load piecewise linear training data into ty_rad_ml_data.
   !
   ! ######################################################################################
-  function load_training_data(this, file, nPts) result(err_message)
+  function load_training_data_piecewise(this, file, spect_lw) result(err_message)
     class(ty_rad_ml_data), intent(inout) :: this
     ! Inputs
     character(len=*), intent(in) :: file
-    integer, intent(in), optional :: nPts
+    logical, intent(in) :: spect_lw
     ! Outputs
     character(len=128) :: err_message
     ! Locals
     integer :: ncid, dimid, varid, iLay, iPred, iName, count, stride
-    
+
     ! Open file
     call check_netCDF(nf90_open(file, NF90_NOWRITE, ncid),err_message)
 
     ! Get dimensions
-    call check_netCDF(nf90_inq_dimid(ncid, 'example', dimid),err_message)
+    call check_netCDF(nf90_inq_dimid(ncid, 'linear_piece', dimid),err_message)
     call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%nCol),err_message)
     call check_netCDF(nf90_inq_dimid(ncid, 'height', dimid),err_message)
     call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%nLev),err_message)
@@ -119,83 +129,104 @@ contains
     call check_netCDF(nf90_inq_dimid(ncid, 'vector_predictor', dimid),err_message)
     call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%npred_vector),err_message)
 
-    ! If provided, use only a subset of the points
-    if (present(nPts)) then
-       stride    = max(1,this%nCol/nPts)
-       this%nCol = nPts
-    endif
-    
     ! Allocate space
     allocate(this%scalar_predictor_names(this%npred_scalar))
+    allocate(this%scalar_slope(     this%nCol,   this%npred_scalar))
+    allocate(this%scalar_intercept( this%nCol,   this%npred_scalar))
+    allocate(this%scalar_breakpoint(this%nCol+1, this%npred_scalar))
     allocate(this%vector_predictor_names(this%npred_vector))
-    allocate(this%scalar_predictor(this%npred_scalar, this%nCol))
-    allocate(this%vector_predictor(this%npred_vector, this%nLev, this%nCol))
-    allocate(this%scalar_predictor_mean(this%npred_scalar))
-    allocate(this%vector_predictor_mean(this%npred_vector, this%nLev))
-    allocate(this%scalar_predictor_stdev(this%npred_scalar))
-    allocate(this%vector_predictor_stdev(this%npred_vector, this%nLev))
+    allocate(this%vector_slope(     this%nCol,   this%nLev, this%npred_vector))
+    allocate(this%vector_intercept( this%nCol,   this%nLev, this%npred_vector))
+    allocate(this%vector_breakpoint(this%nCol+1, this%nLev, this%npred_vector))
 
-    ! Read in training data
-    call check_netCDF(nf90_inq_varid(ncid, "scalar_predictor_names", varid),err_message)
+    ! Read in training data (piecewise uniform)
+    call check_netCDF(nf90_inq_varid(ncid, "scalar_predictor", varid),err_message)
     call check_netCDF(nf90_get_var(ncid, varid, this%scalar_predictor_names),err_message)
-    call check_netCDF(nf90_inq_varid(ncid, "vector_predictor_names", varid),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "vector_predictor", varid),err_message)
     call check_netCDF(nf90_get_var(ncid, varid, this%vector_predictor_names),err_message)
-    call check_netCDF(nf90_inq_varid(ncid, "scalar_predictor_matrix", varid),err_message)
-    call check_netCDF(nf90_get_var(ncid, varid, this%scalar_predictor,count=(/this%npred_scalar, this%nCol/),stride=(/1,stride/)),err_message)
-    call check_netCDF(nf90_inq_varid(ncid, "vector_predictor_matrix", varid),err_message)
-    call check_netCDF(nf90_get_var(ncid, varid, this%vector_predictor,count=(/this%npred_vector, this%nLev, this%nCol/),stride=(/1,1,stride/)),err_message)
-    
+    call check_netCDF(nf90_inq_varid(ncid, "scalar_slope", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%scalar_slope),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "scalar_intercept", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%scalar_intercept),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "scalar_break_point_physical_units", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%scalar_breakpoint),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "vector_slope", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%vector_slope),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "vector_intercept", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%vector_intercept),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "vector_break_point_physical_units", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%vector_breakpoint),err_message)
+
     ! HACK UNTIL NETCDF INPUT FILES ARE FIXED!!
-    this%scalar_predictor_names(1)  = "zenith_angle_radians"
-    this%scalar_predictor_names(2)  = "latitude_deg_n"
-    this%scalar_predictor_names(3)  = "longitude_deg_e"
-    this%scalar_predictor_names(4)  = "column_liquid_water_path_kg_m02"
-    this%scalar_predictor_names(5)  = "column_ice_water_path_kg_m02"
-    this%scalar_predictor_names(6)  = "surface_temperature_kelvins"
-    this%scalar_predictor_names(7)  = "surface_emissivity"
-    !
-    this%vector_predictor_names(1)  = "pressure_pascals"
-    this%vector_predictor_names(2)  = "temperature_kelvins"
-    this%vector_predictor_names(3)  = "specific_humidity_kg_kg01"
-    this%vector_predictor_names(4)  = "liquid_water_content_kg_m03"
-    this%vector_predictor_names(5)  = "ice_water_content_kg_m03"
-    this%vector_predictor_names(6)  = "o3_mixing_ratio_kg_kg01"
-    this%vector_predictor_names(7)  = "co2_concentration_ppmv"
-    this%vector_predictor_names(8)  = "ch4_concentration_ppmv"
-    this%vector_predictor_names(9)  = "n2o_concentration_ppmv"
-    this%vector_predictor_names(10) = "liquid_effective_radius_metres"
-    this%vector_predictor_names(11) = "ice_effective_radius_metres"
-    this%vector_predictor_names(12) = "height_m_agl"
-    this%vector_predictor_names(13) = "height_thickness_metres"
-    this%vector_predictor_names(14) = "pressure_thickness_pascals"
-    this%vector_predictor_names(15) = "liquid_water_path_kg_m02"
-    this%vector_predictor_names(16) = "ice_water_path_kg_m02"
-    this%vector_predictor_names(17) = "vapour_path_kg_m02"
-    this%vector_predictor_names(18) = "upward_liquid_water_path_kg_m02"
-    this%vector_predictor_names(19) = "upward_ice_water_path_kg_m02"
-    this%vector_predictor_names(20) = "upward_vapour_path_kg_m02"
-    this%vector_predictor_names(21) = "relative_humidity_unitless"
+    if (spect_lw) then
+       this%scalar_predictor_names(1)  = "zenith_angle_radians"
+       this%scalar_predictor_names(2)  = "latitude_deg_n"
+       this%scalar_predictor_names(3)  = "longitude_deg_e"
+       this%scalar_predictor_names(4)  = "column_liquid_water_path_kg_m02"
+       this%scalar_predictor_names(5)  = "column_ice_water_path_kg_m02"
+       this%scalar_predictor_names(6)  = "surface_temperature_kelvins"
+       this%scalar_predictor_names(7)  = "surface_emissivity"
+    else
+       this%scalar_predictor_names(1)  = "zenith_angle_radians"
+       this%scalar_predictor_names(2)  = "albedo"
+       this%scalar_predictor_names(3)  = "latitude_deg_n"
+       this%scalar_predictor_names(4)  = "longitude_deg_e"
+       this%scalar_predictor_names(5)  = "column_liquid_water_path_kg_m02"
+       this%scalar_predictor_names(6)  = "column_ice_water_path_kg_m02"
+       this%scalar_predictor_names(7)  = "aerosol_single_scattering_albedo"
+       this%scalar_predictor_names(8)  = "aerosol_asymmetry_param"
+    endif
+    if (spect_lw) then
+       this%vector_predictor_names(1)  = "pressure_pascals"
+       this%vector_predictor_names(2)  = "temperature_kelvins"
+       this%vector_predictor_names(3)  = "specific_humidity_kg_kg01"
+       this%vector_predictor_names(4)  = "liquid_water_content_kg_m03"
+       this%vector_predictor_names(5)  = "ice_water_content_kg_m03"
+       this%vector_predictor_names(6)  = "o3_mixing_ratio_kg_kg01"
+       this%vector_predictor_names(7)  = "co2_concentration_ppmv"
+       this%vector_predictor_names(8)  = "ch4_concentration_ppmv"
+       this%vector_predictor_names(9)  = "n2o_concentration_ppmv"
+       this%vector_predictor_names(10) = "liquid_effective_radius_metres"
+       this%vector_predictor_names(11) = "ice_effective_radius_metres"
+       this%vector_predictor_names(12) = "height_m_agl"
+       this%vector_predictor_names(13) = "height_thickness_metres"
+       this%vector_predictor_names(14) = "pressure_thickness_pascals"
+       this%vector_predictor_names(15) = "liquid_water_path_kg_m02"
+       this%vector_predictor_names(16) = "ice_water_path_kg_m02"
+       this%vector_predictor_names(17) = "vapour_path_kg_m02"
+       this%vector_predictor_names(18) = "upward_liquid_water_path_kg_m02"
+       this%vector_predictor_names(19) = "upward_ice_water_path_kg_m02"
+       this%vector_predictor_names(20) = "upward_vapour_path_kg_m02"
+       this%vector_predictor_names(21) = "relative_humidity_unitless"
+    else
+       this%vector_predictor_names(1)  = "pressure_pascals"
+       this%vector_predictor_names(2)  = "temperature_kelvins"
+       this%vector_predictor_names(3)  = "specific_humidity_kg_kg01"
+       this%vector_predictor_names(4)  = "liquid_water_content_kg_m03"
+       this%vector_predictor_names(5)  = "ice_water_content_kg_m03"
+       this%vector_predictor_names(6)  = "o3_mixing_ratio_kg_kg01"
+       this%vector_predictor_names(7)  = "co2_concentration_ppmv"
+       this%vector_predictor_names(8)  = "ch4_concentration_ppmv"
+       this%vector_predictor_names(9)  = "n2o_concentration_ppmv"
+       this%vector_predictor_names(10) = "aerosol_extinction_metres01"
+       this%vector_predictor_names(11) = "liquid_effective_radius_metres"
+       this%vector_predictor_names(12) = "ice_effective_radius_metres"
+       this%vector_predictor_names(13) = "height_m_agl"
+       this%vector_predictor_names(14) = "height_thickness_metres"
+       this%vector_predictor_names(15) = "pressure_thickness_pascals"
+       this%vector_predictor_names(16) = "liquid_water_path_kg_m02"
+       this%vector_predictor_names(17) = "ice_water_path_kg_m02"
+       this%vector_predictor_names(18) = "vapour_path_kg_m02"
+       this%vector_predictor_names(19) = "upward_liquid_water_path_kg_m02"
+       this%vector_predictor_names(20) = "upward_ice_water_path_kg_m02"
+       this%vector_predictor_names(21) = "upward_vapour_path_kg_m02"
+       this%vector_predictor_names(22) = "relative_humidity_unitless"
+    endif
 
     ! Close file
     call check_netCDF(nf90_close(ncid),err_message)
 
-    ! Compute scalar-predictor statistics.
-    do iPred = 1,this%npred_scalar
-       this%scalar_predictor_mean(iPred)  = sum(this%scalar_predictor(iPred,:))/this%nCol
-       this%scalar_predictor_stdev(iPred) = sqrt(abs(sum(this%scalar_predictor(iPred,:)**2)-&
-            sum(this%scalar_predictor(iPred,:))**2/this%nCol)/(this%nCol-1))
-    enddo
-
-    ! Compute vector-predictor statistics.
-    do iPred = 1,this%npred_vector
-       do iLay = 1,this%nLev
-          this%vector_predictor_mean(iPred,iLay)  = sum(this%vector_predictor(iPred,iLay,:))/this%nCol
-          this%vector_predictor_stdev(iPred,iLay) = sqrt(abs(sum(this%vector_predictor(iPred,iLay,:)**2)-&
-               sum(this%vector_predictor(iPred,iLay,:))**2/this%nCol)/(this%nCol-1))
-       enddo
-    enddo
-
-  end function load_training_data
+  end function load_training_data_piecewise
 
   ! ######################################################################################
   !
@@ -247,72 +278,6 @@ contains
 
   end function load_reference_data
 
-
-  ! ######################################################################################
-  ! Procedure (type-bound) to interpolate model field onto emulators expected grid.
-  ! ######################################################################################
-  subroutine vert_int(this, var_in, zi, var_out, zo)
-    class(ty_rad_ml_data), intent(in) :: this
-    real(kind_phys),dimension(:),intent(in) :: &
-         var_in, & ! Field to be regridded
-         zi,     & ! Height of field, at interface (m)
-         zo        ! Height of regridded field, at interface (m)
-    real(kind_phys),dimension(:),intent(out) :: &
-         var_out   ! Regriided field
-    integer :: nlay_in, nlev_in, ilay_in, nlay_out, nlev_out, ilay_out, num_w
-    real(kind_phys) :: wts, wt, dbb, dbt, dtb, dtt
-
-    var_out(:) = 0._kind_phys
-    nlay_in  = size(var_in)
-    nlev_in  = size(zi)
-    nlay_out = size(var_out)
-    nlev_out = nlay_out+1
-
-    do iLay_out = 1,nlay_out
-       num_w = 0
-       wts   = 0._kind_phys
-       do iLay_in=1,nlay_in
-          wt = 0._kind_phys
-          if (ilay_in > nlev_in) exit
-          ! Distances between edges of both grids
-          dbb = zi(iLay_in)   - zo(iLay_out)
-          dtb = zi(iLay_in+1) - zo(iLay_out)
-          dbt = zi(iLay_in)   - zo(iLay_out+1)
-          dtt = zi(iLay_in+1) - zo(iLay_out+1)
-          if (dbt >= 0.0) exit ! Do next level in the new grid
-          if (dtb > 0.0) then
-             if (dbb <= 0.0) then
-                if (dtt <= 0) then
-                   wt = dtb
-                else
-                   wt = zo(iLay_out+1) - zo(iLay_out)
-                endif
-             else
-                if (dtt <= 0) then
-                   wt = zi(iLay_in+1) - zi(iLay_in)
-                else
-                   wt = -dbt
-                endif
-             endif
-             ! If layers overlap (w/=0), then accumulate
-             if (wt /= 0.0) then
-                num_w = num_w + 1
-                wts = wts + wt
-                var_out(iLay_out) = var_out(iLay_out) + wt*var_in(iLay_in)
-             endif
-          endif
-       enddo
-
-       ! Calculate average in new grid
-       if (num_w > 0) then
-          var_out(iLay_out) = var_out(iLay_out)/wts
-       endif
-    enddo
-    var_out(nlay_out) = var_in(nlay_in) - (zi(nLay_in) - zo(nLay_out))*(var_in(nLay_in) - var_in(nLay_in-1)) / (zi(nLay_in)-zi(nLay_in-1))
-
-
-  end subroutine vert_int
-
   ! ######################################################################################
   !
   ! Simple function to output netcdf error message and stop code.
@@ -326,9 +291,10 @@ contains
     err_message = ''
     if(status /= nf90_noerr) then
        err_message = trim(nf90_strerror(status))
+       print*,err_message
        stop
     end if
 
   end subroutine check_netCDF
 
-end module module_rad_ml
+end module module_mlrad

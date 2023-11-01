@@ -134,13 +134,13 @@ SET_PROPERTY(SOURCE ${SCHEMES} ${CAPS}
 
 # Search for any machine learning schemes using ECMWF Inferno library
 # If any, link scheme to Inferno.
-if(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90 IN_LIST SCHEMES)
+if(${LOCAL_CURRENT_SOURCE_DIR}/physics/mlrad_driver.F90 IN_LIST SCHEMES)
   message(STATUS "Adding Infero flags")
-  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90
+  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/mlrad_driver.F90
                               APPEND_STRING PROPERTIES INCLUDE_DIRECTORIES "${INFERO_LIB_DIR}/module")
-  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90
+  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/mlrad_driver.F90
                               APPEND_STRING PROPERTIES LINK_DIRECTORIES "${INFERO_LIB_DIR}/lib")
-  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/ml_rad_phys.F90
+  SET_SOURCE_FILES_PROPERTIES(${LOCAL_CURRENT_SOURCE_DIR}/physics/mlrad_driver.F90
                               APPEND_STRING PROPERTIES COMPILE_FLAGS " ${INFERO_FORTRAN_FLAGS}")
 endif()
 

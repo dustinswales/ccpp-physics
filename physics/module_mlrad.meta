@@ -19,12 +19,12 @@
 
 ########################################################################
 [ccpp-table-properties]
-  name = module_rad_ml
+  name = module_mlrad
   type = module
   dependencies = machine.F
 
 [ccpp-arg-table]
-  name = module_rad_ml
+  name = module_mlrad
   type = module
 [ty_rad_ml_data]
   standard_name = ty_rad_ml_data
