@@ -7,14 +7,14 @@
 [ccpp-arg-table]
   name = mlrad_driver_init
   type = scheme
-[do_ml_rad]
+[do_mlrad]
   standard_name = flag_for_machine_learning_radiation_scheme
   long_name = flag for machine learning	radiation scheme
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[infero_model_path]
+[infero_mpath]
   standard_name = infero_longwave_model_path
   long_name = Infero longwave radiation model path
   units = none
@@ -22,7 +22,7 @@
   type = character
   kind = len=128
   intent = in
-[infero_model_type]
+[infero_mtype]
   standard_name = infero_longwave_model_type
   long_name = Infero longwave radiation model type
   units = none
@@ -30,12 +30,12 @@
   type = character
   kind = len=128
   intent = in
-[mlrad_driver_data]
-  standard_name = training_data_used_in_machine_learning_longwave_radiation
-  long_name = training data used in machine learning longwave radiation
+[mlrad_data]
+  standard_name = training_data_used_in_machine_learning_radiation
+  long_name = training data used in machine learning radiation
   units = mixed
   dimensions = ()
-  type = ty_rad_ml_data
+  type = ty_mlrad_data
   intent = inout
 [errmsg]
   standard_name = ccpp_error_message
@@ -57,7 +57,7 @@
 [ccpp-arg-table]
   name = mlrad_driver_finalize
   type = scheme
-[do_ml_rad]
+[do_mlrad]
   standard_name = flag_for_machine_learning_radiation_scheme
   long_name = flag for machine learning radiation scheme
   units = flag
@@ -84,26 +84,19 @@
 [ccpp-arg-table]
   name = mlrad_driver_run
   type = scheme
-[do_ml_rad]
+[do_mlrad]
   standard_name = flag_for_machine_learning_radiation_scheme
   long_name = flag for machine learning radiation scheme
   units = flag
   dimensions =  ()
   type = logical
   intent = in
-[mlrad_driver_data]
-  standard_name = training_data_used_in_machine_learning_longwave_radiation
-  long_name = training data used in machine learning longwave radiation
+[mlrad_data]
+  standard_name = training_data_used_in_machine_learning_radiation
+  long_name = training data used in machine learning radiation
   units = mixed
   dimensions = ()
-  type = ty_rad_ml_data
-  intent = in
-[ref_data]
-  standard_name = reference_data_for_machine_learning_longwave_radiation
-  long_name = reference data for machine learning longwave radiation
-  units = mixed
-  dimensions = ()
-  type = ty_rad_ml_ref_data
+  type = ty_mlrad_data
   intent = in
 [effr_in]
   standard_name = flag_for_cloud_effective_radii
@@ -254,6 +247,20 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+  intent = in
+[nday]
+  standard_name = daytime_points_dimension
+  long_name = daytime points dimension
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[idx]
+  standard_name = daytime_points
+  long_name = daytime points
+  units = index
+  dimensions = (horizontal_loop_extent)
+  type = integer
   intent = in
 [con_eps]
   standard_name = ratio_of_dry_air_to_water_vapor_gas_constants

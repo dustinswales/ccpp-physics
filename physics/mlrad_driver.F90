@@ -66,7 +66,7 @@ module mlrad_driver
   use machine,  only: kind_phys, kind_dbl_prec
   use funcphys, only: fpvs
   use module_radiation_gases, only: NF_VGAS, getgases, getozn
-  use module_mlrad, only: ty_rad_ml_data, ty_rad_ml_ref_data, ip2io_lw, is2D_lw, predictor_names_lw
+  use module_mlrad, only: ty_mlrad_data, ip2io_lw, is2D_lw, pnames_lw, pnames_sw, ip2io_sw, is2D_sw
   use mersenne_twister, only: random_setseed, random_number, random_stat
   use inferof
   use iso_c_binding, only : c_double, c_int, c_float, c_char, c_null_char, c_ptr
@@ -88,67 +88,33 @@ contains
 !! \htmlinclude mlrad_driver_init.html
 !!
 ! ########################################################################################
-  subroutine mlrad_driver_init(do_ml_rad, infero_model_path, infero_model_type, mlrad_driver_data, &
+  subroutine mlrad_driver_init(do_mlrad, infero_mpath, infero_mtype, mlrad_data,         &
        errmsg, errflg)
 
     ! Inputs
     logical, intent(in) :: &
-         do_ml_rad            ! Use ML emulator for LW radiation?
+         do_mlrad        ! Use ML emulator for radiation?
     character(len=128), intent(in) :: &
-         infero_model_path, & ! 
-         infero_model_type    !
-    type(ty_rad_ml_data), intent(inout) :: &
-         mlrad_driver_data        ! DDT containing training data (IN:raw,OUT:sorted)
+         infero_mpath, & ! Infero model path
+         infero_mtype    ! Infero model type
+    type(ty_mlrad_data), intent(inout) :: &
+         mlrad_data      ! DDT containing training data (IN:raw,OUT:sorted)
     
     ! Outputs
     character(len=*), intent(out) :: &
-         errmsg               !
+         errmsg          ! CCPP error message
     integer, intent(out) :: &
-         errflg               !
+         errflg          ! CCPP error flag
 
     ! Locals
     character(1024) :: yaml_config
     integer :: iCol, iPred, iLay, iName, count
-    logical,dimension(mlrad_driver_data%nCol) :: isort
-    real(kind_phys), dimension(mlrad_driver_data%npred_scalar, mlrad_driver_data%nCol) :: &
-         scalar_predictor
-    real(kind_phys), dimension(mlrad_driver_data%npred_vector, mlrad_driver_data%nLev, mlrad_driver_data%nCol) :: &
-         vector_predictor
 
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
 
-    if (.not. do_ml_rad) return
-
-    !open(98,file='predictor_breakpoints.txt',status='unknown')
-
-    ! ######################################################################################
-    !
-    ! Sort training data. Needed for normalization process for predictor matrix.
-    !
-    ! ######################################################################################
-    ! Scalars
-    do iPred= 1,mlrad_driver_data%npred_scalar
-       isort(:) = .true.
-       do iCol = 1,mlrad_driver_data%nCol
-          scalar_predictor(iPred,iCol) = minval(mlrad_driver_data%scalar_predictor(iPred,:),isort)
-          isort(minloc(mlrad_driver_data%scalar_predictor(iPred,:),isort)) = .false.
-       end do
-       mlrad_driver_data%scalar_predictor(iPred,:) = scalar_predictor(iPred,:)
-    enddo
-
-    ! Two-dimensional arrays
-    do iPred = 1,mlrad_driver_data%npred_vector
-       do iLay = 1,mlrad_driver_data%nLev
-          isort(:) = .true.
-          do iCol = 1,mlrad_driver_data%nCol
-             vector_predictor(iPred,iLay,iCol) = minval(mlrad_driver_data%vector_predictor(iPred,iLay,:),isort)
-             isort(minloc(mlrad_driver_data%vector_predictor(iPred,iLay,:),isort)) = .false.
-          end do
-          mlrad_driver_data%vector_predictor(iPred,iLay,:) = vector_predictor(iPred,iLay,:)
-       enddo
-    enddo
+    if (.not. do_mlrad) return
 
     ! ######################################################################################
     !
@@ -158,22 +124,44 @@ contains
     ! (The emulator expects the predictors in order. The inputs may not be in this order)
     !
     ! ######################################################################################
+    ! Longwave
     count = 0
-    do iPred= 1,mlrad_driver_data%npred_scalar
-       do iName = 1,size(predictor_names_lw)
-          if (trim(predictor_names_lw(iName)) == trim(mlrad_driver_data%scalar_predictor_names(iPred))) then
+    do iPred= 1,mlrad_data%lw%npreds
+       do iName = 1,size(pnames_lw)
+          if (trim(pnames_lw(iName)) == trim(mlrad_data%lw%scalar_pnames(iPred))) then
              ip2io_lw(iName) = iPred
              is2D_lw(iName)  = .false.
              count = count + 1
           endif
        enddo
     enddo
-
-    do iPred = 1,mlrad_driver_data%npred_vector
-       do iName = 1,size(predictor_names_lw)
-          if (trim(predictor_names_lw(iName)) == trim(mlrad_driver_data%vector_predictor_names(iPred))) then
+    !
+    do iPred = 1,mlrad_data%lw%npredv
+       do iName = 1,size(pnames_lw)
+          if (trim(pnames_lw(iName)) == trim(mlrad_data%lw%vector_pnames(iPred))) then
              ip2io_lw(iName) = iPred
              is2D_lw(iName)  = .true.
+             count = count + 1
+          endif
+       enddo
+    enddo
+
+    ! Shortwave
+    do iPred= 1,mlrad_data%sw%npreds
+       do iName = 1,size(pnames_sw)
+          if (trim(pnames_sw(iName)) == trim(mlrad_data%sw%scalar_pnames(iPred))) then
+             ip2io_sw(iName) = iPred
+             is2D_sw(iName)  = .false.
+             count = count + 1
+          endif
+       enddo
+    enddo
+    !
+    do iPred = 1,mlrad_data%sw%npredv
+       do iName = 1,size(pnames_sw)
+          if (trim(pnames_sw(iName)) == trim(mlrad_data%sw%vector_pnames(iPred))) then
+             ip2io_sw(iName) = iPred
+             is2D_sw(iName)  = .true.
              count = count + 1
           endif
        enddo
@@ -188,8 +176,8 @@ contains
 
     ! YAML config string
     yaml_config = "---"//NEW_LINE('A') &
-         //"  path: "//TRIM(infero_model_path)//NEW_LINE('A') &
-         //"  type: "//TRIM(infero_model_type)//c_null_char
+         //"  path: "//TRIM(infero_mpath)//NEW_LINE('A') &
+         //"  type: "//TRIM(infero_mtype)//c_null_char
 
     ! Get a infero model
     call infero_check(model%initialise_from_yaml_string(yaml_config))
@@ -201,32 +189,32 @@ contains
 !! \htmlinclude mlrad_driver_run.html
 !!
 ! #########################################################################################
-  subroutine mlrad_driver_run(do_ml_rad, effr_in, debug, nCol, nLev, i_cldliq, i_cldice,      &
-       i_ozone, ico2, isubc, icseed, semis, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, &
-       cld_reice, qgrs, mlrad_driver_data, ref_data, con_epsqs, con_eps, con_epsm1, con_rd,   &
+  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, i_cldliq, i_cldice,  &
+       i_ozone, ico2, isubc, icseed, idx, semis, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, &
+       cld_reice, qgrs, mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd,   &
        con_fvirt, con_g, con_pi, htrlw, sfcflw, sfcfsw, topflw, topfsw, errmsg, errflg)
     use module_radsw_parameters, only: topfsw_type, sfcfsw_type
     use module_radlw_parameters, only: topflw_type, sfcflw_type
 
     ! Inputs
-    type(ty_rad_ml_data), intent(in) :: &
-         mlrad_driver_data  ! DDT containing training data
-    type(ty_rad_ml_ref_data), intent(in) :: &
-         ref_data       ! DDT containing reference data.
+    type(ty_mlrad_data), intent(in) :: &
+         mlrad_data  ! DDT containing training data
     logical, intent(in) :: &
-         do_ml_rad,   & ! Use ML emulator for LW radiation?
+         do_mlrad,   & ! Use ML emulator for LW radiation?
          effr_in,     & ! Provide hydrometeor radii from macrophysics? 
          debug          ! Debug mode?
     integer, intent(in) ::  &
          nCol,        & ! Number of horizontal grid points
          nLev,        & ! Number of vertical layers
+         nDay,        & ! Number of daylit columns
          i_cldliq,    & ! Index into tracer array for cloud liquid.
          i_cldice,    & ! Index into tracer array for cloud ice.
          i_ozone,     & ! Index into tracer array for ozone concentration.
          ico2,        & ! Flag for co2 radiation scheme
          isubc          ! Flag for cloud-seeding (rng) for cloud-sampling
     integer,intent(in),dimension(:) :: &
-         icseed         ! Seed for random number generation for longwave radiation
+         icseed,      &  ! Seed for random number generation for longwave radiation
+         idx             ! Index array for daytime points
     real(kind_phys), dimension(:), intent(in) :: &
          lon,         & ! Longitude
          lat,         & ! Latitude
@@ -269,7 +257,7 @@ contains
 
     ! Locals
     logical :: top_at_1
-    integer :: ipred, ilev, icase, iinf, iLay, iCol, ncol_pred
+    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred
     integer, dimension(nCol) :: ipseed
     real(kind_phys) :: es, qs, dp, tem1, tem2, pfac, ranku(nCol), rankn(nCol), rankk(1), &
          bin(1), edge(nLev+1), bot, top
@@ -279,15 +267,17 @@ contains
     real(kind_phys), dimension(nCol, nLev, NF_VGAS) :: gas_vmr
     real(c_float), allocatable :: it2f(:,:,:) ! data for inference in profile, height, value order
     real(c_float), allocatable :: ot2f(:,:)   ! data from inference in profile, height order
-    real(c_float), dimension(nCol, nLev, size(predictor_names_lw)) :: predictor_matrix_lw, upredictor_matrix_lw
+    real(c_float), dimension(nCol, nLev, size(pnames_lw)) :: predictor_matrix_lw, upredictor_matrix_lw
+    real(c_float), dimension(nDay, nLev, size(pnames_sw)) :: predictor_matrix_sw, upredictor_matrix_sw
     real(c_float), dimension(nCol, nLev+2) :: target_matrix_lw
+    real(c_float), dimension(nDay, nLev+2) :: target_matrix_sw
 
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
 
     ! Are we supposed to be here?
-    if (.not. do_ml_rad) return
+    if (.not. do_mlrad) return
 
     ! What is vertical ordering of the host?
     top_at_1 = (prsi(1,1) .lt.  prsi(1, nLev))
@@ -316,12 +306,18 @@ contains
     call getgases (prsi/100., lon, lat, nCol, nLev, ico2, top_at_1, con_pi, gas_vmr)
 
     ! ######################################################################################
-    ! Compute fields for predictor matrices and populate.
+    !
+    ! LONGWAVE
+    !
     ! ######################################################################################
+
+    !
+    ! Compute Longwave predictor matrix...
+    !
     tem1 = 1._kind_phys/con_g
     tem2 = con_rd/con_g
     do iCol=1,nCol
-       ! Pressure business (DJS: Will revisit)
+       ! Pressure business (DJS: Will revisit after retraining)
        predictor_matrix_lw(iCol,:,1)  = prsi(iCol,1:nLev) - 1._kind_phys
        do iLay=1,nLev
           predictor_matrix_lw(iCol,iLay,21) = predictor_matrix_lw(iCol,iLay,1) - predictor_matrix_lw(iCol,iLay+1,1)
@@ -332,6 +328,7 @@ contains
        predictor_matrix_lw(iCol,:,21) = abs(edge(2:nlev+1)-edge(1:nlev))
 
        do iLay=1,nLev
+          ! (DJS: Will revisit after retraining)
           ! Layer pressure (Pa)
           !predictor_matrix_lw(iCol,iLay,1)  = prsl(iCol,iLay)
 
@@ -426,37 +423,103 @@ contains
        !enddo
     enddo    ! END column loop
 
-    ! ######################################################################################
-    ! Normalize predictor matrix
-    ! ######################################################################################
+    !
+    ! Normalize Longwave predictor matrix...
+    !
     if (debug) upredictor_matrix_lw = predictor_matrix_lw
-    do iPred = 1,size(predictor_names_lw)
+    do iPred = 1,size(pnames_lw)
        do iLay=1,nLev
           do iCol=1,nCol
              ! Find uniform rank of predictor value wrt training data.
              if (is2D_lw(iPred)) then
                 rankk     = real(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - &
-                                            mlrad_driver_data%vector_breakpoint(:,iLay, ip2io_lw(iPred)))),kind=kind_phys)
-                ncol_pred = count(mlrad_driver_data%vector_breakpoint(:, iLay, ip2io_lw(iPred)) .eq. &
-                                  mlrad_driver_data%vector_breakpoint(:, iLay, ip2io_lw(iPred)))
+                                            mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred)))),kind=kind_phys)
+                ncol_pred = count(mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred)) .eq. &
+                                  mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred)))
              else
                 rankk     = real(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - &
-                                            mlrad_driver_data%scalar_breakpoint(:, ip2io_lw(iPred)))),kind=kind_phys)
-                ncol_pred = count(mlrad_driver_data%scalar_breakpoint(:, ip2io_lw(iPred)) .eq. &
-                                  mlrad_driver_data%scalar_breakpoint(:, ip2io_lw(iPred)))
+                                            mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))),kind=kind_phys)
+                ncol_pred = count(mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)) .eq. &
+                                  mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))
              endif
              rankk       = max(1.e-6_kind_phys,rankk)
-             ranku(iCol) = rankk(1)/min(mlrad_driver_data%nCol,ncol_pred)
+             ranku(iCol) = rankk(1)/min(mlrad_data%lw%nCol,ncol_pred)
              predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1)
           enddo ! END Column loop
        enddo    ! END Vertical loop
     enddo       ! END Predictor loop
 
+
+    ! ######################################################################################
+    !
+    ! SHORTWAVE
+    !
+    ! ######################################################################################
+    if (nDay > 0) then
+       !
+       ! Compute Shortwave predictor matrix...
+       !  *NOTE* Many of the same fields are used for SW as in LW, just copy these over.
+       !
+       do iDay=1,nDay
+          do iLay=1,nLev
+             predictor_matrix_sw(iDay,iLay,1)  = predictor_matrix_lw(idx(iCol),iLay,1)
+             predictor_matrix_sw(iDay,iLay,2)  = predictor_matrix_lw(idx(iCol),iLay,2)
+             predictor_matrix_sw(iDay,iLay,3)  = predictor_matrix_lw(idx(iCol),iLay,3)
+             predictor_matrix_sw(iDay,iLay,4)  = predictor_matrix_lw(idx(iCol),iLay,4)
+             predictor_matrix_sw(iDay,iLay,5)  = predictor_matrix_lw(idx(iCol),iLay,5)
+             predictor_matrix_sw(iDay,iLay,6)  = predictor_matrix_lw(idx(iCol),iLay,6)
+             predictor_matrix_sw(iDay,iLay,7)  = predictor_matrix_lw(idx(iCol),iLay,7)
+             predictor_matrix_sw(iDay,iLay,8)  = predictor_matrix_lw(idx(iCol),iLay,8)
+             predictor_matrix_sw(iDay,iLay,9)  = predictor_matrix_lw(idx(iCol),iLay,9)
+             predictor_matrix_sw(iDay,iLay,10) = predictor_matrix_lw(idx(iCol),iLay,10)
+             predictor_matrix_sw(iDay,iLay,11) = predictor_matrix_lw(idx(iCol),iLay,11)
+             predictor_matrix_sw(iDay,iLay,12) = predictor_matrix_lw(idx(iCol),iLay,12)
+             predictor_matrix_sw(iDay,iLay,13) = predictor_matrix_lw(idx(iCol),iLay,13)
+             predictor_matrix_sw(iDay,iLay,14) = predictor_matrix_lw(idx(iCol),iLay,14)
+             predictor_matrix_sw(iDay,iLay,15) = predictor_matrix_lw(idx(iCol),iLay,15)
+             predictor_matrix_sw(iDay,iLay,16) = predictor_matrix_lw(idx(iCol),iLay,16)
+             predictor_matrix_sw(iDay,iLay,17) = predictor_matrix_lw(idx(iCol),iLay,17)
+             predictor_matrix_sw(iDay,iLay,18) = predictor_matrix_lw(idx(iCol),iLay,18)
+          enddo
+       enddo
+
+       !
+       ! Normalize Shortwave predictor matrix.
+       !
+       do iPred = 1,size(pnames_sw)
+          do iLay=1,nLev
+             do iDay=1,nDay
+                ! Find uniform rank of predictor value wrt training data.
+                if (is2D_sw(iPred)) then
+                   rankk     = real(minloc(abs(predictor_matrix_sw(iDay,iLay,iPred) - &
+                                               mlrad_data%sw%vector_breakpoint(:,iLay, ip2io_sw(iPred)))),kind=kind_phys)
+                   ncol_pred = count(mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred)) .eq. &
+                                     mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred)))
+                else
+                   rankk     = real(minloc(abs(predictor_matrix_sw(iDay,iLay,iPred) - &
+                                               mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))),kind=kind_phys)
+                   ncol_pred = count(mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)) .eq. &
+                                     mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))
+                endif
+                rankk       = max(1.e-6_kind_phys,rankk)
+                ranku(iDay) = rankk(1)/min(mlrad_data%sw%nCol,ncol_pred)
+                predictor_matrix_sw(iDay,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iDay)-1)
+             enddo ! END Column loop
+          enddo    ! END Vertical loop
+       enddo       ! END Predictor loop
+       !
+    endif          ! END Daylit columns
+
+
     ! ######################################################################################
     ! Begin Inference...
     ! ######################################################################################
     ! Run inferences
+    ! Longwave (all columns)
     call infero_check(model%infer(predictor_matrix_lw, target_matrix_lw))
+
+    ! Shortwave (daylit-columns only)
+    !call infero_check(model%infer(predictor_matrix_sw, target_matrix_sw))
 
     do iCol=1,nCol
        print*,'heating profile (K/day): '
@@ -474,6 +537,9 @@ contains
        htrlw(iCol,:)      = target_matrix_lw(iCol,iLay)/(3600.*24.) ! K/day -> K/sec
        sfcflw(iCol)%dnfxc = target_matrix_lw(iCol,nLev+1)
        topflw(iCol)%upfxc = target_matrix_lw(iCol,nLev+2)
+       !htrsw(iCol,:)      = target_matrix_sw(iCol,iLay)/(3600.*24.) ! K/day -> K/sec 
+       !sfcfsw(iCol)%dnfxc = target_matrix_sw(iCol,nLev+1)
+       !topfsw(iCol)%upfxc = target_matrix_sw(iCol,nLev+2)
     enddo
 
     if (debug) then
@@ -523,31 +589,6 @@ contains
                   upredictor_matrix_lw(iCol,iLay,22),      &
                   upredictor_matrix_lw(iCol,iLay,23),      &
                   upredictor_matrix_lw(iCol,iLay,24)
-             write (*,'(a5,25f10.2)')     '',&
-                  ref_data%unnorm_predictor_matrix(1,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(2,iLay,iCol),       &
-                  1.e3*ref_data%unnorm_predictor_matrix(3,iLay,iCol),  &
-                  ref_data%unnorm_predictor_matrix(4,iLay,iCol),       &
-                  1.e6*ref_data%unnorm_predictor_matrix(5,iLay,iCol),  &
-                  1.e6*ref_data%unnorm_predictor_matrix(6,iLay,iCol),  &
-                  ref_data%unnorm_predictor_matrix(7,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(8,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(9,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(10,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(11,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(12,iLay,iCol),      &
-                  1.e6*ref_data%unnorm_predictor_matrix(13,iLay,iCol), &
-                  1.e6*ref_data%unnorm_predictor_matrix(14,iLay,iCol), &
-                  1.e6*ref_data%unnorm_predictor_matrix(15,iLay,iCol), &
-                  ref_data%unnorm_predictor_matrix(16,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(17,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(18,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(19,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(20,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(21,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(22,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(23,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(24,iLay,iCol)
           enddo
        enddo
        write (*,'(a50)') '################################'
@@ -582,32 +623,6 @@ contains
                   predictor_matrix_lw(iCol,iLay,22),       &
                   predictor_matrix_lw(iCol,iLay,23),       &
                   predictor_matrix_lw(iCol,iLay,24)
-             write (*,'(i5,25f10.2)') iLay,                &
-                  ref_data%predictor_matrix(1,iLay,iCol),  &
-                  ref_data%predictor_matrix(2,iLay,iCol),  &
-                  ref_data%predictor_matrix(3,iLay,iCol),  &
-                  ref_data%predictor_matrix(4,iLay,iCol),  &
-                  ref_data%predictor_matrix(5,iLay,iCol),  &
-                  ref_data%predictor_matrix(6,iLay,iCol),  &
-                  ref_data%predictor_matrix(7,iLay,iCol),  &
-                  ref_data%predictor_matrix(8,iLay,iCol),  &
-                  ref_data%predictor_matrix(9,iLay,iCol),  &
-                  ref_data%predictor_matrix(10,iLay,iCol), &
-                  ref_data%predictor_matrix(11,iLay,iCol), &
-                  ref_data%predictor_matrix(12,iLay,iCol), &
-                  ref_data%predictor_matrix(13,iLay,iCol), &
-                  ref_data%predictor_matrix(14,iLay,iCol), &
-                  ref_data%predictor_matrix(15,iLay,iCol), &
-                  ref_data%predictor_matrix(16,iLay,iCol), &
-                  ref_data%predictor_matrix(17,iLay,iCol), &
-                  ref_data%predictor_matrix(18,iLay,iCol), &
-                  ref_data%predictor_matrix(19,iLay,iCol), &
-                  ref_data%predictor_matrix(20,iLay,iCol), &
-                  ref_data%predictor_matrix(21,iLay,iCol), &
-                  ref_data%predictor_matrix(22,iLay,iCol), &
-                  ref_data%predictor_matrix(23,iLay,iCol), &
-                  ref_data%predictor_matrix(24,iLay,iCol)
-             print*,'-'
           enddo
        enddo
     endif
@@ -619,9 +634,9 @@ contains
 !! \htmlinclude mlrad_driver_finalize.html
 !!
 ! #########################################################################################
-  subroutine mlrad_driver_finalize(do_ml_rad, errmsg, errflg)
+  subroutine mlrad_driver_finalize(do_mlrad, errmsg, errflg)
     ! Inputs
-    logical,           intent(in) :: do_ml_rad
+    logical,           intent(in) :: do_mlrad
     ! Outputs
     character(len=*),  intent(out) :: errmsg
     integer,           intent(out) :: errflg
@@ -630,7 +645,7 @@ contains
     errmsg = ''
     errflg = 0
 
-    if (.not. do_ml_rad) return
+    if (.not. do_mlrad) return
 
     ! Free the model
     call infero_check(model%free())
