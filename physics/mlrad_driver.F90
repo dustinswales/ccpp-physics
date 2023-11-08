@@ -1,5 +1,5 @@
 ! ###########################################################################################
-!> \file mlrad_driver.F90
+!> \file mlrad_river.F90
 !!
 !! This module includes the ONNX based machine-learning emulator for longwave and shortwave
 !! radiation detailed in 10.22541/essoar.168319865.58439449/v1
@@ -55,24 +55,26 @@
 !!    20 - 'height_m_agl'                    [m]
 !!    21 - 'height_thickness_metres'         [m]
 !!    22 - 'pressure_thickness_pascals'      [Pa]
-!!    22 - 'zenith_angle_radians'            [1]
-!!    23 - 'surface_temperature_kelvins'     [K]
+!!    23 - 'zenith_angle_radians'            [1]
 !!    24 - 'albedo'                          [1]
 !!    25 - 'aerosol_single_scattering_albedo'[1]
 !!    26 - 'aerosol_asymmetry_param'         [1]
 !!
 ! ###########################################################################################
 module mlrad_driver
-  use machine,  only: kind_phys, kind_dbl_prec
-  use funcphys, only: fpvs
-  use module_radiation_gases, only: NF_VGAS, getgases, getozn
-  use module_mlrad, only: ty_mlrad_data, ip2io_lw, is2D_lw, pnames_lw, pnames_sw, ip2io_sw, is2D_sw
-  use mersenne_twister, only: random_setseed, random_number, random_stat
+  use machine,                   only: kind_phys, kind_dbl_prec
+  use funcphys,                  only: fpvs
+  use module_radiation_gases,    only: NF_VGAS, getgases, getozn
+  use module_radiation_aerosols, only: setaer
+  use module_mlrad,              only: ty_mlrad_data, ip2io_lw, is2D_lw, pnames_lw,         &
+                                       pnames_sw, ip2io_sw, is2D_sw,ty_rad_ml_ref_data
+  use mersenne_twister,          only: random_setseed, random_number, random_stat
+  use iso_c_binding,             only : c_double, c_int, c_float, c_char, c_null_char, c_ptr
   use inferof
-  use iso_c_binding, only : c_double, c_int, c_float, c_char, c_null_char, c_ptr
+
   implicit none
 
-  type(infero_model) :: model
+  type(infero_model) :: model_lw, model_sw
 
   ! Default effective radii, used when coupling radiation to single-moment cloud microphysics
   ! This is set by the host using, effr_in=F
@@ -88,17 +90,20 @@ contains
 !! \htmlinclude mlrad_driver_init.html
 !!
 ! ########################################################################################
-  subroutine mlrad_driver_init(do_mlrad, infero_mpath, infero_mtype, mlrad_data,         &
-       errmsg, errflg)
+  subroutine mlrad_driver_init(do_mlrad, debug, infero_mpath_lw, infero_mtype_lw, infero_mpath_sw, &
+       infero_mtype_sw, mlrad_data, errmsg, errflg)
 
     ! Inputs
     logical, intent(in) :: &
-         do_mlrad        ! Use ML emulator for radiation?
+         debug,           & ! Debug mode
+         do_mlrad           ! Use ML emulator for radiation?
     character(len=128), intent(in) :: &
-         infero_mpath, & ! Infero model path
-         infero_mtype    ! Infero model type
+         infero_mpath_lw, & ! Infero model (LW) path
+         infero_mtype_lw, & ! Infero model (LW) type
+         infero_mpath_sw, & ! Infero model (SW) path
+         infero_mtype_sw    ! Infero model (SW) type 
     type(ty_mlrad_data), intent(inout) :: &
-         mlrad_data      ! DDT containing training data (IN:raw,OUT:sorted)
+         mlrad_data         ! DDT containing training data
     
     ! Outputs
     character(len=*), intent(out) :: &
@@ -107,7 +112,7 @@ contains
          errflg          ! CCPP error flag
 
     ! Locals
-    character(1024) :: yaml_config
+    character(1024) :: yaml_config_lw, yaml_config_sw
     integer :: iCol, iPred, iLay, iName, count
 
     ! Initialize CCPP error handling variables
@@ -115,6 +120,16 @@ contains
     errflg = 0
 
     if (.not. do_mlrad) return
+
+    if (debug) then
+       open(93, file='debug.mlrad_driver.heating_rates.txt',   status='unknown')
+       open(94, file='debug.mlrad_driver.fluxes.txt',          status='unknown')
+       open(95, file='debug.mlrad_driver.upmatrix.example.txt',status='unknown')
+       open(96, file='debug.mlrad_driver.npmatrix.example.txt',status='unknown')
+       open(97, file='debug.mlrad_driver.upmatrix.inline.txt', status='unknown')
+       open(98, file='debug.mlrad_driver.npmatrix.inline.txt', status='unknown')
+       open(99, file='debug.mlrad_driver.breakpoints.txt',     status='unknown')
+    endif
 
     ! ######################################################################################
     !
@@ -174,13 +189,19 @@ contains
     ! ######################################################################################
     call infero_check(infero_initialise())
 
-    ! YAML config string
-    yaml_config = "---"//NEW_LINE('A') &
-         //"  path: "//TRIM(infero_mpath)//NEW_LINE('A') &
-         //"  type: "//TRIM(infero_mtype)//c_null_char
+    ! Longwave
+    yaml_config_lw = "---"//NEW_LINE('A') &
+         //"  path: "//TRIM(infero_mpath_lw)//NEW_LINE('A') &
+         //"  type: "//TRIM(infero_mtype_lw)//c_null_char
+    !
+    call infero_check(model_lw%initialise_from_yaml_string(yaml_config_lw))
 
-    ! Get a infero model
-    call infero_check(model%initialise_from_yaml_string(yaml_config))
+    ! Shortwave
+    yaml_config_sw = "---"//NEW_LINE('A') &
+         //"  path: "//TRIM(infero_mpath_sw)//NEW_LINE('A') &
+         //"  type: "//TRIM(infero_mtype_sw)//c_null_char
+    !
+    call infero_check(model_sw%initialise_from_yaml_string(yaml_config_sw))
 
   end subroutine mlrad_driver_init
 
@@ -189,18 +210,20 @@ contains
 !! \htmlinclude mlrad_driver_run.html
 !!
 ! #########################################################################################
-  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, i_cldliq, i_cldice,  &
-       i_ozone, ico2, isubc, icseed, idx, semis, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, &
-       cld_reice, qgrs, mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd,   &
-       con_fvirt, con_g, con_pi, htrlw, sfcflw, sfcfsw, topflw, topfsw, errmsg, errflg)
+  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, i_cldliq,       &
+       i_cldice, i_ozone, ico2, isubc, iaermdl, iaerflg, icseed, idx, lsmask, semis,      &
+       sfcalb, coszen, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, cld_reice, qgrs,     &
+       aerfld, mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd, con_fvirt, con_g,       &
+       con_pi, htrlw, htrsw, sfcflw, sfcfsw, topflw, topfsw, errmsg, errflg, ref_data)
     use module_radsw_parameters, only: topfsw_type, sfcfsw_type
     use module_radlw_parameters, only: topflw_type, sfcflw_type
 
     ! Inputs
+    type(ty_rad_ml_ref_data),intent(in) :: ref_data
     type(ty_mlrad_data), intent(in) :: &
-         mlrad_data  ! DDT containing training data
+         mlrad_data     ! DDT containing training data
     logical, intent(in) :: &
-         do_mlrad,   & ! Use ML emulator for LW radiation?
+         do_mlrad,    & ! Use ML emulator for LW radiation?
          effr_in,     & ! Provide hydrometeor radii from macrophysics? 
          debug          ! Debug mode?
     integer, intent(in) ::  &
@@ -211,23 +234,30 @@ contains
          i_cldice,    & ! Index into tracer array for cloud ice.
          i_ozone,     & ! Index into tracer array for ozone concentration.
          ico2,        & ! Flag for co2 radiation scheme
-         isubc          ! Flag for cloud-seeding (rng) for cloud-sampling
+         isubc,       & ! Flag for cloud-seeding (rng) for cloud-sampling
+         iaermdl,     & ! Aerosol model scheme flag
+         iaerflg        ! Aerosol effects to include
     integer,intent(in),dimension(:) :: &
-         icseed,      &  ! Seed for random number generation for longwave radiation
-         idx             ! Index array for daytime points
+         icseed,      & ! Seed for random number generation for longwave radiation
+         idx            ! Index array for daytime points
     real(kind_phys), dimension(:), intent(in) :: &
+         lsmask,      & ! Land/sea/sea-ice mask
          lon,         & ! Longitude
          lat,         & ! Latitude
-         semis          ! Longwave surface emissivity
+         semis,       & ! Longwave surface emissivity
+         coszen         ! Cosine(SZA)
     real(kind_phys), dimension(:,:), intent(in) :: &
          prsl,        & ! Pressure at model-layer centers (Pa)
          tgrs,        & ! Temperature at model-layer centers (K)
          prslk,       & ! Exner function at model layer centers (1)
          prsi,        & ! Pressure at model-interfaces (Pa)
          cld_reliq,   & ! Effective radius (m)
-         cld_reice      ! Effective radius (m)
+         cld_reice,   & ! Effective radius (m)
+         sfcalb         ! Surface albedo
     real(kind_phys), dimension(:,:,:), intent(in) :: &
          qgrs           ! Tracer concentrations (kg/kg)
+    real(kind_phys), dimension(:, :,:),intent(in) :: &
+         aerfld         ! Aerosol input concentrations 
     real(kind_phys), intent(in) :: &
          con_epsqs,   & ! Physical constant: Minimum saturation mixing-ratio (kg/kg)
          con_eps,     & ! Physical constant: Epsilon (Rd/Rv)
@@ -239,15 +269,16 @@ contains
 
     ! Outputs (fluxes to ccpp and host)
     real(kind_phys), dimension(:,:), intent(inout) :: &
-         htrlw          ! Longwave heating-rate (K/s)
+         htrlw,       & ! Longwave heating-rate       (K/s)
+         htrsw          ! Shortwave heating-rate      (K/s)
     type(sfcflw_type), dimension(:), intent(inout) :: &
-         sfcflw         ! Longwave fluxes at surface (W/m2)
+         sfcflw         ! Longwave fluxes at surface  (W/m2)
     type(sfcfsw_type), dimension(:), intent(inout) :: &
          sfcfsw         ! Shortwave fluxes at surface (W/m2)
     type(topflw_type), dimension(:), intent(inout) :: &
-         topflw         ! Longwave fluxes at TOA (W/m2)
+         topflw         ! Longwave fluxes at TOA      (W/m2)
     type(topfsw_type), dimension(:), intent(inout) :: &
-         topfsw         ! Shortwave fluxes at TOA (W/m2)
+         topfsw         ! Shortwave fluxes at TOA     (W/m2)
 
     ! Outputs
     character(len=*), intent(out) :: &
@@ -257,14 +288,17 @@ contains
 
     ! Locals
     logical :: top_at_1
-    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred
+    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd
     integer, dimension(nCol) :: ipseed
     real(kind_phys) :: es, qs, dp, tem1, tem2, pfac, ranku(nCol), rankn(nCol), rankk(1), &
          bin(1), edge(nLev+1), bot, top
-    real(kind_phys), dimension(nLev) :: tv, rho, tempVar
+    real(kind_phys), dimension(nLev) :: rho, tempVar
     real(kind_phys), dimension(nLev+1) :: hgtb, zo, zi
-    real(kind_phys), dimension(nCol, nLev) :: o3_lay
+    real(kind_phys), dimension(nCol, nLev) :: o3_lay, tv, rh, aerodp, tau_aero, g_aero, ssa_aero
     real(kind_phys), dimension(nCol, nLev, NF_VGAS) :: gas_vmr
+    real(kind_phys), dimension(nCol, nLev, 14, 3) :: aerosolssw
+    real(kind_phys), dimension(nCol, nLev, 16, 3) :: aerosolslw
+    real(kind_phys), dimension(nCol, 3) :: ext550
     real(c_float), allocatable :: it2f(:,:,:) ! data for inference in profile, height, value order
     real(c_float), allocatable :: ot2f(:,:)   ! data from inference in profile, height order
     real(c_float), dimension(nCol, nLev, size(pnames_lw)) :: predictor_matrix_lw, upredictor_matrix_lw
@@ -336,10 +370,11 @@ contains
           !predictor_matrix_lw(iCol,iLay,21) = abs((prsi(iCol,iLay+1))-(prsi(iCol,iLay)))
 
           ! Thermodynamic temporaries
-          es        = min( predictor_matrix_lw(iCol,iLay,1),  fpvs( tgrs(iCol,iLay) ) )
-          qs        = max( con_epsqs, con_eps * es / (predictor_matrix_lw(iCol,iLay,1) + con_epsm1*es) )
-          tv(iLay)  = tgrs(iCol,iLay) * (1._kind_phys + con_fvirt*qgrs(iCol,iLay,1))
-          rho(iLay) = predictor_matrix_lw(iCol,iLay,1)/(con_rd*tv(iLay))
+          es            = min( predictor_matrix_lw(iCol,iLay,1),  fpvs( tgrs(iCol,iLay) ) )
+          qs            = max( con_epsqs, con_eps * es / (predictor_matrix_lw(iCol,iLay,1) + con_epsm1*es) )
+          tv(iCol,iLay) = tgrs(iCol,iLay) * (1._kind_phys + con_fvirt*qgrs(iCol,iLay,1))
+          rho(iLay)     = predictor_matrix_lw(iCol,iLay,1)/(con_rd*tv(iCol,iLay))
+          rh(iCol,iLay) = max( 0._kind_phys, min( 1._kind_phys, max(con_epsqs, qgrs(iCol,iLay,1))/qs ) )
 
           ! Layer temperature (K)
           predictor_matrix_lw(iCol,iLay,2)  = tgrs(iCol,iLay)
@@ -348,7 +383,7 @@ contains
           predictor_matrix_lw(iCol,iLay,3)  = qgrs(iCol,iLay,1)
 
           ! Compute layer relative-humidity (kg/kg)->(1)
-          predictor_matrix_lw(iCol,iLay,4)  = max( 0._kind_phys, min( 1._kind_phys, max(con_epsqs, qgrs(iCol,iLay,1))/qs ) )
+          predictor_matrix_lw(iCol,iLay,4)  = rh(iCol,iLay)
 
           ! Compute layer liquid/Ice water content (kg/kg)->(kg/m3).
           predictor_matrix_lw(iCol,iLay,5)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq)*rho(iLay))
@@ -383,7 +418,7 @@ contains
        enddo ! END vertical loop
        
        ! Zenith-angle (1) Why do we need this for Longwave?
-       predictor_matrix_lw(iCol,:,22) = 0._kind_phys
+       predictor_matrix_lw(iDay,:,22) = acos(coszen(iCol))
 
        ! Surface temperature (K)
        predictor_matrix_lw(iCol,:,23) = tgrs(iCol,1)
@@ -406,8 +441,9 @@ contains
        ! Layer thickness and height above ground (m) (assumes SFC->TOA vertical ordering)
        ! Layer thickness (m)
        do iLay=nLev,1,-1
-          predictor_matrix_lw(iCol,iLay,20) = tem2 * abs(log(prsi(iCol,iLay)) - log(prsi(iCol,iLay+1))) * tv(iLay)
+          predictor_matrix_lw(iCol,iLay,20) = tem2 * abs(log(prsi(iCol,iLay)) - log(prsi(iCol,iLay+1))) * tv(iCol,iLay)
        enddo
+
        ! Height at layer boundaries
        hgtb(1) = 0._kind_phys
        do iLay=1,nLev
@@ -444,11 +480,18 @@ contains
              endif
              rankk       = max(1.e-6_kind_phys,rankk)
              ranku(iCol) = rankk(1)/min(mlrad_data%lw%nCol,ncol_pred)
-             predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1)
+             predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1._kind_phys)
+             if (debug) then
+                write(99,'(a32,a7,i5)') trim(pnames_lw(iPred)),'  iLay=',iLay
+                if (is2D_lw(iPred)) then
+                   write(99,*) mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred))
+                else
+                   write(99,*) mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))
+                endif
+             endif
           enddo ! END Column loop
        enddo    ! END Vertical loop
     enddo       ! END Predictor loop
-
 
     ! ######################################################################################
     !
@@ -456,36 +499,76 @@ contains
     !
     ! ######################################################################################
     if (nDay > 0) then
+
+       ! SW Aerosol optics (*WORK IN PROGRESS*)
+       ! aerosolssw contains the MERRA aerosol optics properties for the RRTMG SW bands (14).
+       call setaer(prsi*0.01, prsl*0.01, prslk, tv, rh, lsmask, qgrs, aerfld, lon, lat,    &
+            nCol, nLev, nLev+1, .true., .true., iaermdl, iaerflg, top_at_1, con_pi, con_rd,&
+            con_g, aerosolssw, aerosolslw, aerodp, ext550, errflg, errmsg)
+
+       ! setaer() provides spectrally defined aerosol optical properties. We need to sum
+       ! them to get broadband values.
+       tau_aero = 0._kind_phys
+       ssa_aero = 0._kind_phys
+       g_aero   = 0._kind_phys
+       do iCol=1,nCol
+          do iLay=1,nLev
+             do iBnd=1,14
+                tau_aero(iCol,iLay) = tau_aero(iCol,iLay) + aerosolssw(iCol,iLay,iBnd,1)
+                ssa_aero(iCol,iLay) = ssa_aero(iCol,iLay) + aerosolssw(iCol,iLay,iBnd,1)*&
+                                                            aerosolssw(iCol,iLay,iBnd,2)
+                g_aero(iCol,iLay)   = g_aero(iCol,iLay)   + aerosolssw(iCol,iLay,iBnd,1)*&
+                                                            aerosolssw(iCol,iLay,iBnd,2)*&
+                                                            aerosolssw(iCol,iLay,iBnd,3)
+             enddo
+             ssa_aero(iCol,iLay) = ssa_aero(iCol,iLay) / max(con_eps, tau_aero(iCol,iLay))
+             g_aero(iCol,iLay)   = g_aero(iCol,iLay)   / max(con_eps, ssa_aero(iCol,iLay)*tau_aero(iCol,iLay))
+          enddo
+          ! Compute vertically extinction
+          do iLay=1,nLev
+             tau_aero(iCol,iLay) = sum(tau_aero(iCol,iLay:nLev))
+          enddo
+       enddo
+
        !
        ! Compute Shortwave predictor matrix...
        !  *NOTE* Many of the same fields are used for SW as in LW, just copy these over.
        !
        do iDay=1,nDay
           do iLay=1,nLev
-             predictor_matrix_sw(iDay,iLay,1)  = predictor_matrix_lw(idx(iCol),iLay,1)
-             predictor_matrix_sw(iDay,iLay,2)  = predictor_matrix_lw(idx(iCol),iLay,2)
-             predictor_matrix_sw(iDay,iLay,3)  = predictor_matrix_lw(idx(iCol),iLay,3)
-             predictor_matrix_sw(iDay,iLay,4)  = predictor_matrix_lw(idx(iCol),iLay,4)
-             predictor_matrix_sw(iDay,iLay,5)  = predictor_matrix_lw(idx(iCol),iLay,5)
-             predictor_matrix_sw(iDay,iLay,6)  = predictor_matrix_lw(idx(iCol),iLay,6)
-             predictor_matrix_sw(iDay,iLay,7)  = predictor_matrix_lw(idx(iCol),iLay,7)
-             predictor_matrix_sw(iDay,iLay,8)  = predictor_matrix_lw(idx(iCol),iLay,8)
-             predictor_matrix_sw(iDay,iLay,9)  = predictor_matrix_lw(idx(iCol),iLay,9)
-             predictor_matrix_sw(iDay,iLay,10) = predictor_matrix_lw(idx(iCol),iLay,10)
-             predictor_matrix_sw(iDay,iLay,11) = predictor_matrix_lw(idx(iCol),iLay,11)
-             predictor_matrix_sw(iDay,iLay,12) = predictor_matrix_lw(idx(iCol),iLay,12)
-             predictor_matrix_sw(iDay,iLay,13) = predictor_matrix_lw(idx(iCol),iLay,13)
-             predictor_matrix_sw(iDay,iLay,14) = predictor_matrix_lw(idx(iCol),iLay,14)
-             predictor_matrix_sw(iDay,iLay,15) = predictor_matrix_lw(idx(iCol),iLay,15)
-             predictor_matrix_sw(iDay,iLay,16) = predictor_matrix_lw(idx(iCol),iLay,16)
-             predictor_matrix_sw(iDay,iLay,17) = predictor_matrix_lw(idx(iCol),iLay,17)
-             predictor_matrix_sw(iDay,iLay,18) = predictor_matrix_lw(idx(iCol),iLay,18)
+             predictor_matrix_sw(iDay,iLay,1)  = predictor_matrix_lw(idx(iDay),iLay,1)
+             predictor_matrix_sw(iDay,iLay,2)  = predictor_matrix_lw(idx(iDay),iLay,2)
+             predictor_matrix_sw(iDay,iLay,3)  = predictor_matrix_lw(idx(iDay),iLay,3)
+             predictor_matrix_sw(iDay,iLay,4)  = predictor_matrix_lw(idx(iDay),iLay,4)
+             predictor_matrix_sw(iDay,iLay,5)  = predictor_matrix_lw(idx(iDay),iLay,5)
+             predictor_matrix_sw(iDay,iLay,6)  = predictor_matrix_lw(idx(iDay),iLay,6)
+             predictor_matrix_sw(iDay,iLay,7)  = predictor_matrix_lw(idx(iDay),iLay,7)
+             predictor_matrix_sw(iDay,iLay,8)  = predictor_matrix_lw(idx(iDay),iLay,8)
+             predictor_matrix_sw(iDay,iLay,9)  = predictor_matrix_lw(idx(iDay),iLay,9)
+             predictor_matrix_sw(iDay,iLay,10) = predictor_matrix_lw(idx(iDay),iLay,10)
+             predictor_matrix_sw(iDay,iLay,11) = predictor_matrix_lw(idx(iDay),iLay,11)
+             predictor_matrix_sw(iDay,iLay,12) = predictor_matrix_lw(idx(iDay),iLay,12)
+             predictor_matrix_sw(iDay,iLay,13) = predictor_matrix_lw(idx(iDay),iLay,13)
+             predictor_matrix_sw(iDay,iLay,14) = predictor_matrix_lw(idx(iDay),iLay,14)
+             predictor_matrix_sw(iDay,iLay,15) = predictor_matrix_lw(idx(iDay),iLay,15)
+             predictor_matrix_sw(iDay,iLay,16) = predictor_matrix_lw(idx(iDay),iLay,16)
+             predictor_matrix_sw(iDay,iLay,17) = predictor_matrix_lw(idx(iDay),iLay,17)
+             predictor_matrix_sw(iDay,iLay,18) = predictor_matrix_lw(idx(iDay),iLay,18)
+             predictor_matrix_sw(iDay,iLay,19) = 0.!tau_aero(idx(iDay),iLay)
+             predictor_matrix_sw(iDay,iLay,20) = predictor_matrix_lw(idx(iDay),iLay,19)
+             predictor_matrix_sw(iDay,iLay,21) = predictor_matrix_lw(idx(iDay),iLay,20)
+             predictor_matrix_sw(iDay,iLay,22) = predictor_matrix_lw(idx(iDay),iLay,21)
+             predictor_matrix_sw(iDay,iLay,23) = acos(coszen(idx(iDay)))
+             predictor_matrix_sw(iDay,iLay,24) = sum(sfcalb(idx(iDay),:))
+             predictor_matrix_sw(iDay,iLay,25) = 0.!ssa_aero(idx(iDay),iLay)
+             predictor_matrix_sw(iDay,iLay,26) = 0.!g_aero(idx(iDay),iLay)
           enddo
        enddo
 
        !
        ! Normalize Shortwave predictor matrix.
        !
+       if (debug) upredictor_matrix_sw = predictor_matrix_sw
        do iPred = 1,size(pnames_sw)
           do iLay=1,nLev
              do iDay=1,nDay
@@ -503,7 +586,15 @@ contains
                 endif
                 rankk       = max(1.e-6_kind_phys,rankk)
                 ranku(iDay) = rankk(1)/min(mlrad_data%sw%nCol,ncol_pred)
-                predictor_matrix_sw(iDay,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iDay)-1)
+                predictor_matrix_sw(iDay,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iDay)-1._kind_phys)
+                if(debug) then
+                   write(99,'(a32,a7,i5)') trim(pnames_sw(iPred)),'  iLay=',iLay
+                   if (is2D_sw(iPred)) then
+                      write(99,*) mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred))
+                   else
+                      write(99,*) mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred))
+                   endif
+                endif
              enddo ! END Column loop
           enddo    ! END Vertical loop
        enddo       ! END Predictor loop
@@ -516,89 +607,105 @@ contains
     ! ######################################################################################
     ! Run inferences
     ! Longwave (all columns)
-    call infero_check(model%infer(predictor_matrix_lw, target_matrix_lw))
+    call infero_check(model_lw%infer(predictor_matrix_lw, target_matrix_lw))
 
     ! Shortwave (daylit-columns only)
-    !call infero_check(model%infer(predictor_matrix_sw, target_matrix_sw))
+    if (nDay > 0) then
+       call infero_check(model_sw%infer(predictor_matrix_sw, target_matrix_sw))
+    endif
 
-    do iCol=1,nCol
-       print*,'heating profile (K/day): '
-       write(*,'(a20,3a12)'  ) '                  ','ML(train)','ML(all)','G(all)'
-       do iLay=1,nLev
-          write(*,'(a17,i3,3f12.2)')'    ',iLay,predictor_matrix_lw(iCol,iLay,1),target_matrix_lw(iCol,iLay),htrlw(iCol,iLay)*3600.*24.
-       enddo
-       write(*,'(a20,3a12)'  ) '                  ','ML(all)','G(all)','G(clr)'
-       write(*,'(a20,3f12.2)') 'surface(down):    ',target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,sfcflw(iCol)%dnfx0
-       write(*,'(a20,3f12.2)') 'toa(up):          ',target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc,topflw(iCol)%upfx0
-    enddo
-
-    ! Copy from prediction-matrix to ccpp interstitials.
-    do iCol=1,nCol
-       htrlw(iCol,:)      = target_matrix_lw(iCol,iLay)/(3600.*24.) ! K/day -> K/sec
-       sfcflw(iCol)%dnfxc = target_matrix_lw(iCol,nLev+1)
-       topflw(iCol)%upfxc = target_matrix_lw(iCol,nLev+2)
+    ! Copy from prediction-matrix to ccpp interstitials (for prognostic ML rad)
+    !do iCol=1,nCol
+       !htrlw(iCol,:)      = target_matrix_lw(iCol,iLay)/(3600.*24.) ! K/day -> K/sec
+       !sfcflw(iCol)%dnfxc = target_matrix_lw(iCol,nLev+1)
+       !topflw(iCol)%upfxc = target_matrix_lw(iCol,nLev+2)
        !htrsw(iCol,:)      = target_matrix_sw(iCol,iLay)/(3600.*24.) ! K/day -> K/sec 
        !sfcfsw(iCol)%dnfxc = target_matrix_sw(iCol,nLev+1)
        !topfsw(iCol)%upfxc = target_matrix_sw(iCol,nLev+2)
-    enddo
+    !enddo
 
     if (debug) then
+       ! ######################################################################################
+       ! Heating rates (93)
+       ! ######################################################################################
        do iCol=1,nCol
-          print*,'heating profile (K/day): '
-          write(*,'(a20,3a12)'  ) '                  ','ML(train)','ML(all)','G(all)'
+          write(93,'(a30)') 'heating profile (K/day): '
+          write(93,'(3a12)'  ) 'Layer','ML(all)','G(all)'
+          write(93,'(3a12)'  ) '     ','(LW)',   '(LW)'
           do iLay=1,nLev
-             write(*,'(a17,i3,3f12.2)')'    ',iLay,predictor_matrix_lw(iCol,iLay,1),target_matrix_lw(iCol,iLay),htrlw(iCol,iLay)*3600.*24.
+             write(93,'(a9,i3,2f12.2)') '',iLay,target_matrix_lw(iCol,iLay),htrlw(iCol,iLay)*3600.*24.
           enddo
-          write(*,'(a20,3a12)'  ) '                  ','ML(all)','G(all)','G(clr)'
-          write(*,'(a20,3f12.2)') 'surface(down):    ',target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,sfcflw(iCol)%dnfx0
-          write(*,'(a20,3f12.2)') 'toa(up):          ',target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc,topflw(iCol)%upfx0
        enddo
 
-       write(*, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                      &
+       ! ###################################################################################### 
+       ! Fluxes file (94)
+       ! ###################################################################################### 
+       do iCol=1,nCol
+          write(94,'(a20,3a12)'  ) '                  ','ML(all)','G(all)','G(clr)'
+          write(94,'(a20,3f12.2)') 'LW surface(down): ',target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,sfcflw(iCol)%dnfx0
+          write(94,'(a20,3f12.2)') 'LW toa(up):       ',target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc,topflw(iCol)%upfx0
+          write(94,'(a20,3f12.2)') 'SW surface(down): ',target_matrix_sw(iCol,nLev+1),sfcfsw(iCol)%dnfxc,sfcfsw(iCol)%dnfx0
+          write(94,'(a20,3f12.2)') 'SW toa(up):       ',target_matrix_sw(iCol,nLev+2),topfsw(iCol)%upfxc,topfsw(iCol)%upfx0
+       enddo
+
+       ! ######################################################################################
+       ! Raw predictor file (97)
+       ! ######################################################################################
+       write(97, '(a5, 28a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                     &
             'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                           &
             'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                           &
-            'dp', 'sza', 'Tsfc', 'sfc_emiss'
-       write(*, '(a5, 25a10)')  '', '(Pa)', '(k)', '(g/kg)', '(1)', '(g/m3)',             &
+            'dp', 'sza', 'Tsfc', 'sfc_emiss', 'aer_tau', 'aer_ssa', 'aer_g', 'sfc_alb'
+       write(97, '(a5, 28a10)')  '', '(Pa)', '(k)', '(g/kg)', '(1)', '(g/m3)',            &
             '(g/m3)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)',         &
             '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',        &
-            '(Pa)', '(1)', '(K)', '(1)'
+            '(Pa)', '(1)', '(K)', '(1)', '(1)', '(1)', '(1)', '(1)'
        do iCol=1,nCol
           do iLay=1,nLev
-             write (*,'(i5,25f10.2)') iLay,                &
-                  upredictor_matrix_lw(iCol,iLay,1),       &
-                  upredictor_matrix_lw(iCol,iLay,2),       &
-                  1.e3*upredictor_matrix_lw(iCol,iLay,3),  &
-                  upredictor_matrix_lw(iCol,iLay,4),       &
-                  1.e6*upredictor_matrix_lw(iCol,iLay,5),  &
-                  1.e6*upredictor_matrix_lw(iCol,iLay,6),  &
-                  upredictor_matrix_lw(iCol,iLay,7),       &
-                  upredictor_matrix_lw(iCol,iLay,8),       &
-                  upredictor_matrix_lw(iCol,iLay,9),       &
-                  upredictor_matrix_lw(iCol,iLay,10),      &
-                  upredictor_matrix_lw(iCol,iLay,11),      &
-                  upredictor_matrix_lw(iCol,iLay,12),      &
-                  1.e6*upredictor_matrix_lw(iCol,iLay,13), &
-                  1.e6*upredictor_matrix_lw(iCol,iLay,14), &
-                  1.e6*upredictor_matrix_lw(iCol,iLay,15), &
-                  upredictor_matrix_lw(iCol,iLay,16),      &
-                  upredictor_matrix_lw(iCol,iLay,17),      &
-                  upredictor_matrix_lw(iCol,iLay,18),      &
-                  upredictor_matrix_lw(iCol,iLay,19),      &
-                  upredictor_matrix_lw(iCol,iLay,20),      &
-                  upredictor_matrix_lw(iCol,iLay,21),      &
-                  upredictor_matrix_lw(iCol,iLay,22),      &
-                  upredictor_matrix_lw(iCol,iLay,23),      &
-                  upredictor_matrix_lw(iCol,iLay,24)
+             write (97,'(i5,4f10.2,4e10.2,f10.2,2e10.2,17f10.2)')    &
+                  iLay,                                 &
+                  upredictor_matrix_lw(iCol,iLay,1),    &
+                  upredictor_matrix_lw(iCol,iLay,2),    &
+                  upredictor_matrix_lw(iCol,iLay,3),    &
+                  upredictor_matrix_lw(iCol,iLay,4),    &
+                  upredictor_matrix_lw(iCol,iLay,5),    &
+                  upredictor_matrix_lw(iCol,iLay,6),    &
+                  upredictor_matrix_lw(iCol,iLay,7),    &
+                  upredictor_matrix_lw(iCol,iLay,8),    &
+                  upredictor_matrix_lw(iCol,iLay,9),    &
+                  upredictor_matrix_lw(iCol,iLay,10),   &
+                  upredictor_matrix_lw(iCol,iLay,11),   &
+                  upredictor_matrix_lw(iCol,iLay,12),   &
+                  upredictor_matrix_lw(iCol,iLay,13),   &
+                  upredictor_matrix_lw(iCol,iLay,14),   &
+                  upredictor_matrix_lw(iCol,iLay,15),   &
+                  upredictor_matrix_lw(iCol,iLay,16),   &
+                  upredictor_matrix_lw(iCol,iLay,17),   &
+                  upredictor_matrix_lw(iCol,iLay,18),   &
+                  upredictor_matrix_lw(iCol,iLay,19),   &
+                  upredictor_matrix_lw(iCol,iLay,20),   &
+                  upredictor_matrix_lw(iCol,iLay,21),   &
+                  upredictor_matrix_sw(iCol,iLay,23),   &
+                  upredictor_matrix_lw(iCol,iLay,23),   &
+                  upredictor_matrix_lw(iCol,iLay,24),   &
+                  upredictor_matrix_sw(iCol,iLay,19),   &
+                  upredictor_matrix_sw(iCol,iLay,25),   &
+                  upredictor_matrix_sw(iCol,iLay,26),   &
+                  upredictor_matrix_sw(iCol,iLay,24)
           enddo
        enddo
-       write (*,'(a50)') '################################'
-       write(*, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',   &
+
+       ! ######################################################################################
+       ! Normalizaed predictor file (98)
+       ! ######################################################################################
+       write (98, '(a5, 28a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC', &
             'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',        &
             'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',        &
-            'dp', 'sza', 'Tsfc', 'sfc_emiss'
+            'dp', 'sza', 'Tsfc', 'sfc_emiss', 'aer_tau', 'aer_ssa',    &
+            'aer_g', 'sfc_alb'
        do iCol=1,nCol
           do iLay=1,nLev
-             write (*,'(i5,25f10.2)') iLay,                &
+             write (98,'(i5,29f10.2)')                     &
+                  iLay,                                    &
                   predictor_matrix_lw(iCol,iLay,1),        &
                   predictor_matrix_lw(iCol,iLay,2),        &
                   predictor_matrix_lw(iCol,iLay,3),        &
@@ -622,9 +729,94 @@ contains
                   predictor_matrix_lw(iCol,iLay,21),       &
                   predictor_matrix_lw(iCol,iLay,22),       &
                   predictor_matrix_lw(iCol,iLay,23),       &
-                  predictor_matrix_lw(iCol,iLay,24)
+                  predictor_matrix_lw(iCol,iLay,24),       &
+                  predictor_matrix_sw(iCol,iLay,19),       &
+                  predictor_matrix_lw(iCol,iLay,25),       &
+                  predictor_matrix_lw(iCol,iLay,26),       &
+                  predictor_matrix_sw(iCol,iLay,24)
           enddo
        enddo
+
+       ! ######################################################################################
+       ! Raw predictor example (95)
+       ! ######################################################################################
+       write(95, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                     &
+            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                           &
+            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                           &
+            'dp', 'sza', 'Tsfc', 'sfc_emiss'
+       write(95, '(a5, 25a10)')  '', '(Pa)', '(k)', '(g/kg)', '(1)', '(g/m3)',            &
+            '(g/m3)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)',         &
+            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',        &
+            '(Pa)', '(1)', '(K)', '(1)'
+       do iCol=1,nCol
+          do iLay=1,nLev
+             write (95,'(i5,4f10.2,4e10.2,f10.2,2e10.2,17f10.2)')      &
+                  iLay,                                                &
+                  ref_data%unnorm_predictor_matrix(1,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(2,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(3,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(4,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(5,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(6,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(7,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(8,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(9,iLay,iCol),       &
+                  ref_data%unnorm_predictor_matrix(10,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(11,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(12,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(13,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(14,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(15,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(16,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(17,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(18,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(19,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(20,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(21,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(22,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(23,iLay,iCol),      &
+                  ref_data%unnorm_predictor_matrix(24,iLay,iCol)
+          enddo
+       enddo
+
+       ! ######################################################################################
+       ! Normalized predictor examples (96)
+       ! ######################################################################################
+       write(96, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                     &
+            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                           &
+            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                           &
+            'dp', 'sza', 'Tsfc', 'sfc_emiss'
+       do iCol=1,nCol
+          do iLay=1,nLev
+             write (96,'(i5,25f10.2)')                     &
+                  iLay,                                    &
+                  ref_data%predictor_matrix(1,iLay,iCol),  &
+                  ref_data%predictor_matrix(2,iLay,iCol),  &
+                  ref_data%predictor_matrix(3,iLay,iCol),  &
+                  ref_data%predictor_matrix(4,iLay,iCol),  &
+                  ref_data%predictor_matrix(5,iLay,iCol),  &
+                  ref_data%predictor_matrix(6,iLay,iCol),  &
+                  ref_data%predictor_matrix(7,iLay,iCol),  &
+                  ref_data%predictor_matrix(8,iLay,iCol),  &
+                  ref_data%predictor_matrix(9,iLay,iCol),  &
+                  ref_data%predictor_matrix(10,iLay,iCol), &
+                  ref_data%predictor_matrix(11,iLay,iCol), &
+                  ref_data%predictor_matrix(12,iLay,iCol), &
+                  ref_data%predictor_matrix(13,iLay,iCol), &
+                  ref_data%predictor_matrix(14,iLay,iCol), &
+                  ref_data%predictor_matrix(15,iLay,iCol), &
+                  ref_data%predictor_matrix(16,iLay,iCol), &
+                  ref_data%predictor_matrix(17,iLay,iCol), &
+                  ref_data%predictor_matrix(18,iLay,iCol), &
+                  ref_data%predictor_matrix(19,iLay,iCol), &
+                  ref_data%predictor_matrix(20,iLay,iCol), &
+                  ref_data%predictor_matrix(21,iLay,iCol), &
+                  ref_data%predictor_matrix(22,iLay,iCol), &
+                  ref_data%predictor_matrix(23,iLay,iCol), &
+                  ref_data%predictor_matrix(24,iLay,iCol)
+          enddo
+       enddo
+       stop
     endif
 
   end subroutine mlrad_driver_run
@@ -634,9 +826,9 @@ contains
 !! \htmlinclude mlrad_driver_finalize.html
 !!
 ! #########################################################################################
-  subroutine mlrad_driver_finalize(do_mlrad, errmsg, errflg)
+  subroutine mlrad_driver_finalize(do_mlrad, debug, errmsg, errflg)
     ! Inputs
-    logical,           intent(in) :: do_mlrad
+    logical,           intent(in) :: do_mlrad, debug
     ! Outputs
     character(len=*),  intent(out) :: errmsg
     integer,           intent(out) :: errflg
@@ -647,40 +839,28 @@ contains
 
     if (.not. do_mlrad) return
 
-    ! Free the model
-    call infero_check(model%free())
+    ! Free the model(s)
+    call infero_check(model_lw%free())
+    call infero_check(model_sw%free())
 
     ! Finalize
     call infero_check(infero_finalise())
 
-    !close(98)
+    if (debug) then
+       close(93)
+       close(94)
+       close(95)
+       close(96)
+       close(97)
+       close(98)
+       close(99)
+    endif
 
   end subroutine mlrad_driver_finalize
 
   ! #########################################################################################
   ! 
   ! #########################################################################################
-  function boxmuller_transform(var_u, seed, con_pi) result(var_n)
-    ! IN
-    real(kind_phys),intent(in) :: con_pi
-    real(kind_phys),intent(in) :: var_u
-    integer, intent(in) :: seed
-    ! OUT
-    real(kind_phys) :: var_n
-    ! Locals
-    real(kind_phys) :: rho, theta
-    type(random_stat) :: rng_stat
-    real(kind_dbl_prec) :: rng(1)
-    
-    call random_setseed(seed,rng_stat)
-    call random_number(rng,rng_stat)
-    rho   = sqrt(-2._kind_phys*log(rng(1)))
-    theta = 2._kind_phys*con_pi*var_u
-    var_n = rho*cos(theta)
-    write(*,'(a12,4f12.4)') 'box-muller: ',rng,var_u,var_n
-
-  end function boxmuller_transform
-
   function erfinv(var_in) result(var_out)
     real(kind_phys),intent(in) :: var_in
     real(kind_phys) :: var_out

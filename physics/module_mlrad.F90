@@ -72,7 +72,7 @@ module module_mlrad
           vector_breakpoint         ! [nCol+1, nLev, npredv]
   end type ty_mlrad_base_data
 
-  public ty_mlrad_data
+  public ty_mlrad_data, ty_rad_ml_ref_data
 
 ! ########################################################################################
 ! Type containing training data used for emulator.
@@ -89,6 +89,31 @@ module module_mlrad
      generic,   public  :: load => load_training_data_piecewise
      procedure, private :: load_training_data_piecewise
   end type ty_mlrad_data
+
+! ########################################################################################
+! Type containing reference data for emulator.
+!
+!> \section arg_table_ty_rad_ml_ref_data Argument Table
+!! \htmlinclude ty_rad_ml_ref_data.html
+!!
+! ########################################################################################
+  type ty_rad_ml_ref_data
+     integer :: &
+          nCol,                   & ! Number of horizontal columns in reference data.
+          nLev,                   & ! Number of vertical layers in reference data.
+          npred,                  & ! Number of predictor variables.
+          ntar_scalar,            & ! Number of targets (scalar)
+          ntar_vector               ! Number of targets (vector)
+     real(kind_phys),dimension(:,:,:), allocatable :: &
+          predictor_matrix,       & ! Predictor matrix (normalized)
+          unnorm_predictor_matrix   ! Predictor matrix (unnormalized)
+     real(kind_phys),dimension(:,:), allocatable :: &
+          scalar_prediction         ! Target predictions (scalar)
+     real(kind_phys),dimension(:,:,:), allocatable :: &
+          vector_prediction         ! Target predictions (vector)
+   contains
+     procedure, public :: load =>load_reference_data
+  end type ty_rad_ml_ref_data
 
 contains
 
@@ -256,6 +281,56 @@ contains
     call check_netCDF(nf90_close(ncid),err_message)
 
   end function load_training_data_piecewise
+
+  ! ######################################################################################
+  !
+  ! Type-bound procedure to load reference data into ty_rad_ml_ref_data from input file.
+  !
+  ! ######################################################################################
+  function load_reference_data(this,file) result(err_message)
+    class(ty_rad_ml_ref_data), intent(inout) :: this
+    ! Inputs
+    character(len=*), intent(in) :: file
+    ! Output
+    character(len=128) :: err_message
+    ! Locals
+    integer :: ncid, dimid, varid
+
+    ! Open file
+    call check_netCDF(nf90_open(file, NF90_NOWRITE, ncid),err_message)
+
+    ! Get dimensions
+    call check_netCDF(nf90_inq_dimid(ncid, 'example', dimid),err_message)
+    call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%nCol),err_message)
+    call check_netCDF(nf90_inq_dimid(ncid, 'height', dimid),err_message)
+    call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%nLev),err_message)
+    call check_netCDF(nf90_inq_dimid(ncid, 'predictor_variable', dimid),err_message)
+    call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%npred),err_message)
+    call check_netCDF(nf90_inq_dimid(ncid, 'vector_target_variable', dimid),err_message)
+    call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%ntar_vector),err_message)
+    call check_netCDF(nf90_inq_dimid(ncid, 'scalar_target_variable', dimid),err_message)
+    call check_netCDF(nf90_inquire_dimension(ncid, dimid, len = this%ntar_scalar),err_message)
+
+    ! Allocate space
+    allocate(this%predictor_matrix( this%npred,       this%nLev, this%nCol))
+    allocate(this%vector_prediction(this%ntar_vector, this%nLev, this%nCol))
+    allocate(this%scalar_prediction(this%ntar_scalar,            this%nCol))
+    allocate(this%unnorm_predictor_matrix( this%npred,       this%nLev, this%nCol))
+
+    ! Read in reference data
+    call check_netCDF(nf90_inq_varid(ncid, "predictor_matrix", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%predictor_matrix),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "vector_prediction_matrix", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%vector_prediction),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "scalar_prediction_matrix", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%scalar_prediction),err_message)
+    call check_netCDF(nf90_inq_varid(ncid, "unnorm_predictor_matrix", varid),err_message)
+    call check_netCDF(nf90_get_var(ncid, varid, this%unnorm_predictor_matrix),err_message)
+
+    ! Close file
+    call check_netCDF(nf90_close(ncid),err_message)
+
+  end function load_reference_data
 
   ! ######################################################################################
   !
