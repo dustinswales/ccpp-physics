@@ -8,68 +8,188 @@ module module_mlrad
 
   ! #####################################################################################
   !
+  ! Shortwave (SW)
+  !
+  ! ##################################################################################### 
+  
+  ! Number of SW predictors
+  integer,parameter :: npred_sw = 26
+
   ! Predictor varaible names, from training data, in order expected by emulator.
+  character(len=32),dimension(npred_sw) :: &
+       pnames_sw =  &
+       (/'zenith_angle_radians            ','albedo                          ',&
+         'aerosol_single_scattering_albed ','aerosol_asymmetry_param         ',&
+         'pressure_pascals                ','temperature_kelvins             ',&
+         'specific_humidity_kg_kg01       ','relative_humidity_unitless      ',&
+         'liquid_water_content_kg_m03     ','ice_water_content_kg_m03        ',&
+         'liquid_water_path_kg_m02        ','ice_water_path_kg_m02           ',&
+         'vapour_path_kg_m02              ','upward_liquid_water_path_kg_m02 ',&
+         'upward_ice_water_path_kg_m02    ','upward_vapour_path_kg_m02       ',&
+         'liquid_effective_radius_metres  ','ice_effective_radius_metres     ',&
+         'o3_mixing_ratio_kg_kg01         ','co2_concentration_ppmv          ',&
+         'ch4_concentration_ppmv          ','n2o_concentration_ppmv          ',&
+         'aerosol_extinction_metres01     ','height_m_agl                    ',&
+         'height_thickness_metres         ','pressure_thickness_pascals      '/)
+
+  ! Indices into prediction matrix
+  integer, parameter :: &
+       isw_sza    = 1,  &
+       isw_alb    = 2,  &
+       isw_aerssa = 3,  &
+       isw_aerasy = 4,  &
+       isw_p      = 5,  &
+       isw_t      = 6,  &
+       isw_q      = 7,  &
+       isw_rh     = 8,  &
+       isw_lwc    = 9,  &
+       isw_iwc    = 10, &
+       isw_dlwp   = 11, &
+       isw_diwp   = 12, &
+       isw_dwvp   = 13, &
+       isw_ulwp   = 14, &
+       isw_uiwp   = 15, &
+       isw_uwvp   = 16, &
+       isw_reliq  = 17, &
+       isw_reice  = 18, &
+       isw_o3mr   = 19, &
+       isw_co2    = 20, &
+       isw_ch4    = 21, &
+       isw_n2o    = 22, &
+       isw_tauaer = 23, &
+       isw_z      = 24, &
+       isw_dz     = 25, &
+       isw_dp     = 26
+
+  ! ##################################################################################### 
+  !
+  ! Longwave (LW)
+  !
+  ! ##################################################################################### 
+
+  ! Number of LW predictors.
+  integer,parameter :: npred_lw = 24
+
+  ! Predictor varaible names, from training data, in order expected by emulator.
+!  character(len=32),dimension(npred_lw) :: &
+!       pnames_lw =  &
+!       (/'zenith_angle_radians            ','surface_temperature_kelvins     ',&
+!         'surface_emissivity              ',                                   &
+!         'pressure_pascals                ','temperature_kelvins             ',&
+!         'specific_humidity_kg_kg01       ','relative_humidity_unitless      ',&
+!         'liquid_water_content_kg_m03     ','ice_water_content_kg_m03        ',&
+!         'liquid_water_path_kg_m02        ','ice_water_path_kg_m02           ',&
+!         'vapour_path_kg_m02              ','upward_liquid_water_path_kg_m02 ',&
+!         'upward_ice_water_path_kg_m02    ','upward_vapour_path_kg_m02       ',&
+!         'liquid_effective_radius_metres  ','ice_effective_radius_metres     ',&
+!         'o3_mixing_ratio_kg_kg01         ','co2_concentration_ppmv          ',&
+!         'ch4_concentration_ppmv          ','n2o_concentration_ppmv          ',&
+!         'height_m_agl                    ','height_thickness_metres         ',&
+!         'pressure_thickness_pascals      '/)
+
+  ! Indices into prediction matrix
+!  integer, parameter :: &
+!       ilw_sza    = 1,  &
+!       ilw_sfct   = 2,  &
+!       ilw_emiss  = 3,  &
+!       ilw_p      = 4,  &
+!       ilw_t      = 5,  &
+!       ilw_q      = 6,  &
+!       ilw_rh     = 7,  &
+!       ilw_lwc    = 8,  &
+!       ilw_iwc    = 9,  &
+!       ilw_dlwp   = 10, &
+!       ilw_diwp   = 11, &
+!       ilw_dwvp   = 12, &
+!       ilw_ulwp   = 13, &
+!       ilw_uiwp   = 14, &
+!       ilw_uwvp   = 15, &
+!       ilw_reliq  = 16, &
+!       ilw_reice  = 17, &
+!       ilw_o3mr   = 18, &
+!       ilw_co2    = 19, &
+!       ilw_ch4    = 20, &
+!       ilw_n2o    = 21, &
+!       ilw_z      = 22, &
+!       ilw_dz     = 23, &
+!       ilw_dp     = 24
+
+  integer, parameter :: &
+       ilw_p      = 1,  &
+       ilw_t      = 2,  &
+       ilw_q      = 3,  &
+       ilw_rh     = 4,  &
+       ilw_lwc    = 5,  &
+       ilw_iwc    = 6,  &
+       ilw_dlwp   = 7, &
+       ilw_diwp   = 8, &
+       ilw_dwvp   = 9, &
+       ilw_ulwp   = 10, &
+       ilw_uiwp   = 11, &
+       ilw_uwvp   = 12, &
+       ilw_reliq  = 13, &
+       ilw_reice  = 14, &
+       ilw_o3mr   = 15, &
+       ilw_co2    = 16, &
+       ilw_ch4    = 17, &
+       ilw_n2o    = 18, &
+       ilw_z      = 19, &
+       ilw_dz     = 20, &
+       ilw_dp     = 21, &
+       ilw_sza    = 22,  &
+       ilw_sfct   = 23,  &
+       ilw_emiss  = 24
+  character(len=32),dimension(npred_lw) :: &
+       pnames_lw =  &
+       (/'pressure_pascals                ','temperature_kelvins             ',&
+         'specific_humidity_kg_kg01       ','relative_humidity_unitless      ',&
+         'liquid_water_content_kg_m03     ','ice_water_content_kg_m03        ',&
+         'liquid_water_path_kg_m02        ','ice_water_path_kg_m02           ',&
+         'vapour_path_kg_m02              ','upward_liquid_water_path_kg_m02 ',&
+         'upward_ice_water_path_kg_m02    ','upward_vapour_path_kg_m02       ',&
+         'liquid_effective_radius_metres  ','ice_effective_radius_metres     ',&
+         'o3_mixing_ratio_kg_kg01         ','co2_concentration_ppmv          ',&
+         'ch4_concentration_ppmv          ','n2o_concentration_ppmv          ',&
+         'height_m_agl                    ','height_thickness_metres         ',&
+         'pressure_thickness_pascals      ','zenith_angle_radians            ',&
+         'surface_temperature_kelvins     ','surface_emissivity              '/)
+
+  ! #####################################################################################
+  !
+  ! Bookeeping indices 
   !
   ! #####################################################################################
-  integer,parameter :: nPredictors_lw = 24, nPredictors_sw = 26
-  character(len=32),dimension(nPredictors_lw) :: &
-       pnames_lw =  &
-       (/'pressure_pascals                 ','temperature_kelvins             ',&
-         'specific_humidity_kg_kg01        ','relative_humidity_unitless      ',&
-         'liquid_water_content_kg_m03      ','ice_water_content_kg_m03        ',&
-         'liquid_water_path_kg_m02         ','ice_water_path_kg_m02           ',&
-         'vapour_path_kg_m02               ','upward_liquid_water_path_kg_m02 ',&
-         'upward_ice_water_path_kg_m02     ','upward_vapour_path_kg_m02       ',&
-         'liquid_effective_radius_metres   ','ice_effective_radius_metres     ',&
-         'o3_mixing_ratio_kg_kg01          ','co2_concentration_ppmv          ',&
-         'ch4_concentration_ppmv           ','n2o_concentration_ppmv          ',&
-         'height_m_agl                     ','height_thickness_metres         ',&
-         'pressure_thickness_pascals       ','zenith_angle_radians            ',&
-         'surface_temperature_kelvins      ','surface_emissivity              '/)
-  character(len=32),dimension(nPredictors_sw) :: &
-       pnames_sw =  &
-       (/'pressure_pascals                 ','temperature_kelvins             ',&
-         'specific_humidity_kg_kg01        ','relative_humidity_unitless      ',&
-         'liquid_water_content_kg_m03      ','ice_water_content_kg_m03        ',&
-         'liquid_water_path_kg_m02         ','ice_water_path_kg_m02           ',&
-         'vapour_path_kg_m02               ','upward_liquid_water_path_kg_m02 ',&
-         'upward_ice_water_path_kg_m02     ','upward_vapour_path_kg_m02       ',&
-         'liquid_effective_radius_metres   ','ice_effective_radius_metres     ',&
-         'o3_mixing_ratio_kg_kg01          ','co2_concentration_ppmv          ',&
-         'ch4_concentration_ppmv           ','n2o_concentration_ppmv          ',&
-         'aerosol_extinction_metres01      ','height_m_agl                    ',&
-         'height_thickness_metres          ','pressure_thickness_pascals      ',&
-         'zenith_angle_radians             ','albedo                          ',&
-         'aerosol_single_scattering_albedo ','aerosol_asymmetry_param         '/)
-
-  ! Bookeeping indices 
-  integer, dimension(nPredictors_lw) :: &
+  integer, dimension(npred_lw) :: &
        ip2io_lw ! Index mapping from vector/scalar inputs into LW predictor matrix
-  integer, dimension(nPredictors_sw) :: &
+  integer, dimension(npred_sw) :: &
        ip2io_sw ! Index mapping from vector/scalar inputs into SW predictor matrix
-  logical, dimension(nPredictors_lw) :: &
+  logical, dimension(npred_lw) :: &
        is2D_lw  ! Are input LW predictors 2 dimensional?
-  logical, dimension(nPredictors_sw) :: &
+  logical, dimension(npred_sw) :: &
        is2D_sw  ! Are input SW predictors 2 dimensional?
   
+  ! #####################################################################################
+  !
   ! Base type containing data needed by emulators.
+  !
+  ! #####################################################################################
   type ty_mlrad_base_data
      integer :: &
-          nCol,             & ! Number of piecewise linear fits of training data(200)
-          nLev,             & ! Number of vertical layers in training data (127)
-          npreds,           & ! Number of predictor variables (1D)
-          npredv              ! Number of predictor variables (2D)
+          nCol,              & ! Number of piecewise linear fits of training data(200)
+          nLev,              & ! Number of vertical layers in training data (127)
+          npreds,            & ! Number of predictor variables (1D)
+          npredv               ! Number of predictor variables (2D)
      character(len=31),dimension(:), allocatable :: &
-          scalar_pnames, & ! Name for scalar predictors  [npreds]
-          vector_pnames    ! Name for vector predictors  [npredv]
+          scalar_pnames,     & ! Name for scalar predictors  [npreds]
+          vector_pnames        ! Name for vector predictors  [npredv]
      real(kind_phys),dimension(:,:), allocatable :: &
-          scalar_slope,           & ! [nCol,   npreds]
-          scalar_intercept,       & ! [nCol,   npreds]
-          scalar_breakpoint         ! [nCol+1, npreds]
+          scalar_slope,      & ! [nCol,   npreds]
+          scalar_intercept,  & ! [nCol,   npreds]
+          scalar_breakpoint    ! [nCol+1, npreds]
      real(kind_phys),dimension(:,:,:), allocatable :: &
-          vector_slope,           & ! [nCol,   nLev, npredv]
-          vector_intercept,       & ! [nCol,   nLev, npredv]
-          vector_breakpoint         ! [nCol+1, nLev, npredv]
+          vector_slope,      & ! [nCol,   nLev, npredv]
+          vector_intercept,  & ! [nCol,   nLev, npredv]
+          vector_breakpoint    ! [nCol+1, nLev, npredv]
   end type ty_mlrad_base_data
 
   public ty_mlrad_data, ty_rad_ml_ref_data
