@@ -5,7 +5,7 @@
 !! radiation detailed in 10.22541/essoar.168319865.58439449/v1
 !!
 !! There are 24 predictors for the Longwave (LW) emulator:
-!!         Name                       Units
+!!         Name                                Units
 !!    1  - 'zenith_angle_radians'              [1]
 !!    2  - 'surface_temperature_kelvins'       [K]
 !!    3  - 'surface_emissivity'                [1]  
@@ -32,7 +32,7 @@
 !!    24 - 'pressure_thickness_pascals'        [Pa]
 !!
 !! There are 26 predictors for the Shortwave (SW) emulator:
-!!         Name                       Units
+!!         Name                                Units
 !!    1  - 'zenith_angle_radians'              [1]
 !!    2  - 'albedo'                            [1]
 !!    3  - 'aerosol_single_scattering_albedo'  [1]
@@ -78,8 +78,7 @@ module mlrad_driver
                                        isw_uiwp, isw_uwvp, isw_reliq, isw_reice, isw_o3mr,  &
                                        isw_co2, isw_ch4, isw_n2o, isw_tauaer, isw_z, isw_dz,&
                                        isw_dp
-  use mersenne_twister,          only: random_setseed, random_number, random_stat
-  use iso_c_binding,             only : c_double, c_int, c_float, c_char, c_null_char, c_ptr
+  use iso_c_binding,             only: c_float, c_null_char
   use inferof
   use netcdf
 
@@ -456,7 +455,7 @@ contains
        predictor_matrix_lw(iCol,:,ilw_sfct) = tgrs(iCol,1)
 
        ! Surface emissivity (1)
-       predictor_matrix_lw(iCol,:,ilw_emiss) = 1.!semis(iCol)
+       predictor_matrix_lw(iCol,:,ilw_emiss) = semis(iCol)
 
        ! Compute vertically integrated (in both directions) liquid/ice/vapor condensate path (kg/m2).
        do iLay=1,nLev
@@ -578,10 +577,12 @@ contains
                 ncol_pred = count(mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)) .eq. &
                                   mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))
              endif
-             rankk       = max(1.e-6_kind_phys,rankk)
+             rankk = max(1.e-6_kind_phys,rankk)
 
              ! Compute the uniform (0-1) rank of the predictor variable.
              ranku(iCol) = rankk(1)/min(mlrad_data%lw%nCol,ncol_pred)
+
+             ! Debug
              if (debug .and. do_debug_once) then
                 write(99,'(a32,a10,3i10)' ) trim(pnames_lw(iPred)),'    ipred=',iPred,iLay,min(mlrad_data%lw%nCol,ncol_pred)
                 write(99,'(a32,a10,f10.2)') '',                    '    rankk=',rankk

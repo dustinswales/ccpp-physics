@@ -2,7 +2,7 @@
   name = mlrad_driver
   type = scheme
   dependencies = machine.F,funcphys.f90,radiation_gases.f,module_mlrad.F90
-  dependencies = radlw_param.f,radsw_param.f,mersenne_twister.f,radiation_aerosols.f
+  dependencies = radlw_param.f,radsw_param.f,radiation_aerosols.f
 
 ########################################################################
 [ccpp-arg-table]
