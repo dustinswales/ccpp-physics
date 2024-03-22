@@ -46,7 +46,7 @@ contains
          is_photochem      ! Flags for photochemistry processes to sum
 
     ! Inputs (optional)
-    real(kind=kind_phys), intent(in), dimension(:,:), pointer, optional :: &
+    real(kind=kind_phys), intent(in), dimension(:,:), optional :: &
          do3_dt_prd,     & ! Physics tendency: production and loss effect
          do3_dt_ozmx,    & ! Physics tendency: ozone mixing ratio effect
          do3_dt_temp,    & ! Physics tendency: temperature effect
@@ -78,22 +78,22 @@ contains
     !
     ! #######################################################################################
     idtend = dtidx(100+ntoz,ip_prod_loss)
-    if (idtend >= 1 .and. associated(do3_dt_prd)) then  
+    if (idtend >= 1 .and. present(do3_dt_prd)) then  
        dtend(:,:,idtend) = dtend(:,:,idtend) + do3_dt_prd
     endif
     !
     idtend = dtidx(100+ntoz,ip_ozmix)
-    if (idtend >= 1 .and. associated(do3_dt_ozmx)) then
+    if (idtend >= 1 .and. present(do3_dt_ozmx)) then
        dtend(:,:,idtend) = dtend(:,:,idtend) + do3_dt_ozmx
     endif
     !
     idtend = dtidx(100+ntoz,ip_temp)
-    if (idtend >= 1 .and. associated(do3_dt_temp)) then
+    if (idtend >= 1 .and. present(do3_dt_temp)) then
        dtend(:,:,idtend) = dtend(:,:,idtend) + do3_dt_temp
     endif
     !
     idtend = dtidx(100+ntoz,ip_overhead_ozone)
-    if (idtend >= 1 .and. associated(do3_dt_ohoz)) then
+    if (idtend >= 1 .and. present(do3_dt_ohoz)) then
        dtend(:,:,idtend) = dtend(:,:,idtend) + do3_dt_ohoz
     endif
 

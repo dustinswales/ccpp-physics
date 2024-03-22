@@ -424,6 +424,7 @@
   type = real
   kind = kind_phys
   intent = inout
+  optional = True
 [fdncmp]
   standard_name = components_of_surface_downward_shortwave_fluxes
   long_name = derived type for special components of surface downward shortwave fluxes
@@ -431,6 +432,7 @@
   dimensions = (horizontal_loop_extent)
   type = cmpfsw_type
   intent = inout
+  optional = True
 [cld_lwp]
   standard_name = cloud_liquid_water_path
   long_name = cloud liquid water path
@@ -439,6 +441,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_ref_liq]
   standard_name = mean_effective_radius_for_liquid_cloud
   long_name = mean effective radius for liquid cloud
@@ -447,6 +450,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_iwp]
   standard_name = cloud_ice_water_path
   long_name = cloud ice water path
@@ -455,6 +459,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_ref_ice]
   standard_name = mean_effective_radius_for_ice_cloud
   long_name = mean effective radius for ice cloud
@@ -463,6 +468,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_rwp]
   standard_name = cloud_rain_water_path
   long_name = cloud rain water path
@@ -471,6 +477,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_ref_rain]
   standard_name = mean_effective_radius_for_rain_drop
   long_name = mean effective radius for rain drop
@@ -479,6 +486,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_swp]
   standard_name = cloud_snow_water_path
   long_name = cloud snow water path
@@ -487,6 +495,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cld_ref_snow]
   standard_name = mean_effective_radius_for_snow_flake
   long_name = mean effective radius for snow flake
@@ -495,6 +504,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
