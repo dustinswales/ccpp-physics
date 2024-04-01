@@ -62,7 +62,7 @@
 !!
 ! ###########################################################################################
 module mlrad_driver
-  use machine,                   only: kind_phys, kind_dbl_prec
+  use machine,                   only: kind_phys, kind_dbl_prec, kind_qdt_prec
   use funcphys,                  only: fpvs
   use module_radiation_gases,    only: NF_VGAS, getgases, getozn
   use module_radiation_aerosols, only: setaer
@@ -567,40 +567,86 @@ contains
              ! *NOTE* The input data isn't in the order that the emulator requires. Here we 
              ! map the input data, mlrad_data%lw, using ip2io_lw determined during init.
              if (is2D_lw(iPred)) then
-                rankk     = real(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - &
-                                            mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred)))),kind=kind_phys)
-                ncol_pred = count(mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred)) .eq. &
-                                  mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred)))
+                if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%vector_breakpoint(  1, iLay, ip2io_lw(iPred))) then
+                   rankk(1) = 1
+                   ranku(iCol) = mlrad_data%lw%vector_breakpoint(1, iLay,  ip2io_lw(iPred))
+                elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))) then
+                   rankk(1) = 200
+                   ranku(iCol) = mlrad_data%lw%vector_breakpoint(201, iLay,  ip2io_lw(iPred))
+                else
+                   rankk = minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred))))
+                   ranku(iCol) = mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred)) + &
+                        predictor_matrix_lw(iCol,iLay,iPred)*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))
+                endif
              else
-                rankk     = real(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - &
-                                            mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))),kind=kind_phys)
-                ncol_pred = count(mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)) .eq. &
-                                  mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))
+                if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
+                   rankk(1) = 1
+                   ranku(iCol) = mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred))
+                elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))) then
+                   rankk(1) = 201
+                   ranku(iCol) = mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))
+                else
+                   rankk = minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))))
+                   ranku(iCol) = mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred)) + &
+                        predictor_matrix_lw(iCol,iLay,iPred)*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))
+                endif
              endif
-             rankk = max(1.e-6_kind_phys,rankk)
-
-             ! Compute the uniform (0-1) rank of the predictor variable.
-             ranku(iCol) = rankk(1)/min(mlrad_data%lw%nCol,ncol_pred)
 
              ! Debug
              if (debug .and. do_debug_once) then
-                write(99,'(a32,a10,3i10)' ) trim(pnames_lw(iPred)),'    ipred=',iPred,iLay,min(mlrad_data%lw%nCol,ncol_pred)
-                write(99,'(a32,a10,f10.2)') '',                    '    rankk=',rankk
-                write(99,'(a32,a10,f10.2)') '',                    '    ranku=',ranku(iCol)
-                write(99,'(a32,a10,f10.2)') '',                    '      val=',predictor_matrix_lw(iCol,iLay,iPred)
+                write(99,'(a40)') '------------------------------------------------------------------------------------------------'
+                write(99,'(a20)' ) trim(pnames_lw(iPred))
+                write(99,'(a14,f14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
+                write(99,'(a14,f14.6)')     "      rankk = ",rankk
+                write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
+                !write(99,'(a14,f14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
+                if (is2D_lw(iPred)) then
+                   if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%vector_breakpoint(  1, iLay, ip2io_lw(iPred))) then
+                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%vector_breakpoint(1, iLay, ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))
+                      write(99,'(a14,a14)')    "      slope = ","N/A"
+                      write(99,'(a14,a14)')    "  intercept = ","N/A"
+                      write(99,'(a14,a14)')    "       calc = ","N/A"
+                   elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))) then
+                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%vector_breakpoint(1, iLay, ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))
+                      write(99,'(a14,a14)')    "      slope = ","N/A"
+                      write(99,'(a14,a14)')    "  intercept = ","N/A"
+                      write(99,'(a14,a14)')    "       calc = ","N/A"
+                   else
+                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%vector_breakpoint(rankk(1)-1, iLay, ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(rankk(1), iLay, ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "      slope = ",mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "  intercept = ",mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "     calc_A = ",mlrad_data%lw%vector_breakpoint(rankk(1),   iLay, ip2io_lw(iPred))*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))+mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "     calc_B = ",mlrad_data%lw%vector_breakpoint(rankk(1)+1, iLay, ip2io_lw(iPred))*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))+mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred))
+                   endif
+                else
+                   if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
+                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))
+                      write(99,'(a14,a14)')    "      slope = ","N/A"
+                      write(99,'(a14,a14)')    "  intercept = ","N/A"
+                      write(99,'(a14,a14)')    "       calc = ","N/A"
+                   elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))) then
+                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))
+                      write(99,'(a14,a14)')    "      slope = ","N/A"
+                      write(99,'(a14,a14)')    "  intercept = ","N/A"
+                      write(99,'(a14,a14)')    "       calc = ","N/A"
+                   else
+                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%scalar_breakpoint(rankk(1)-1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(rankk(1),ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "      slope = ",mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "  intercept = ",mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "     calc_A = ",mlrad_data%lw%scalar_breakpoint(rankk(1),   ip2io_lw(iPred))*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))+mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred))
+                      write(99,'(a14,f14.6)')  "     calc_B = ",mlrad_data%lw%scalar_breakpoint(rankk(1)+1, ip2io_lw(iPred))*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))+mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred))
+                   
+                   endif
+!                   write(99,*) "breakpoint"
+!                   write(99,*) mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))
+                endif
              endif
-
+             
              ! Normalize.
              predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1._kind_phys)
 
-             ! Debug
              if (debug .and. do_debug_once) then
-                write(99,'(a32,a10,f10.2)') '',                    '  nval=',predictor_matrix_lw(iCol,iLay,iPred)
-                if (is2D_lw(iPred)) then
-                   write(99,*) mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred))
-                else
-                   write(99,*) mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))
-                endif
+                write(99,'(a14,f14.6)')     "       nval = ",predictor_matrix_lw(iCol,iLay,iPred)
              endif
           enddo
        enddo
@@ -647,6 +693,10 @@ contains
           enddo
        enddo
     endif
+
+    print*,'ERFINV TESTS: ',erfinv(-1.0),erfinv(1.0)
+    print*,'ERF TESTS:    ',erf(-1.0),erf(1.0)
+
 
     ! ######################################################################################
     ! Begin Inference...
@@ -917,7 +967,8 @@ contains
   end subroutine mlrad_driver_finalize
 
   ! #########################################################################################
-  ! 
+  ! ERFINV: Using Newton refinement method
+  ! (http://www.mimirgames.com/articles/programming/approximations-of-the-inverse-error-function)
   ! #########################################################################################
   function erfinv(var_in) result(var_out)
     real(kind_phys),intent(in) :: var_in
@@ -928,23 +979,23 @@ contains
          c = (/-1.970840454, -1.624906493,  3.429567803,  1.641345311/)
     real(kind_dbl_prec),parameter,dimension(2) :: &
          d = (/ 3.543889200,  1.637067800/)
-    real(kind_phys) :: x, z
+    real(kind_dbl_prec) :: x, z
 
-    if (abs(var_in) == 1._kind_phys) then
+    if (abs(var_in) == 1._kind_dbl_prec) then
        x = var_in
-    elseif(var_in < -0.7) then
-       z = sqrt(-log((1._kind_phys+var_in)/2._kind_phys))
+    elseif(var_in < -0.7_kind_dbl_prec) then
+       z = sqrt(-log((1._kind_dbl_prec+var_in)/2._kind_dbl_prec))
        x = -(((c(4)*z+c(3))*z+c(2))*z+c(1))/((d(2)*z+d(1))*z+1.0)
     else
        if (var_in > 0.7) then
           z = var_in*var_in
           x = var_in*(((a(4)*z+a(3))*z+a(2))*z+a(1))/((((b(4)*z+b(4))*z+b(2))*z+b(1))*z+1.0)
        else
-          z = sqrt(-Log((1._kind_phys-var_in)/2._kind_phys));
+          z = sqrt(-Log((1._kind_dbl_prec-var_in)/2._kind_dbl_prec));
           x = (((c(4)*z+c(3))*z+c(2))*z+c(1))/((d(2)*z+d(1))*z+1.0)
        endif
     endif
-    var_out = x - (erf(x) - var_in) / (2.0/sqrt(3.14) * exp(-x*x))
+    var_out = x - (erf(x) - var_in) / (2._kind_dbl_prec/sqrt(3.14_kind_dbl_prec) * exp(-x*x))
 
   end function erfinv
 
