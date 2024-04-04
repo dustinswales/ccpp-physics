@@ -49,7 +49,7 @@ contains
     integer,              intent (in) :: me
     integer,              intent (in) :: master
     integer,              intent (in) :: nlunit
-    character(len=*),     intent (in) :: input_nml_file(:)
+    character(len=*),     intent (in), optional :: input_nml_file(:)
     integer,              intent (in) :: logunit
     integer,              intent (in) :: lonr
     integer,              intent (in) :: levs
@@ -229,21 +229,23 @@ contains
     real(kind=kind_phys),    intent(out), dimension(:)      :: zmtb, zlwb, zogw, rdxzb
     real(kind=kind_phys),    intent(out), dimension(:)      :: tau_mtb, tau_ogw, tau_tofd, tau_ngw
     real(kind=kind_phys),    intent(out), dimension(:, :):: gw_dudt, gw_dvdt, gw_dtdt, gw_kdis
-    real(kind=kind_phys),    intent(out), dimension(:, :):: dudt_mtb, dudt_ogw, dudt_tms
-    real(kind=kind_phys),    intent(out), dimension(:)    :: dusfc_ms, dvsfc_ms, dusfc_bl, dvsfc_bl
-    real(kind=kind_phys),    intent(out), dimension(:, :) :: dtauy2d_ms
-    real(kind=kind_phys),    intent(out), dimension(:, :) :: dtaux2d_bl, dtauy2d_bl
+    real(kind=kind_phys),    intent(out), dimension(:, :):: dudt_mtb, dudt_tms
+    real(kind=kind_phys),    intent(out), dimension(:, :), optional :: dudt_ogw
+    real(kind=kind_phys),    intent(out), dimension(:), optional    :: dusfc_ms, dvsfc_ms, dusfc_bl, dvsfc_bl
+    real(kind=kind_phys),    intent(out), dimension(:, :), optional :: dtauy2d_ms
+    real(kind=kind_phys),    intent(out), dimension(:, :), optional :: dtaux2d_bl, dtauy2d_bl
 
     ! dtend is only allocated if ldiag=.true.
     real(kind=kind_phys), optional, intent(inout)            :: dtend(:,:,:)
-    integer, intent(in)                                      :: dtidx(:,:), &
+    integer, intent(in), optional                            :: dtidx(:,:)
+    integer, intent(in)                                      :: &
          index_of_x_wind, index_of_y_wind, index_of_temperature,         &
          index_of_process_orographic_gwd, index_of_process_nonorographic_gwd
 
     logical,                 intent(in)                         :: ldiag3d, lssav
 
     ! These arrays only allocated if ldiag_ugwp = .true.
-    real(kind=kind_phys),    intent(inout), dimension(:,:) :: du3dt_mtb, du3dt_ogw, du3dt_tms
+    real(kind=kind_phys),    intent(inout), dimension(:,:), optional :: du3dt_mtb, du3dt_ogw, du3dt_tms
 
     real(kind=kind_phys),    intent(inout), dimension(:, :):: dudt, dvdt, dtdt
 

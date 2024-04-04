@@ -28,7 +28,7 @@
       real(kind=kind_phys), intent(inout) :: dugwd(:), dvgwd(:),        &
      &  gu0(:,:), gv0(:,:), gt0(:,:)
       real(kind=kind_phys), intent(inout), optional :: dtend(:,:,:)
-      integer, intent(in) :: dtidx(:,:)
+      integer, intent(in), optional :: dtidx(:,:)
       integer, intent(in) :: index_of_process_nonorographic_gwd
       integer, intent(in) :: index_of_x_wind, index_of_y_wind
 
