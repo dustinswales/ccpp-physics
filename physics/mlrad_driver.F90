@@ -62,7 +62,7 @@
 !!
 ! ###########################################################################################
 module mlrad_driver
-  use machine,                   only: kind_phys, kind_dbl_prec, kind_qdt_prec
+  use machine,                   only: kind_phys, kind_dbl_prec
   use funcphys,                  only: fpvs
   use module_radiation_gases,    only: NF_VGAS, getgases, getozn
   use module_radiation_aerosols, only: setaer
@@ -99,13 +99,13 @@ module mlrad_driver
   public mlrad_driver_init, mlrad_driver_run
 
 contains
-! ########################################################################################
+! ###########################################################################################
 !! \section arg_table_mlrad_driver_init
 !! \htmlinclude mlrad_driver_init.html
 !!
-! ########################################################################################
-  subroutine mlrad_driver_init(do_mlrad, debug, infero_mpath_lw, infero_mtype_lw, infero_mpath_sw, &
-       infero_mtype_sw, mlrad_data, errmsg, errflg)
+! ###########################################################################################
+  subroutine mlrad_driver_init(do_mlrad, debug, infero_mpath_lw, infero_mtype_lw,           &
+       infero_mpath_sw, infero_mtype_sw, mlrad_data, errmsg, errflg)
 
     ! Inputs
     logical, intent(in) :: &
@@ -137,33 +137,22 @@ contains
     if (.not. do_mlrad) return
 
     if (debug) then
-       !open(89, file='debug.mlrad_driver.npmatrix.cld.txt',    status='unknown')
-       !open(90, file='debug.mlrad_driver.upmatrix.cld.txt',    status='unknown')
-       !open(91, file='debug.mlrad_driver.lev_inline.txt',      status='unknown')
-       !open(92, file='debug.mlrad_driver.lev_computations.txt',status='unknown')
-       !open(93, file='debug.mlrad_driver.heating_rates.txt',   status='unknown')
-       !open(94, file='debug.mlrad_driver.fluxes.inline.txt',   status='unknown')
-       open(88, file='debug.mlrad_driver.fluxes.example.txt',  status='unknown')
        open(95, file='debug.mlrad_driver.upmatrix.example.txt',status='unknown')
        open(96, file='debug.mlrad_driver.npmatrix.example.txt',status='unknown')
        open(97, file='debug.mlrad_driver.upmatrix.inline.txt', status='unknown')
        open(98, file='debug.mlrad_driver.npmatrix.inline.txt', status='unknown')
        open(99, file='debug.mlrad_driver.breakpoints.txt',     status='unknown')
-       status = nf90_open('/home/Dustin.Swales/Projects/ML-radiation/tools/debug.mlrad_driver.npmatrix.ryan.txt.nc', NF90_NOWRITE, ncid)
-       status = nf90_inq_varid(ncid, 'pmatrix', varID)
-       status = nf90_get_var(  ncid, varID, npmatrix_offline)
-       status = nf90_close(ncid)
        do_debug_once = .true.
     endif
 
-    ! ######################################################################################
+    ! #######################################################################################
     !
     ! Determine the mapping between the fields in training data and the order of expected 
     ! inputs to the emulator. Store in "ip2io"
     ! Also, store which data container the predictors are in (1D vs 2D)
     ! (The emulator expects the predictors in order. The inputs may not be in this order)
     !
-    ! ######################################################################################
+    ! #######################################################################################
     ! Longwave
     count = 0
     ip2io_lw(:) = -999
@@ -208,11 +197,11 @@ contains
        enddo
     enddo
 
-    ! ######################################################################################
+    ! #######################################################################################
     !
     ! Initialize Infero
     !
-    ! ######################################################################################
+    ! #######################################################################################
     call infero_check(infero_initialise())
 
     ! Longwave
@@ -230,17 +219,16 @@ contains
     call infero_check(model_sw%initialise_from_yaml_string(yaml_config_sw))
 
   end subroutine mlrad_driver_init
-
-! #########################################################################################
+! ###########################################################################################
 !! \section arg_table_mlrad_driver_run
 !! \htmlinclude mlrad_driver_run.html
 !!
-! #########################################################################################
-  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, i_cldliq,       &
-       i_cldice, i_ozone, ico2, isubc, iaermdl, iaerflg, icseed, idx, lsmask, semis,      &
-       sfcalb, coszen, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, cld_reice, qgrs,     &
-       aerfld, mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd, con_fvirt, con_g,       &
-       con_pi, htrlw, htrsw, sfcflw, sfcfsw, topflw, topfsw, psfc, oro, errmsg, errflg, ref_data)
+! ###########################################################################################
+  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, i_cldliq,         &
+       i_cldice, i_ozone, ico2, isubc, iaermdl, iaerflg, icseed, idx, lsmask, semis, sfcalb,&
+       coszen, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, cld_reice, qgrs, aerfld,       &
+       mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd, con_fvirt, con_g, con_pi, htrlw,  &
+       htrsw, sfcflw, sfcfsw, topflw, topfsw, oro, errmsg, errflg, ref_data)
     use module_radsw_parameters, only: topfsw_type, sfcfsw_type
     use module_radlw_parameters, only: topflw_type, sfcflw_type
 
@@ -272,7 +260,6 @@ contains
          lat,         & ! Latitude
          semis,       & ! Longwave surface emissivity
          coszen,      & ! Cosine(SZA)
-         psfc,        &
          oro
     real(kind_phys), dimension(:,:), intent(in) :: &
          prsl,        & ! Pressure at model-layer centers (Pa)
@@ -316,7 +303,7 @@ contains
 
     ! Locals
     logical :: top_at_1
-    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd
+    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd, nbpts, ibpt
     integer, dimension(nCol) :: ipseed
     real(kind_phys) :: es, qs, dp, tem1, tem2, pfac, ranku(nCol), rankn(nCol), rankk(1), &
          bin(1), edge(nLev+1), bot, top
@@ -358,9 +345,9 @@ contains
        enddo
     endif
 
-    ! ######################################################################################
+    ! #######################################################################################
     ! Set up trace gas concentrations
-    ! ######################################################################################
+    ! #######################################################################################
 
     ! Do we need to get climatological ozone? (only if not using prognostic ozone)
     if (i_ozone .le. 0) then
@@ -370,11 +357,11 @@ contains
     ! Get trace-gas concentrations.
     call getgases (prsi/100., lon, lat, nCol, nLev, ico2, top_at_1, con_pi, gas_vmr)
 
-    ! ######################################################################################
+    ! #######################################################################################
     !
     ! Compute prediction matrices for longwave and shortwave
     !
-    ! ######################################################################################
+    ! #######################################################################################
 
     !
     ! Compute Longwave predictor matrix...
@@ -421,9 +408,12 @@ contains
           predictor_matrix_lw(iCol,iLay,ilw_iwc)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice)*rho(iLay))
 
           ! Compute layer liquid/ice/vapor condensate path, from mixing ratios (kg/kg)->(kg/m2).
-          predictor_matrix_lw(iCol,iLay,ilw_dlwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq) * tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
-          predictor_matrix_lw(iCol,iLay,ilw_diwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice) * tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
-          predictor_matrix_lw(iCol,iLay,ilw_dwvp)  = max(0._kind_phys, qgrs(iCol,iLay,1) * tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
+          predictor_matrix_lw(iCol,iLay,ilw_dlwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq) * &
+               tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
+          predictor_matrix_lw(iCol,iLay,ilw_diwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice) * &
+               tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
+          predictor_matrix_lw(iCol,iLay,ilw_dwvp)  = max(0._kind_phys, qgrs(iCol,iLay,1       ) * &
+               tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
 
           ! Cloud effective radii (m).
           if (effr_in) then
@@ -505,10 +495,10 @@ contains
           do iLay=1,nLev
              do iBnd=1,14
                 tau_aero(iCol,iLay) = tau_aero(iCol,iLay) + aerosolssw(iCol,iLay,iBnd,1)
-                ssa_aero(iCol,iLay) = ssa_aero(iCol,iLay) + aerosolssw(iCol,iLay,iBnd,1)*&
+                ssa_aero(iCol,iLay) = ssa_aero(iCol,iLay) + aerosolssw(iCol,iLay,iBnd,1)* &
                                                             aerosolssw(iCol,iLay,iBnd,2)
-                g_aero(iCol,iLay)   = g_aero(iCol,iLay)   + aerosolssw(iCol,iLay,iBnd,1)*&
-                                                            aerosolssw(iCol,iLay,iBnd,2)*&
+                g_aero(iCol,iLay)   = g_aero(iCol,iLay)   + aerosolssw(iCol,iLay,iBnd,1)* &
+                                                            aerosolssw(iCol,iLay,iBnd,2)* &
                                                             aerosolssw(iCol,iLay,iBnd,3)
              enddo
              ssa_aero(iCol,iLay) = ssa_aero(iCol,iLay) / max(con_eps, tau_aero(iCol,iLay))
@@ -550,11 +540,11 @@ contains
        enddo       ! END DO daylit columns
     endif          ! END IF daylit columns
 
-    ! ######################################################################################
+    ! #######################################################################################
     !
     ! Normalize...
     !
-    ! ######################################################################################
+    ! #######################################################################################
     
     !
     ! Longwave
@@ -562,6 +552,31 @@ contains
     if (debug .and. do_debug_once) upredictor_matrix_lw = predictor_matrix_lw
     do iPred = 1,size(pnames_lw)
        do iLay=1,nLev
+          !
+          ! Determine number of valid breakpoints for current predictor
+          !
+          if (is2D_lw(iPred)) then
+             nbpts = size(mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred)))
+             if (any(isnan(mlrad_data%lw%vector_breakpoint(:, iLay, ip2io_lw(iPred))))) then
+                do ibpt=1,nbpts
+                   if (isnan(mlrad_data%lw%vector_breakpoint(ibpt, iLay, ip2io_lw(iPred)))) then
+                      nbpts = ibpt-1
+                      exit
+                   endif
+                enddo
+             endif
+          else
+             nbpts = size(mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))
+             if (any(isnan(mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))))) then
+                do ibpt=1,nbpts
+                   if (isnan(mlrad_data%lw%scalar_breakpoint(ibpt, ip2io_lw(iPred)))) then
+                      nbpts = ibpt-1
+                      exit
+                   endif
+                enddo
+             endif
+          endif
+          
           do iCol=1,nCol
              ! Compute the rank of the predictor variable with respect to the training data.
              ! *NOTE* The input data isn't in the order that the emulator requires. Here we 
@@ -569,76 +584,45 @@ contains
              if (is2D_lw(iPred)) then
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%vector_breakpoint(  1, iLay, ip2io_lw(iPred))) then
                    rankk(1) = 1
-                   ranku(iCol) = mlrad_data%lw%vector_breakpoint(1, iLay,  ip2io_lw(iPred))
-                elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))) then
-                   rankk(1) = 200
-                   ranku(iCol) = mlrad_data%lw%vector_breakpoint(201, iLay,  ip2io_lw(iPred))
+                   ranku(iCol) = epsilon(1._kind_phys)
+                elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(nbpts, iLay, ip2io_lw(iPred))) then
+                   rankk(1) = nbpts
+                   ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
                 else
-                   rankk = minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred))))
+                   rankk = max(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred)))) - 1, 1)
                    ranku(iCol) = mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred)) + &
                         predictor_matrix_lw(iCol,iLay,iPred)*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))
+                endif
+                if (debug .and. do_debug_once) then
+                   write(99,'(a40)') '------------------------------------------------------------------------------------------------V'
+                   write(99,'(a20,i5)' ) trim(pnames_lw(iPred)),nbpts
+                   write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
+                   write(99,'(a14,f14.6)')     "      rankk = ",rankk
+                   write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
+                   write(99,'(a14,i14  )')     "       iLay = ",iLay
+                   write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%lw%vector_breakpoint(1, iLay,  ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(nbpts, iLay,  ip2io_lw(iPred))
+                   write(99,*)mlrad_data%lw%vector_breakpoint(:, iLay,  ip2io_lw(iPred))
                 endif
              else
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
                    rankk(1) = 1
-                   ranku(iCol) = mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred))
-                elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))) then
-                   rankk(1) = 201
-                   ranku(iCol) = mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))
+                   ranku(iCol) = epsilon(1._kind_phys)
+                elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(nbpts, ip2io_lw(iPred))) then
+                   rankk(1) = nbpts
+                   ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
                 else
-                   rankk = minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))))
+                   rankk = max(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))) - 1, 1)
                    ranku(iCol) = mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred)) + &
                         predictor_matrix_lw(iCol,iLay,iPred)*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))
                 endif
-             endif
-
-             ! Debug
-             if (debug .and. do_debug_once) then
-                write(99,'(a40)') '------------------------------------------------------------------------------------------------'
-                write(99,'(a20)' ) trim(pnames_lw(iPred))
-                write(99,'(a14,f14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
-                write(99,'(a14,f14.6)')     "      rankk = ",rankk
-                write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
-                !write(99,'(a14,f14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
-                if (is2D_lw(iPred)) then
-                   if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%vector_breakpoint(  1, iLay, ip2io_lw(iPred))) then
-                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%vector_breakpoint(1, iLay, ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))
-                      write(99,'(a14,a14)')    "      slope = ","N/A"
-                      write(99,'(a14,a14)')    "  intercept = ","N/A"
-                      write(99,'(a14,a14)')    "       calc = ","N/A"
-                   elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))) then
-                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%vector_breakpoint(1, iLay, ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(201, iLay, ip2io_lw(iPred))
-                      write(99,'(a14,a14)')    "      slope = ","N/A"
-                      write(99,'(a14,a14)')    "  intercept = ","N/A"
-                      write(99,'(a14,a14)')    "       calc = ","N/A"
-                   else
-                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%vector_breakpoint(rankk(1)-1, iLay, ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(rankk(1), iLay, ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "      slope = ",mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "  intercept = ",mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "     calc_A = ",mlrad_data%lw%vector_breakpoint(rankk(1),   iLay, ip2io_lw(iPred))*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))+mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "     calc_B = ",mlrad_data%lw%vector_breakpoint(rankk(1)+1, iLay, ip2io_lw(iPred))*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))+mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred))
-                   endif
-                else
-                   if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
-                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))
-                      write(99,'(a14,a14)')    "      slope = ","N/A"
-                      write(99,'(a14,a14)')    "  intercept = ","N/A"
-                      write(99,'(a14,a14)')    "       calc = ","N/A"
-                   elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))) then
-                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(201, ip2io_lw(iPred))
-                      write(99,'(a14,a14)')    "      slope = ","N/A"
-                      write(99,'(a14,a14)')    "  intercept = ","N/A"
-                      write(99,'(a14,a14)')    "       calc = ","N/A"
-                   else
-                      write(99,'(a14,2f14.6)') " breakpoint = ",mlrad_data%lw%scalar_breakpoint(rankk(1)-1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(rankk(1),ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "      slope = ",mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "  intercept = ",mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "     calc_A = ",mlrad_data%lw%scalar_breakpoint(rankk(1),   ip2io_lw(iPred))*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))+mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred))
-                      write(99,'(a14,f14.6)')  "     calc_B = ",mlrad_data%lw%scalar_breakpoint(rankk(1)+1, ip2io_lw(iPred))*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))+mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred))
-                   
-                   endif
-!                   write(99,*) "breakpoint"
-!                   write(99,*) mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred))
+                if (debug .and. do_debug_once) then
+                   write(99,'(a40)') '------------------------------------------------------------------------------------------------S'
+                   write(99,'(a20)' ) trim(pnames_lw(iPred))
+                   write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
+                   write(99,'(a14,f14.6)')     "      rankk = ",rankk
+                   write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
+                   write(99,'(a14,i14  )')     "       iLay = ",iLay
+                   write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(nbpts,  ip2io_lw(iPred))
                 endif
              endif
              
@@ -659,48 +643,88 @@ contains
        if (debug .and. do_debug_once) upredictor_matrix_sw = predictor_matrix_sw
        do iPred = 1,size(pnames_sw)
           do iLay=1,nLev
-             do iDay=1,nDay
-                ! Compute the rank of the predictor variable with respect to the training data.
-                if (is2D_sw(iPred)) then
-                   rankk     = real(minloc(abs(predictor_matrix_sw(iDay,iLay,iPred) - &
-                                               mlrad_data%sw%vector_breakpoint(:,iLay, ip2io_sw(iPred)))),kind=kind_phys)
-                   ncol_pred = count(mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred)) .eq. &
-                                     mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred)))
-                else
-                   rankk     = real(minloc(abs(predictor_matrix_sw(iDay,iLay,iPred) - &
-                                               mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))),kind=kind_phys)
-                   ncol_pred = count(mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)) .eq. &
-                                     mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))
+             !
+             ! Determine number of valid breakpoints for current predictor
+             !
+             if (is2D_sw(iPred)) then
+                nbpts = size(mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred)))
+                if (any(isnan(mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred))))) then
+                   do ibpt=1,nbpts
+                      if (isnan(mlrad_data%sw%vector_breakpoint(ibpt, iLay, ip2io_sw(iPred)))) then
+                         nbpts = ibpt-1
+                         exit
+                      endif
+                   enddo
                 endif
-                rankk = max(1.e-6_kind_phys,rankk)
+             else
+                nbpts = size(mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))
+                if (any(isnan(mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred))))) then
+                   do ibpt=1,nbpts
+                      if (isnan(mlrad_data%sw%scalar_breakpoint(ibpt, ip2io_sw(iPred)))) then
+                         nbpts = ibpt-1
+                         exit
+                      endif
+                   enddo
+                endif
+             endif
 
-                ! Compute the uniform (0-1) rank of the predictor variable.
-                ranku(iDay) = rankk(1)/min(mlrad_data%sw%nCol,ncol_pred)
+             do iCol=1,nDay
+                if (is2D_sw(iPred)) then
+                   if     (predictor_matrix_sw(iCol,iLay,iPred) <= mlrad_data%sw%vector_breakpoint(  1, iLay, ip2io_sw(iPred))) then
+                      rankk(1) = 1
+                      ranku(iCol) = epsilon(1._kind_phys)
+                   elseif (predictor_matrix_sw(iCol,iLay,iPred) >= mlrad_data%sw%vector_breakpoint(nbpts, iLay, ip2io_sw(iPred))) then
+                      rankk(1) = nbpts
+                      ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
+                   else
+                      rankk = max(minloc(abs(predictor_matrix_sw(iCol,iLay,iPred) - mlrad_data%sw%vector_breakpoint(:,iLay, ip2io_sw(iPred)))) - 1, 1)
+                      ranku(iCol) = mlrad_data%sw%vector_intercept(rankk(1), iLay, ip2io_sw(iPred)) + &
+                           predictor_matrix_sw(iCol,iLay,iPred)*mlrad_data%sw%vector_slope(rankk(1), iLay, ip2io_sw(iPred))
+                   endif
+                   if (debug .and. do_debug_once) then
+                      write(99,'(a40)') '------------------------------------------------------------------------------------------------V'
+                      write(99,'(a20,i5)' ) trim(pnames_sw(iPred)),nbpts
+                      write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_sw(iCol,iLay,iPred)
+                      write(99,'(a14,f14.6)')     "      rankk = ",rankk
+                      write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
+                      write(99,'(a14,i14  )')     "       iLay = ",iLay
+                      write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%sw%vector_breakpoint(1, iLay,  ip2io_sw(iPred)),mlrad_data%sw%vector_breakpoint(nbpts, iLay,  ip2io_sw(iPred))
+                      write(99,*)mlrad_data%sw%vector_breakpoint(:, iLay,  ip2io_sw(iPred))
+                   endif
+                else
+                   if     (predictor_matrix_sw(iCol,iLay,iPred) <= mlrad_data%sw%scalar_breakpoint(  1, ip2io_sw(iPred))) then
+                      rankk(1) = 1
+                      ranku(iCol) = epsilon(1._kind_phys)
+                   elseif (predictor_matrix_sw(iCol,iLay,iPred) >= mlrad_data%sw%scalar_breakpoint(nbpts, ip2io_sw(iPred))) then
+                      rankk(1) = nbpts
+                      ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
+                   else
+                      rankk = max(minloc(abs(predictor_matrix_sw(iCol,iLay,iPred) - mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))) - 1, 1)
+                      ranku(iCol) = mlrad_data%sw%scalar_intercept(rankk(1), ip2io_sw(iPred)) + &
+                           predictor_matrix_sw(iCol,iLay,iPred)*mlrad_data%sw%scalar_slope(rankk(1), ip2io_sw(iPred))
+                   endif
+                   if (debug .and. do_debug_once) then
+                      write(99,'(a40)') '------------------------------------------------------------------------------------------------S'
+                      write(99,'(a20)' ) trim(pnames_sw(iPred))
+                      write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_sw(iCol,iLay,iPred)
+                      write(99,'(a14,f14.6)')     "      rankk = ",rankk
+                      write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
+                      write(99,'(a14,i14  )')     "       iLay = ",iLay
+                      write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%sw%scalar_breakpoint(1, ip2io_sw(iPred)),mlrad_data%sw%scalar_breakpoint(nbpts,  ip2io_sw(iPred))
+                   endif
+                endif
 
                 ! Normalize
                 predictor_matrix_sw(iDay,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iDay)-1._kind_phys)
 
-                ! Debug
-                if(debug .and. do_debug_once) then
-                   write(99,'(a32,a7,i5)') trim(pnames_sw(iPred)),'  iLay=',iLay
-                   if (is2D_sw(iPred)) then
-                      write(99,*) mlrad_data%sw%vector_breakpoint(:, iLay, ip2io_sw(iPred))
-                   else
-                      write(99,*) mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred))
-                   endif
-                endif
              enddo
           enddo
        enddo
     endif
 
-    print*,'ERFINV TESTS: ',erfinv(-1.0),erfinv(1.0)
-    print*,'ERF TESTS:    ',erf(-1.0),erf(1.0)
-
-
-    ! ######################################################################################
+    ! #######################################################################################
     ! Begin Inference...
-    ! ######################################################################################
+    ! #######################################################################################
     ! Run inferences
     ! Longwave (all columns)
     call infero_check(model_lw%infer(predictor_matrix_lw, target_matrix_lw))
@@ -710,17 +734,17 @@ contains
        call infero_check(model_sw%infer(predictor_matrix_sw, target_matrix_sw))
     endif
 
-    ! ######################################################################################
-    ! ######################################################################################
-    ! ######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
     ! REMOVE WHEN WORKING
-    ! ######################################################################################
-    ! ######################################################################################
-    ! ######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
     if (debug .and. do_debug_once) then
-       ! ######################################################################################
+       ! ####################################################################################
        ! Compute fluxes from reference data (sanity check for proper infero implementation)
-       ! ######################################################################################
+       ! ####################################################################################
        do iCol=1,nCol
           do iLay=1,nLev
              predictor_matrix_lw2(iCol,iLay,:) = ref_data%predictor_matrix(:,iLay,iCol)
@@ -728,29 +752,20 @@ contains
        enddo
        call infero_check(model_lw%infer(predictor_matrix_lw2, target_matrix_lw))
 
-       ! ######################################################################################
-       ! Fluxes file, example, lw-only (88)
-       ! ######################################################################################
-       do iCol=1,nCol
-          write(88,'(a20,2a12)'  ) '                  ','ML(ref)','ML(inline)'
-          write(88,'(a20,2f12.2)') 'LW surface(down): ',ref_data%scalar_prediction(1,iCol),target_matrix_lw(iCol,nLev+1)
-          write(88,'(a20,2f12.2)') 'LW toa(up):       ',ref_data%scalar_prediction(2,iCol),target_matrix_lw(iCol,nLev+2)
-       enddo
-
-       ! ######################################################################################
+       ! ####################################################################################
        ! Raw predictor file (97)
-       ! ######################################################################################
-       write(97, '(a5, 24a10)')  'Layer', 'sza', 'sfcT', 'sfc_emiss', 'p', 'T', 'q', 'rh', 'LWC',&
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                               &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                               &
+       ! ####################################################################################
+       write(97, '(a5, 24a10)')  'Layer', 'sza', 'sfcT', 'sfc_emiss', 'p', 'T', 'q', 'rh',  &
+            'LWC', 'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                      &
+            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
             'dp'
-       write(97, '(a5, 24a10)')  '', '(1)', '(K)', '(1)','(Pa)', '(k)', '(kg/kg)', '(1)', '(kg/m3)', &
-            '(kg/m3)','(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)',       &
-            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',            &
+       write(97, '(a5, 24a10)')  '', '(1)', '(K)', '(1)','(Pa)', '(k)', '(kg/kg)', '(1)',   &
+            '(kg/m3)', '(kg/m3)','(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)',&
+            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',          &
             '(Pa)'
        do iCol=1,nCol
           do iLay=1,nLev
-             write (97,'(i5,7f10.2,4e10.2,f10.2,2e10.2,10f10.4)')    &
+             write (97,'(i5,7f10.2,4e10.2,f10.2,2e10.2,10f10.4)')&
                   iLay,                                       &
                   upredictor_matrix_lw(iCol,iLay,ilw_sza),    &
                   upredictor_matrix_lw(iCol,iLay,ilw_sfct),   &
@@ -769,7 +784,7 @@ contains
                   upredictor_matrix_lw(iCol,iLay,ilw_uwvp),   &
                   upredictor_matrix_lw(iCol,iLay,ilw_reliq),  &
                   upredictor_matrix_lw(iCol,iLay,ilw_reice),  &
-                  upredictor_matrix_lw(iCol,iLay,ilw_o3mr),   &
+                  1e9*upredictor_matrix_lw(iCol,iLay,ilw_o3mr),   &
                   upredictor_matrix_lw(iCol,iLay,ilw_co2),    &
                   upredictor_matrix_lw(iCol,iLay,ilw_ch4),    &
                   upredictor_matrix_lw(iCol,iLay,ilw_n2o),    &
@@ -779,12 +794,12 @@ contains
           enddo
        enddo
 
-       ! ######################################################################################
+       ! ####################################################################################
        ! Normalizaed predictor file (98)
-       ! ######################################################################################
+       ! ####################################################################################
        write(98, '(a5, 24a10)')  'Layer', 'sza', 'sfcT', 'sfc_emiss', 'p', 'T', 'q', 'rh', 'LWC',&
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                               &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                               &
+            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                             &
+            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
             'dp'
 
        do iCol=1,nCol
@@ -818,16 +833,16 @@ contains
           enddo
        enddo
 
-       ! ######################################################################################
+       ! ####################################################################################
        ! Raw predictor example (95)
-       ! ######################################################################################
-       write(95, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                     &
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                           &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                           &
+       ! ####################################################################################
+       write(95, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                       &
+            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                             &
+            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
             'dp', 'sza', 'Tsfc', 'sfc_emiss'
-       write(95, '(a5, 25a10)')  '', '(Pa)', '(k)', '(g/kg)', '(1)', '(g/m3)',            &
-            '(g/m3)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)',         &
-            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',        &
+       write(95, '(a5, 25a10)')  '', '(Pa)', '(k)', '(g/kg)', '(1)', '(g/m3)',              &
+            '(g/m3)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)',           &
+            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',          &
             '(Pa)', '(1)', '(K)', '(1)'
        do iCol=1,nCol
           do iLay=1,nLev
@@ -860,12 +875,12 @@ contains
           enddo
        enddo
 
-       ! ######################################################################################
+       ! ####################################################################################
        ! Normalized predictor examples (96)
-       ! ######################################################################################
-       write(96, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                     &
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                           &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                           &
+       ! ####################################################################################
+       write(96, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                       &
+            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                             &
+            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
             'dp', 'sza', 'Tsfc', 'sfc_emiss'
        do iCol=1,nCol
           do iLay=1,nLev
@@ -899,14 +914,14 @@ contains
        enddo
     endif
     do_debug_once = .false.
-    ! ######################################################################################
-    ! ######################################################################################
-    ! ######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
     ! END DEBUG BLOCK
-    ! ######################################################################################
-    ! ######################################################################################
-    ! ######################################################################################
-
+    ! #######################################################################################
+    ! #######################################################################################
+    ! #######################################################################################
+ 
     ! Copy from prediction-matrix to ccpp interstitials (for prognostic ML rad)
     do iCol=1,nCol
        htrlw(iCol,1:nLev) = target_matrix_lw(iCol,1:nLev)/(3600.*24.) ! K/day -> K/sec
@@ -917,18 +932,18 @@ contains
     do iDay=1,nDay
        htrsw(idx(iDay),1:nLev) = target_matrix_sw(iDay,1:nLev)/(3600.*24.) ! K/day -> K/sec
        sfcfsw(idx(iDay))%dnfxc = target_matrix_sw(iDay,nLev+1)
-       sfcfsw(idx(iDay))%upfxc = sfcfsw(idx(iDay))%dnfxc*(upredictor_matrix_sw(iDay,1,isw_alb))
+!       sfcfsw(idx(iDay))%upfxc = 0.
        topfsw(idx(iDay))%upfxc = target_matrix_sw(iDay,nLev+2)
 !       topfsw(idx(iDay))%dnfxc = 0.
     enddo
 
   end subroutine mlrad_driver_run
 
-! #########################################################################################
+! ###########################################################################################
 !! \section arg_table_mlrad_driver_finalize
 !! \htmlinclude mlrad_driver_finalize.html
 !!
-! #########################################################################################
+! ###########################################################################################
   subroutine mlrad_driver_finalize(do_mlrad, debug, errmsg, errflg)
     ! Inputs
     logical,           intent(in) :: do_mlrad, debug
@@ -950,13 +965,6 @@ contains
     call infero_check(infero_finalise())
 
     if (debug) then
-       close(88)
-       !close(89)
-       !close(90)
-       !close(91)
-       !close(92)
-       !close(93)
-       !close(94)
        close(95)
        close(96)
        close(97)

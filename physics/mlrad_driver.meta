@@ -446,14 +446,6 @@
   dimensions = (horizontal_loop_extent)
   type = topfsw_type
   intent = inout
-[psfc]
-  standard_name = surface_air_pressure
-  long_name = surface pressure
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
 [oro]
   standard_name = unfiltered_height_above_mean_sea_level
   long_name = height_above_mean_sea_level
