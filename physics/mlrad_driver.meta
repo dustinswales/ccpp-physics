@@ -1,8 +1,8 @@
 [ccpp-table-properties]
   name = mlrad_driver
   type = scheme
-  dependencies = machine.F,funcphys.f90,radiation_gases.f,module_mlrad.F90
-  dependencies = radlw_param.f,radsw_param.f,radiation_aerosols.f
+  dependencies = hooks/machine.F,tools/funcphys.f90,Radiation/radiation_gases.f,module_mlrad.F90
+  dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f,Radiation/radiation_aerosols.f
 
 ########################################################################
 [ccpp-arg-table]
