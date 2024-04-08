@@ -64,7 +64,7 @@
 module mlrad_driver
   use machine,                   only: kind_phys, kind_dbl_prec
   use funcphys,                  only: fpvs
-  use module_radiation_gases,    only: NF_VGAS, getgases, getozn
+  use module_radiation_gases,    only: NF_VGAS, getgases
   use module_radiation_aerosols, only: setaer
   use module_mlrad,              only: ty_mlrad_data, ip2io_lw, is2D_lw, pnames_lw,         &
                                        pnames_sw, ip2io_sw, is2D_sw,ty_rad_ml_ref_data,     &
@@ -350,9 +350,9 @@ contains
     ! #######################################################################################
 
     ! Do we need to get climatological ozone? (only if not using prognostic ozone)
-    if (i_ozone .le. 0) then
-       call getozn (prslk, lat, nCol, nLev, top_at_1, o3_lay)
-    endif
+!    if (i_ozone .le. 0) then
+!       call getozn (prslk, lat, nCol, nLev, top_at_1, o3_lay)
+!    endif
 
     ! Get trace-gas concentrations.
     call getgases (prsi/100., lon, lat, nCol, nLev, ico2, top_at_1, con_pi, gas_vmr)
@@ -584,10 +584,10 @@ contains
              if (is2D_lw(iPred)) then
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%vector_breakpoint(  1, iLay, ip2io_lw(iPred))) then
                    rankk(1) = 1
-                   ranku(iCol) = epsilon(1._kind_phys)
+                   ranku(iCol) = 0.999999!epsilon(1._kind_phys)
                 elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(nbpts, iLay, ip2io_lw(iPred))) then
                    rankk(1) = nbpts
-                   ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
+                   ranku(iCol) = 0.000001!1._kind_phys - epsilon(1._kind_phys)
                 else
                    rankk = max(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred)))) - 1, 1)
                    ranku(iCol) = mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred)) + &
@@ -606,10 +606,10 @@ contains
              else
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
                    rankk(1) = 1
-                   ranku(iCol) = epsilon(1._kind_phys)
+                   ranku(iCol) = 0.999999!epsilon(1._kind_phys)
                 elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(nbpts, ip2io_lw(iPred))) then
                    rankk(1) = nbpts
-                   ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
+                   ranku(iCol) = 0.000001!1._kind_phys - epsilon(1._kind_phys)
                 else
                    rankk = max(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))) - 1, 1)
                    ranku(iCol) = mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred)) + &
@@ -913,7 +913,7 @@ contains
           enddo
        enddo
     endif
-    do_debug_once = .false.
+!    do_debug_once = .false.
     ! #######################################################################################
     ! #######################################################################################
     ! #######################################################################################
