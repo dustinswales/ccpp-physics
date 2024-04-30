@@ -19,7 +19,7 @@
 !>\section rrtmg_pre_gen General Algorithm
       subroutine GFS_rrtmg_pre_run (im, levs, lm, lmk, lmp, n_var_lndp, lextop,&
         ltp, imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_c3, me, ncnd, ntrac,        &
-        num_p3d, npdf3d,                                                       &
+        num_p3d, npdf3d, xr_cnvcld,                                            &
         ncnvcld3d,ntqv, ntcw,ntiw, ntlnc, ntinc, ntrnc, ntsnc, ntccn, top_at_1,&
         ntrw, ntsw, ntgl, nthl, ntwa, ntoz, ntsmoke, ntdust, ntcoarsepm,       &
         ntclamt, nleffr, nieffr, nseffr, lndp_type, kdt,                       &
@@ -35,7 +35,7 @@
         lmfshal, lcnorm, lmfdeep2, lcrick, fhswr, fhlwr, solhr, sup, con_eps,  &
         epsm1, fvirt, rog, rocp, con_rd, xlat_d, xlat, xlon, coslat, sinlat,   &
         tsfc, slmsk, prsi, prsl, prslk, tgrs, sfc_wts, mg_cld, effrr_in,       &
-        pert_clds, sppt_wts, sppt_amp, cnvw_in, cnvc_in, qgrs, aer_nm, dx,     &
+        pert_clds, sppt_wts, sppt_amp, cnvw_in, cnvc_inout, qgrs, aer_nm, dx,  &
         icloud, iaermdl, iaerflg, con_pi, con_g, con_ttp, con_thgni, si,       & !inputs from here and above
         coszen, coszdg, effrl_inout, effri_inout, effrs_inout,                 &
         clouds1, clouds2, clouds3, clouds4, clouds5, qci_conv,                 & !in/out from here and above
@@ -45,7 +45,8 @@
         gasvmr_ccl4,  gasvmr_cfc113, aerodp,ext550, clouds6, clouds7, clouds8, &
         clouds9, cldsa, cldfra, cldfra2d, lwp_ex,iwp_ex, lwp_fc,iwp_fc,        &
         faersw1, faersw2, faersw3, faerlw1, faerlw2, faerlw3, alpha, rrfs_sd,  &
-        aero_dir_fdb, fdb_coef, spp_wts_rad, spp_rad, ico2, ozphys,      &
+        aero_dir_fdb, fdb_coef, spp_wts_rad, spp_rad, ico2, ozphys,            &
+        cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice,                &
         errmsg, errflg)
 
       use machine,                   only: kind_phys
@@ -64,7 +65,8 @@
      &                                     adjust_cloudIce,          &
      &                                     adjust_cloudH2O,          &
      &                                     adjust_cloudFinal
-
+      use module_radiation_cloud_optics, only: cloud_mp_SAMF
+      
       use module_radsw_parameters,   only: topfsw_type, sfcfsw_type, &
      &                                     profsw_type, NBDSW
       use module_radlw_parameters,   only: topflw_type, sfcflw_type, &
@@ -83,6 +85,7 @@
                                            make_RainNumber
       ! For NRL Ozone
       use module_ozphys, only: ty_ozphys
+      
       implicit none
 
       integer,              intent(in)  :: im, levs, lm, lmk, lmp, ltp,        &
@@ -129,7 +132,7 @@
                                           uni_cld, effr_in, do_mynnedmf,       &
                                           lmfshal, lmfdeep2, pert_clds, lcrick,&
                                           lcnorm, top_at_1, lextop, mraerosol
-      logical,              intent(in) :: rrfs_sd, aero_dir_fdb
+      logical,              intent(in) :: rrfs_sd, aero_dir_fdb, xr_cnvcld
 
       logical,              intent(in) :: nssl_ccn_on, nssl_invertccn
       integer,              intent(in) :: spp_rad
@@ -145,9 +148,10 @@
       real(kind=kind_phys), dimension(:,:), intent(in) :: prsi, prsl, prslk,   &
                                                           tgrs, sfc_wts,       &
                                                           mg_cld, effrr_in,    &
-                                                          cnvw_in, cnvc_in,    &
+                                                          cnvw_in,             &
                                                           sppt_wts
-
+      real(kind=kind_phys), dimension(:,:), intent(inout) :: cnvc_inout
+      
       real(kind=kind_phys), dimension(:,:,:), intent(in) :: qgrs
       real(kind=kind_phys), dimension(:,:,:), intent(inout) :: aer_nm
 
@@ -197,6 +201,11 @@
                                                            clouds8,   &
                                                            clouds9,   &
                                                            cldfra
+      real(kind=kind_phys), dimension(:,:), intent(out) :: &
+                                                           cld_cnv_lwp,   &
+                                                           cld_cnv_reliq, &
+                                                           cld_cnv_iwp,   &
+                                                           cld_cnv_reice
       real(kind=kind_phys), dimension(:), intent(out) :: cldfra2d
       real(kind=kind_phys), dimension(:,:), intent(out) :: cldsa
 
@@ -941,7 +950,7 @@
               !     but it looks like the Zhao-Carr-PDF scheme is not in the CCPP
               deltaq(i,k1) = 0.0!Tbd%phy_f3d(i,k,5)      !GJF: this variable is not in phy_f3d anymore
               cnvw  (i,k1) = cnvw_in(i,k)
-              cnvc  (i,k1) = cnvc_in(i,k)
+              cnvc  (i,k1) = cnvc_inout(i,k)
             enddo
           enddo
         elseif ((npdf3d == 0) .and. (ncnvcld3d == 1)) then ! all other microphysics with pdfcld = .false. and cnvcld = .true.
@@ -981,7 +990,7 @@
      &       iovr_dcorr, iovr_exp, iovr_exprand, idcor, idcor_con,      &
      &       idcor_hogan, idcor_oreopoulos, lcrick, lcnorm,             &
      &       imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_c3, do_mynnedmf,     &
-     &       lgfdlmprad,                                                &
+     &       lgfdlmprad, xr_cnvcld,                                     &
      &       uni_cld, lmfshal, lmfdeep2, cldcov, clouds1,               &
      &       effrl, effri, effrr, effrs, effr_in,                       &
      &       effrl_inout, effri_inout, effrs_inout,                     &
@@ -995,6 +1004,11 @@
 
 !      endif                             ! end_if_ntcw
 
+!> - Call cloud_mp_SAMF() to calculate convective cloud properties.
+        call cloud_mp_SAMF(.false., .false., IM, LM, tlyr, plvl, plyr, &
+             qstl, rhly, cnvw_in, con_ttp, con_g, 200., cld_cnv_lwp,   &
+             cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cnvc_inout)
+        
 !> - Call ppfbet() to perturb cld cover.
        if (pert_clds) then
           do i=1,im

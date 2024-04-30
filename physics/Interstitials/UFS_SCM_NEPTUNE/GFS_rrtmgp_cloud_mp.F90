@@ -9,6 +9,7 @@ module GFS_rrtmgp_cloud_mp
   use machine,      only: kind_phys
   use radiation_tools,   only: check_error_msg
   use module_radiation_clouds, only: progcld_thompson
+  use module_radiation_cloud_overlap, only: cloud_mp_SAMF
   use rrtmgp_lw_cloud_optics, only: &
        radliq_lwr => radliq_lwrLW, radliq_upr => radliq_uprLW,&
        radice_lwr => radice_lwrLW, radice_upr => radice_uprLW  
@@ -20,15 +21,16 @@ module GFS_rrtmgp_cloud_mp
   real (kind_phys), parameter :: &
        cld_limit_lower = 0.001, &
        cld_limit_ovcst = 1.0 - 1.0e-8, &
-       reliq_def  = 10.0 ,      & ! Default liq radius to 10 micron (used when effr_in=F)
-       reice_def  = 50.0,       & ! Default ice radius to 50 micron (used when effr_in=F)
+       reliq_def  = 10.0 ,      & ! Default liq radius, in stratiform cloud, to 10 micron (used when effr_in=F)
+       reice_def  = 50.0,       & ! Default ice radius, in stratiform cloud, to 50 micron (used when effr_in=F)
+       reliqcnv_def = 10.0 ,    & ! Default liq radius, in convective cloud, to 10 micron (used when effr_in=F)
+       reicecnv_def = 50.0,     & ! Default ice radius, in convective cloud, to 50 micron (used when effr_in=F)
        rerain_def = 1000.0,     & ! Default rain radius to 1000 micron (used when effr_in=F)
        resnow_def = 250.0,      & ! Default snow radius to 250 micron (used when effr_in=F)
        reice_min  = 10.0,       & ! Minimum ice size allowed by GFDL MP scheme
        reice_max  = 150.0         ! Maximum ice size allowed by GFDL MP scheme  
   
   public GFS_rrtmgp_cloud_mp_init, GFS_rrtmgp_cloud_mp_run, GFS_rrtmgp_cloud_mp_finalize
-
 contains  
 
 !>\defgroup gfs_rrtmgp_cloud_mp_mod GFS RRTMGP Cloud MP Module
@@ -250,8 +252,8 @@ contains
        ! SAMF scale & aerosol-aware mass-flux convective clouds?
        if (imfdeepcnv == imfdeepcnv_samf) then
           alpha0 = 200.
-          call cloud_mp_SAMF(nCol, nLev, t_lay, p_lev, p_lay, qs_lay, relhum,           &
-               cnv_mixratio, con_ttp, con_g, alpha0,                                    &
+          call cloud_mp_SAMF(.false., .false., nCol, nLev, t_lay, p_lev, p_lay, qs_lay, &
+               relhum, cnv_mixratio, con_ttp, con_g, alpha0,                            &
                cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_cnv_frac)
        endif
 
@@ -461,71 +463,6 @@ contains
        enddo
     enddo
   end subroutine cloud_mp_MYNN
-
-
-!> \ingroup GFS_rrtmgp_cloud_mp 
-!! Compute cloud radiative properties for SAMF convective cloud scheme.
-!!
-!! - The total-cloud convective mixing-ratio is partitioned by phase into liquid/ice 
-!!   cloud properties. LWP and IWP are computed.
-!!
-!! - The liquid and ice cloud effective particle sizes are assigned reference values.
-!!
-!! - The convective cloud-fraction is computed using Xu-Randall (1996).
-!!   (DJS asks: Does the SAMF scheme produce a cloud-fraction?)
-!!
-!! \section cloud_mp_SAMF_gen General Algorithm
-  subroutine cloud_mp_SAMF(nCol, nLev, t_lay, p_lev, p_lay, qs_lay, relhum,              &
-       cnv_mixratio, con_ttp, con_g, alpha0, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp,    &
-       cld_cnv_reice, cld_cnv_frac)
-    implicit none
-
-    ! Inputs
-    integer, intent(in)    :: &
-         nCol,          & ! Number of horizontal grid points
-         nLev             ! Number of vertical layers
-    real(kind_phys), intent(in) :: &
-         con_g,         & ! Physical constant: gravity         (m s-2)
-         con_ttp,       & ! Triple point temperature of water  (K)
-         alpha0           !
-    real(kind_phys), dimension(:,:),intent(in) :: &
-         t_lay,         & ! Temperature at layer-centers       (K)
-         p_lev,         & ! Pressure at layer-interfaces       (Pa)
-         p_lay,         & ! Presure at layer-centers           (Pa)
-         qs_lay,        & ! Specific-humidity at layer-centers (kg/kg)
-         relhum,        & ! Relative-humidity                  (1)
-         cnv_mixratio     ! Convective cloud mixing-ratio      (kg/kg)
-    ! Outputs
-    real(kind_phys), dimension(:,:),intent(inout) :: &
-         cld_cnv_lwp,   & ! Convective cloud liquid water path
-         cld_cnv_reliq, & ! Convective cloud liquid effective radius
-         cld_cnv_iwp,   & ! Convective cloud ice water path
-         cld_cnv_reice, & ! Convective cloud ice effecive radius
-         cld_cnv_frac     ! Convective cloud-fraction
-    ! Local
-    integer :: iCol, iLay
-    real(kind_phys) :: tem0, tem1, deltaP, clwc
-
-    tem0 = 1.0e5/con_g
-    do iLay = 1, nLev
-       do iCol = 1, nCol
-          if (cnv_mixratio(iCol,iLay) > 0._kind_phys) then
-             tem1   = min(1.0, max(0.0, (con_ttp-t_lay(iCol,iLay))*0.05))
-             deltaP = abs(p_lev(iCol,iLay+1)-p_lev(iCol,iLay))*0.01
-             clwc   = max(0.0, cnv_mixratio(iCol,iLay)) * tem0 * deltaP
-             cld_cnv_iwp(iCol,iLay)   = clwc * tem1
-             cld_cnv_lwp(iCol,iLay)   = clwc - cld_cnv_iwp(iCol,iLay)
-             cld_cnv_reliq(iCol,iLay) = reliq_def
-             cld_cnv_reice(iCol,iLay) = reice_def
-
-             ! Xu-Randall (1996) cloud-fraction.
-             cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay),              &
-               qs_lay(iCol,iLay), relhum(iCol,iLay), cnv_mixratio(iCol,iLay), alpha0)
-          endif
-       enddo
-    enddo
-
-  end subroutine cloud_mp_SAMF
 
 !> \ingroup GFS_rrtmgp_cloud_mp 
 !! This routine computes the cloud radiative properties for a "unified cloud".
