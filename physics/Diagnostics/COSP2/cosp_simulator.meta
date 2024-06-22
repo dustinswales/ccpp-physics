@@ -77,54 +77,48 @@
   dimensions =  ()
   type = logical
   intent = in
-[do_cloudsat]
-  standard_name = flag_for_cosp_Cloudsat_diagnostics
-  long_name = flag for cosp Cloudsat RADAR diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_calipso]
-  standard_name = flag_for_cosp_Calipso_diagnostics
-  long_name = flag for cosp Calipso LIDAR diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_grLidar532]
-  standard_name = flag_for_cosp_grLidar532_diagnostics
-  long_name = flag for cosp ground-based LIDAR (532nm) diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_atlid]
-  standard_name = flag_for_cosp_atlid_diagnostics
-  long_name = flag for cosp EarthCare LIDAR diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_parasol]
-  standard_name = flag_for_cosp_parasol_diagnostics
-  long_name = flag for cosp parasol diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
 [isccp_topht]
   standard_name = cloud_top_height_adjustment_in_cosp_isccp_simulator
   long_name = cloud top height adjustment in cosp isccp simulator
-  units     = 1
+  units     = flag
   dimensions = ()
   type = integer
   intent = in
 [isccp_topht_dir]
   standard_name = cloud_top_height_direction_in_cosp_isccp_simulator
   long_name = cloud top height direction in cosp isccp simulator
-  units     = 1
+  units     = flag
   dimensions = ()
   type = integer
+  intent = in
+[top_at_1]
+  standard_name = flag_for_vertical_ordering_convention
+  long_name = flag for vertical ordering convention
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = out
+[iSFC]
+  standard_name = vertical_index_for_surface
+  long_name = index for surface layer
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = out
+[iTOA]
+  standard_name = vertical_index_for_top_of_atmosphere
+  long_name = index for top of atmosphere layer
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = out
+[prsi]
+  standard_name = air_pressure_at_interface
+  long_name = air pressure at model layer interfaces
+  units = Pa
+  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  type = real
+  kind = kind_phys
   intent = in
 [errmsg]
   standard_name = ccpp_error_message
@@ -238,7 +232,7 @@
   kind = kind_phys
   intent = in
 [ccld_frac]
-  standard_name = convective_cloud_fraction_for_RRTMGP
+  standard_name = convective_cloud_fraction
   long_name = layer convective cloud fraction
   units = frac
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -286,25 +280,118 @@
   kind = kind_phys
   intent = in
 [top_at_1]
-  standard_name = flag_for_vertical_ordering_in_RRTMGP
-  long_name = flag for vertical ordering in radiation
+  standard_name = flag_for_vertical_ordering_convention
+  long_name = flag for vertical ordering convention
   units = flag
   dimensions = ()
   type = logical
   intent = in
 [iSFC]
-  standard_name = vertical_index_for_surface_in_RRTMGP
-  long_name = index for	surface	layer in RRTMGP
+  standard_name = vertical_index_for_surface
+  long_name = index for	surface	layer
   units = flag
   dimensions = ()
   type = integer
   intent = in
 [iTOA]
-  standard_name = vertical_index_for_TOA_in_RRTMGP
-  long_name = index for TOA layer in RRTMGP
+  standard_name = vertical_index_for_top_of_atmosphere
+  long_name = index for top of atmosphere layer
   units = flag
   dimensions = ()
   type = integer
+  intent = in
+[n_isccp_pres_bins]
+  standard_name = number_of_isccp_simulator_pressure_bins
+  long_name = number of pressure bins in ISCCP CFAD.
+  units = none
+  dimensions = ()
+  type = integer
+  intent = in
+[isccp_pres_bins]
+  standard_name = isccp_simulator_pressure_bins
+  long_name = pressure bins used in ISCCP CFAD.
+  units = none
+  dimensions = (number_of_isccp_simulator_pressure_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[n_isccp_tau_bins]
+  standard_name = isccp_simulator_optical_depth_bins
+  long_name = optical depth bins used in ISCCP CFAD
+  units = none
+  dimensions = (number_of_isccp_simulator_optical_depth_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[isccp_tau_bins]
+  standard_name = number_of_isccp_simulator_optical_depth_bins
+  long_name = number of optical depth bins in ISCCP CFAD
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[n_modis_pres_bins]
+  standard_name = number_of_modis_simulator_pressure_bins
+  long_name = number of pressure bins in MODIS CFAD.
+  units = none
+  dimensions = ()
+  type = integer
+  intent = in
+[modis_pres_bins]
+  standard_name = modis_simulator_pressure_bins
+  long_name = pressure bins used in MODIS CFAD.
+  units = none
+  dimensions = (number_of_modis_simulator_pressure_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[n_modis_tau_bins]
+  standard_name = modis_simulator_optical_depth_bins
+  long_name = optical depth bins used in MODIS CFAD
+  units = none
+  dimensions = (number_of_modis_simulator_optical_depth_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[modis_tau_bins]
+  standard_name = number_of_modis_simulator_optical_depth_bins
+  long_name = number of optical depth bins in MODIS CFAD
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[n_misr_pres_bins]
+  standard_name = number_of_misr_simulator_pressure_bins
+  long_name = number of pressure bins in MISR CFAD.
+  units = none
+  dimensions = ()
+  type = integer
+  intent = in
+[misr_pres_bins]
+  standard_name = misr_simulator_pressure_bins
+  long_name = pressure bins used in MISR CFAD.
+  units = none
+  dimensions = (number_of_misr_simulator_pressure_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[n_misr_tau_bins]
+  standard_name = misr_simulator_optical_depth_bins
+  long_name = optical depth bins used in MISR CFAD
+  units = none
+  dimensions = (number_of_misr_simulator_optical_depth_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[misr_tau_bins]
+  standard_name = number_of_misr_simulator_optical_depth_bins
+  long_name = number of optical depth bins in MISR CFAD
+  units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
   intent = in
 [do_cosp]
   standard_name = flag_for_cosp_diagnostics
@@ -334,41 +421,6 @@
   dimensions =  ()
   type = logical
   intent = in
-[do_cloudsat]
-  standard_name = flag_for_cosp_Cloudsat_diagnostics
-  long_name = flag for cosp Cloudsat RADAR diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_calipso]
-  standard_name = flag_for_cosp_Calipso_diagnostics
-  long_name = flag for cosp Calipso LIDAR diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_grLidar532]
-  standard_name = flag_for_cosp_grLidar532_diagnostics
-  long_name = flag for cosp ground-based LIDAR (532nm) diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_atlid]
-  standard_name = flag_for_cosp_atlid_diagnostics
-  long_name = flag for cosp EarthCare LIDAR diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
-[do_parasol]
-  standard_name = flag_for_cosp_parasol_diagnostics
-  long_name = flag for cosp parasol diagnostics
-  units = flag
-  dimensions =  ()
-  type = logical
-  intent = in
 [con_g]
   standard_name = gravitational_acceleration
   long_name = gravitational acceleration
@@ -384,13 +436,6 @@
   dimensions = ()
   type = integer
   intent = in
-[cosp_mp_cam6]
-  standard_name = flag_for_CAM6_cloud_microphysics_used_in_cosp
-  long_name = flag for CAM6 cloud microphysics used to create COSP diagnostics
-  units     = 1
-  dimensions = ()
-  type = integer
-  intent = in
 [cosp_mp_ufs]
   standard_name = flag_for_UFS_cloud_microphysics_used_in_cosp
   long_name = flag for UFS cloud microphysics used to create COSP diagnostics
@@ -399,10 +444,10 @@
   type = integer
   intent = in
 [f1isccp_cosp]
-  standard_name = isccp_cloud_frequency_by_height_diagram
-  long_name = ISCCP cloud frequency by height diagram
+  standard_name = isccp_cloud_frequency_by_altitude_diagram
+  long_name = ISCCP cloud frequency by altitude diagram
   units = 1
-  dimensions = (horizontal_loop_extent,7,7)
+  dimensions = (horizontal_loop_extent,isccp_tau_bins,isccp_pres_bins)
   type = real
   kind = kind_phys
   intent = inout
