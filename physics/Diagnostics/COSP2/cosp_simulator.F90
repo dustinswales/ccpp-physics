@@ -149,9 +149,7 @@ contains
          phil,               & ! Geopotential at model-layer centers
          cld_frac,           & ! Total cloud fraction
          ccld_frac,          & ! Convective cloud fraction
-	 ! THIS NEEDS TO BE STORED AND OUTPUT FROM RADLW_MAIN.
          cldtau_lw,          & ! In-cloud 10 micron optical depth
-	 ! THIS NEEDS TO BE STORED AND OUTPUT FROM RADSW_MAIN.
          cldtau_sw             ! In-cloud 0.67 micron optical depth
     real(kind_phys), dimension(:,:,:), intent(in) :: & 
          qgrs                  ! Tracer concentrations (kg/kg)
