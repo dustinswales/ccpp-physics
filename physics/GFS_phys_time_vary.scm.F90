@@ -264,7 +264,7 @@
          endif
 
 !> - Initialize soil vegetation (needed for sncovr calculation further down)
-         call set_soilveg(me, isot, ivegsrc, nlunit)
+         call set_soilveg(me, isot, ivegsrc, nlunit, errmsg, errflg)
 
 !> - Call setindxoz() to initialize ozone data
          if (ntoz > 0) then
@@ -786,7 +786,10 @@
                              fhour, iflip, jindx1_aer, jindx2_aer, &
                              ddy_aer, iindx1_aer,           &
                              iindx2_aer, ddx_aer,           &
-                             levs, prsl, aer_nm)
+                             levs, prsl, aer_nm, errmsg, errflg)
+           if(errflg /= 0) then
+             return
+           endif
          endif
          
 !       Not needed for SCM:

@@ -57,6 +57,13 @@
   dimensions = ()
   type = integer
   intent = in
+[imfdeepcnv_c3]
+  standard_name = identifier_for_c3_deep_convection
+  long_name = flag for C3 deep convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
 [imfshalcnv]
   standard_name = control_for_shallow_convection_scheme
   long_name = flag for mass-flux shallow convection scheme
@@ -67,6 +74,13 @@
 [imfshalcnv_samf]
   standard_name = identifier_for_scale_aware_mass_flux_shallow_convection
   long_name = flag for SAMF shallow convection scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[imfshalcnv_c3]
+  standard_name = identifier_for_c3_shallow_convection
+  long_name = flag for C3 shallow convection scheme
   units = flag
   dimensions = ()
   type = integer

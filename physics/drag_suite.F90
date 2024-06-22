@@ -9,6 +9,12 @@
 !> \defgroup gfs_drag_suite_mod GSL drag_suite Module
 !> This module contains the CCPP-compliant GSL orographic gravity wave drag scheme.
 !> @{
+!!
+!> \brief This subroutine initializes the orographic gravity wave drag scheme.
+!!
+!> \section arg_table_drag_suite_init Argument Table
+!! \htmlinclude drag_suite_init.html
+!!
       subroutine drag_suite_init(gwd_opt, errmsg, errflg)
 
       integer,          intent(in)  :: gwd_opt
@@ -336,7 +342,7 @@
    real(kind=kind_phys), intent(inout) ::                        &
      &                   dudt(:,:),dvdt(:,:),                &
      &                   dtdt(:,:)
-   real(kind=kind_phys), intent(out) :: rdxzb(:)
+   real(kind=kind_phys), intent(inout) :: rdxzb(:)
    real(kind=kind_phys), intent(in) ::                           &
      &                            u1(:,:),v1(:,:),           &
      &                            t1(:,:),q1(:,:),           &
@@ -377,12 +383,12 @@
    real(kind=kind_phys), intent(inout) ::                        &
      &                      dusfc(:),   dvsfc(:)
 !Output (optional):
-   real(kind=kind_phys), intent(out) ::                          &
+   real(kind=kind_phys), intent(inout) ::                        &
      &                      dusfc_ms(:),dvsfc_ms(:),             &
      &                      dusfc_bl(:),dvsfc_bl(:),             &
      &                      dusfc_ss(:),dvsfc_ss(:),             &
      &                      dusfc_fd(:),dvsfc_fd(:)
-   real(kind=kind_phys), intent(out) ::                          &
+   real(kind=kind_phys), intent(inout) ::                        &
      &         dtaux2d_ms(:,:),dtauy2d_ms(:,:),                  &
      &         dtaux2d_bl(:,:),dtauy2d_bl(:,:),                  &
      &         dtaux2d_ss(:,:),dtauy2d_ss(:,:),                  &
@@ -599,7 +605,6 @@
       else
          xland(i)=2.0
       endif
-      RDXZB(i)  = 0.0
    enddo
 
 !--- calculate scale-aware tapering factors
@@ -811,6 +816,8 @@ IF ( (do_gsl_drag_ls_bl).and.                            &
      (gwd_opt_ms.or.gwd_opt_bl) ) then
 
    do i=its,im
+
+      RDXZB(i)  = 0.0
 
       if ( ls_taper(i).GT.1.E-02 ) then
 
