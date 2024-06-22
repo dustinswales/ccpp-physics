@@ -1,5 +1,12 @@
+! ###########################################################################################
 !> \file cosp_simulator.F90
-  ! #########################################################################################
+!!
+!> \defgroup cosp_simulator cosp_simulator.F90
+!!
+!! \brief This module contains the CCPP interface to the Cloud-Feedback Model Intercomparison
+!! Project (CFMIP) Observational Simulator Package Version 2.0 (COSP)
+!!
+! ###########################################################################################
 module cosp_simulator
   use machine,                  only: kind_phys
   use mod_cosp,                 only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs,&
@@ -15,6 +22,13 @@ contains
 !! \section arg_table_cosp_simulator_init
 !! \htmlinclude cosp_simulator_init.html
 !!
+!!
+!> \ingroup cosp_simulator
+!!
+!! \brief
+!!
+!! \section cosp_simulator_init
+!> @{
 ! ###########################################################################################
   subroutine cosp_simulator_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,    &
        cosp_nsubcol, imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht,      &
@@ -50,7 +64,7 @@ contains
          errflg                ! CCPP error flag
 
     ! Local
-    integer :: nLev
+    integer :: nLev, nLay
 
     ! Initialize CCPP error handling variables
     errmsg = ''
@@ -60,14 +74,15 @@ contains
     if (.not. do_cosp) return
 
     ! What is vertical ordering of the host?
+    nLay = size(prsl,2)
     nLev = size(prsi,2)
     top_at_1 = (prsi(1,1) .lt.  prsi(1, nLev))
     if (top_at_1) then
-       iSFC = nLev
+       iSFC = nLay
        iTOA = 1
     else
        iSFC = 1
-       iTOA = nLev
+       iTOA = nLay
     endif
 
     ! Initialize requested simulators
@@ -95,13 +110,20 @@ contains
     endif
 
   end subroutine cosp_simulator_init
+!> @}
 
 ! ###########################################################################################
 !! \section arg_table_cosp_simulator_run
 !! \htmlinclude cosp_simulator_run.html
 !!
+!> \ingroup cosp_simulator
+!!
+!! \brief
+!!
+!! \section cosp_simulator_run
+!> @{
 ! ###########################################################################################
-  subroutine cosp_simulator_run(nCol, nLev, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,&
+  subroutine cosp_simulator_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,&
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
        top_at_1, con_g, iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
        isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
@@ -119,14 +141,14 @@ contains
          top_at_1              ! Vertical ordering flag
     integer, intent(in) :: &
          nCol,               & ! Number of horizontal grid points
-         nLev,               & ! Number of vertical layers
+         nLay,               & ! Number of vertical layers
          cosp_nlvgrid,       & ! Number of vertical layers in COSP statistical grid.
          cosp_nsubcol,       & ! Number of COSP subcolumns
-         n_isccp_pres_bins,  & ! Number of pressure bins in ISCCP CFAD.
+         n_isccp_pres_bins,  & ! Number of pressure      bins in ISCCP CFAD.
 	 n_isccp_tau_bins,   & ! Number of optical-depth bins in ISCCP CFAD.
-         n_modis_pres_bins,  & ! Number of pressure bins in MODIS CFAD.
+         n_modis_pres_bins,  & ! Number of pressure      bins in MODIS CFAD.
          n_modis_tau_bins,   & ! Number of optical-depth bins in MODIS CFAD.
-         n_misr_pres_bins,   & ! Number of pressure bins in MISR CFAD.
+         n_misr_pres_bins,   & ! Number of pressure      bins in MISR CFAD.
          n_misr_tau_bins,    & ! Number of optical-depth bins in MISR CFAD.
          overlap,            & ! Cloud overlap assumption
          iSFC,               & ! Vertical index for surface
@@ -199,12 +221,12 @@ contains
     enddo
 
     ! Type containing COSP outputs.
-    call construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLev,      &
+    call construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay,      &
     	 cosp_nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins, n_modis_pres_bins,              &
 	 n_modis_tau_bins, n_misr_pres_bins, n_misr_tau_bins, cospOUT)
 
     ! Host-model state for COSP (toa-2-sfc vertical ordering).
-    call construct_cospstateIN(nCol, nLev, cospstateIN)
+    call construct_cospstateIN(nCol, nLay, cospstateIN)
     cospstateIN%sunlit          = sunlit(:)
     cospstateIN%skt             = tsfc(:)
     cospstateIN%land            = slmsk(:)
@@ -216,12 +238,12 @@ contains
     cospstateIN%hgt_matrix_half = phii/con_g
 
     ! Derived (optical) inputs for COSP.
-    call construct_cospIN(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLev, cospIN)
+    call construct_cospIN(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay, cospIN)
 
     !
     ! Call subsample_and_optics
     !
-    call subsample_and_optics(nCol, nSubCol, nLev, do_isccp, do_misr, do_modis,          &
+    call subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,          &
     	 prsi(:,iSFC), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
 
     !
@@ -280,20 +302,37 @@ contains
     meantbclr_isccp  = cospOUT%isccp_meantbclr
 
   end subroutine cosp_simulator_run
+!> @}
 
   ! ######################################################################################
   ! SUBROUTINE subsample_and_optics
+  !
+  ! This routine contains the radiaiton to cloud coupling needed by COSP. Changes to host
+  ! cloud and radiative configurations need to also occur here.
+  !
   ! ######################################################################################
-  subroutine subsample_and_optics(nCol, nSubCol, nLev, do_isccp, do_misr, do_modis,      &
+  subroutine subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,      &
        sfcP, cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
 
     ! Inputs
-    logical, intent(in) :: do_isccp, do_misr, do_modis
-    integer, intent(in) :: nCol, nSubCol, nLev, overlap
-    real(kind_phys), dimension(nCol), intent(in) :: sfcP
-    real(kind_phys), dimension(nCol,nLev), intent(in) :: cld_frac, ccld_frac, cldtau_lw, &
-         cldtau_sw
-    type(cosp_optical_inputs), intent(inout) :: cospIN
+    logical, intent(in) :: &
+    	 do_isccp,  & ! Flag for COSP ISCCP diagnostics
+	 do_misr,   & ! Flag for COSP MISR diagnostics
+	 do_modis     ! Flag for COSP MODIS diagnostics
+    integer, intent(in) :: &
+    	 nCol,      & ! Number of horizontal gridpoints
+	 nSubCol,   & ! Number of COSP subcolumns
+	 nLay,      & ! Number of vertical layers
+	 overlap      ! Cloud overlap assumption
+    real(kind_phys), dimension(nCol), intent(in) :: &
+         sfcP         ! Pressure @ surface (Pa)
+    real(kind_phys), dimension(nCol,nLay), intent(in) :: &
+         cld_frac,  & ! Cloud-fraction from cloud-mp
+	 ccld_frac, & ! Convective cloud fraction
+	 cldtau_lw, & ! In-cloud 10 micron optical depth
+         cldtau_sw    ! In-cloud 0.67 micron optical depth
+    type(cosp_optical_inputs), intent(inout) :: &
+         cospIN       ! DDT containing optical inputs needed by COSP.
 
     ! Locals
     type(rng_state), dimension(nCol) :: rngs
@@ -306,7 +345,7 @@ contains
     call init_rng(rngs, seed)
 
     ! Call scops
-    call scops(nCol, nLev, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
+    call scops(nCol, nLay, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
 
     ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
     if (do_isccp) then
@@ -345,20 +384,30 @@ contains
   ! ######################################################################################
   ! SUBROUTINE construct_cosp_outputs
   ! ######################################################################################
-  subroutine construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, nSubCol, nLev,    &
+  subroutine construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, nSubCol, nLay,    &
   	     Nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins, n_modis_pres_bins,            &
 	     n_modis_tau_bins, n_misr_pres_bins, n_misr_tau_bins, x)
 
     ! Inputs
     logical, intent(in) :: &
-         do_isccp, do_modis, do_misr
+         do_isccp,          & ! Flag for COSP ISCCP diagnostics
+         do_misr,           & ! Flag for COSP MISR diagnostics
+         do_modis             ! Flag for COSP MODIS diagnostics
     integer, intent(in) :: &
-         nCol, nSubCol, nLev, Nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins,              &
-	 n_modis_pres_bins, n_modis_tau_bins, n_misr_pres_bins, n_misr_tau_bins
+         nCol,              & ! Number of horizontal gridpoints.
+	 nSubCol,           & ! Number of COSP subcolumns.
+	 nLay,              & ! Number of vertical layers.
+	 Nlvgrid,           & ! Number of vertical layers in COSP statistical grid.
+         n_isccp_pres_bins, & ! Number of pressure      bins in ISCCP CFAD.
+         n_isccp_tau_bins,  & ! Number of optical-depth bins in ISCCP CFAD.
+         n_modis_pres_bins, & ! Number of pressure      bins in MODIS CFAD.
+         n_modis_tau_bins,  & ! Number of optical-depth bins in MODIS CFAD.
+         n_misr_pres_bins,  & ! Number of pressure      bins in MISR CFAD.
+         n_misr_tau_bins      ! Number of optical-depth bins in MISR CFAD.
     
     ! Outputs
     type(cosp_outputs),intent(out) :: &
-         x           ! COSP output structure  
+         x                    ! COSP output structure  
   
      ! ISCCP simulator outputs
     if (do_isccp) then
@@ -407,51 +456,56 @@ contains
   ! ######################################################################################
   ! SUBROUTINE construct_cospstate
   ! ######################################################################################
-  subroutine construct_cospstateIN(nCol, nLev, y)
+  subroutine construct_cospstateIN(nCol, nLay, y)
 
     ! Inputs
     integer,intent(in) :: &
-         nCol, nLev
+         nCol, & ! Number of horizontal gridpoints
+	 nLay    ! Number of vertical layers
     ! Outputs
     type(cosp_column_inputs),intent(out) :: y
     
-    allocate(y%sunlit(nCol),y%skt(nCol),y%land(nCol),y%at(nCol,nLev), y%pfull(nCol,nLev),&
-         y%phalf(nCol,nLev+1),y%qv(nCol,nLev), y%hgt_matrix(nCol,nLev),                  &
-         y%hgt_matrix_half(nCol,nLev+1))
+    allocate(y%sunlit(nCol),y%skt(nCol),y%land(nCol),y%at(nCol,nLay), y%pfull(nCol,nLay),&
+         y%phalf(nCol,nLay+1),y%qv(nCol,nLay), y%hgt_matrix(nCol,nLay),                  &
+         y%hgt_matrix_half(nCol,nLay+1))
 
   end subroutine construct_cospstateIN
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   ! SUBROUTINE construct_cospIN
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  subroutine construct_cospIN(do_isccp, do_modis, do_misr, nCol, nSubCol, nLev, y)
+  subroutine construct_cospIN(do_isccp, do_modis, do_misr, nCol, nSubCol, nLay, y)
 
     ! Inputs
-    integer,intent(in) :: &
-         nCol, nSubCol, nLev
     logical, intent(in) :: &
-         do_isccp, do_modis, do_misr
+         do_isccp, & ! Flag for COSP ISCCP diagnostics
+         do_misr,  & ! Flag for COSP MISR diagnostics
+         do_modis    ! Flag for COSP MODIS diagnostics
+    integer,intent(in) :: &
+         nCol,     & ! Number of horizontal gridpoints
+	 nSubCol,  & ! Number of COSP subcolumns
+	 nLay        ! Number of vertical layers
     ! Outputs 
     type(cosp_optical_inputs),intent(out) :: y
     
     ! Dimensions
     y%Npoints  = nCol
     y%Ncolumns = nSubCol
-    y%Nlevels  = nLev
+    y%Nlevels  = nLay
 
     if (do_isccp) then
-       if (.not. allocated(y%frac_out)) allocate(y%frac_out(nCol, nSubCol, nLev))
-       if (.not. allocated(y%emiss_11)) allocate(y%emiss_11(nCol, nSubCol, nLev))
-       if (.not. allocated(y%tau_067))  allocate(y%tau_067( nCol, nSubCol, nLev))
+       if (.not. allocated(y%frac_out)) allocate(y%frac_out(nCol, nSubCol, nLay))
+       if (.not. allocated(y%emiss_11)) allocate(y%emiss_11(nCol, nSubCol, nLay))
+       if (.not. allocated(y%tau_067))  allocate(y%tau_067( nCol, nSubCol, nLay))
     endif
     if (do_misr) then
-       if (.not. allocated(y%tau_067))  allocate(y%tau_067( nCol, nSubCol, nLev))
+       if (.not. allocated(y%tau_067))  allocate(y%tau_067( nCol, nSubCol, nLay))
     endif
     if (do_modis) then
-       if (.not. allocated(y%fracLiq))  allocate(y%fracLiq(nCol, nSubCol, nLev))
-       if (.not. allocated(y%tau_067))  allocate(y%tau_067(nCol, nSubCol, nLev))
-       if (.not. allocated(y%asym))     allocate(y%asym(   nCol, nSubCol, nLev))
-       if (.not. allocated(y%ss_alb))   allocate(y%ss_alb( nCol, nSubCol, nLev))
+       if (.not. allocated(y%fracLiq))  allocate(y%fracLiq(nCol, nSubCol, nLay))
+       if (.not. allocated(y%tau_067))  allocate(y%tau_067(nCol, nSubCol, nLay))
+       if (.not. allocated(y%asym))     allocate(y%asym(   nCol, nSubCol, nLay))
+       if (.not. allocated(y%ss_alb))   allocate(y%ss_alb( nCol, nSubCol, nLay))
     endif
 
   end subroutine construct_cospIN
