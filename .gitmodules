@@ -3,6 +3,6 @@
   url = https://github.com/earth-system-radiation/rte-rrtmgp
   branch = main
 [submodule "physics/cosp"]
-  path = physics/cosp
+  path = physics/Diagnostics/COSP2/cosp
   url = https://github.com/CFMIP/COSPv2.0
   branch = master

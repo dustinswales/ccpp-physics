@@ -115,37 +115,37 @@ set(SCHEMES_OPENMP_OFF ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-
 #------------------------------------------------------------------------------
 # Add COSP files to CCPP build
 #if(COSP)
-  set(SCHEMES_COSP ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp_constants.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp_config.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/cosp_stats.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_isccp_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/icarus/icarus.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_misr_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/MISR_simulator/MISR_simulator.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_modis_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/MODIS_simulator/modis_simulator.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_parasol_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/parasol/parasol.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/actsim/lidar_simulator.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_cloudsat_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/quickbeam/quickbeam.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_atlid_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_calipso_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_grLidar532_interface.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/cosp_rttov_interfaceSTUB.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/src/simulator/rttov/cosp_rttovSTUB.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/array_lib.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/math_lib.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/mrgrnk.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/optics_lib.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/cosp_optics.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/optics/cosp_utils.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/subcol/scops.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/subcol/prec_scops.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/subsample_and_optics_example/subcol/rng/mo_rng.F90
-                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/cosp/model-interface/cosp_errorHandling.F90)
+  set(SCHEMES_COSP ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp_constants.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp_config.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp_stats.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_isccp_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/icarus/icarus.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_misr_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/MISR_simulator/MISR_simulator.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_modis_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/MODIS_simulator/modis_simulator.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_parasol_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/parasol/parasol.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/actsim/lidar_simulator.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_cloudsat_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/quickbeam/quickbeam.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_atlid_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_calipso_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_grLidar532_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_rttov_interfaceSTUB.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/rttov/cosp_rttovSTUB.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/array_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/math_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/mrgrnk.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/optics_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/cosp_optics.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/cosp_utils.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/subcol/scops.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/subcol/prec_scops.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/subcol/rng/mo_rng.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/model-interface/cosp_errorHandling.F90)
   list(APPEND SCHEMES ${SCHEMES_COSP})
 #endif()
 
