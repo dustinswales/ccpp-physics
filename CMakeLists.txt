@@ -112,6 +112,43 @@ set(SCHEMES_OPENMP_OFF ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_rte_kind.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_optical_props.F90)
 
+#------------------------------------------------------------------------------
+# Add COSP files to CCPP build
+#if(COSP)
+  set(SCHEMES_COSP ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp_constants.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp_config.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/cosp_stats.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_isccp_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/icarus/icarus.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_misr_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/MISR_simulator/MISR_simulator.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_modis_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/MODIS_simulator/modis_simulator.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_parasol_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/parasol/parasol.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/actsim/lidar_simulator.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_cloudsat_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/quickbeam/quickbeam.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_atlid_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_calipso_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_grLidar532_interface.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/cosp_rttov_interfaceSTUB.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/src/simulator/rttov/cosp_rttovSTUB.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/array_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/math_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/mrgrnk.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/optics_lib.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/quickbeam_optics/quickbeam_optics.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/cosp_optics.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/optics/cosp_utils.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/subcol/scops.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/subcol/prec_scops.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/subsample_and_optics_example/subcol/rng/mo_rng.F90
+                   ${LOCAL_CURRENT_SOURCE_DIR}/physics/Diagnostics/COSP2/cosp/model-interface/cosp_errorHandling.F90)
+  list(APPEND SCHEMES ${SCHEMES_COSP})
+#endif()
+
 # List of files that need to be compiled with different precision
 set(SCHEMES_DYNAMICS)
 
@@ -142,7 +179,9 @@ SET_PROPERTY(SOURCE ${SCHEMES} ${CAPS}
 # Lower optimization for certain schemes when compiling with Intel in Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
   # Define a list of schemes that need lower optimization with Intel in Release mode
-  set(SCHEME_NAMES_LOWER_OPTIMIZATION module_sf_mynn.F90)
+  set(SCHEME_NAMES_LOWER_OPTIMIZATION module_sf_mynn.F90
+                                      mynnedmf_wrapper.F90
+                                      gcycle.F90)
   foreach(SCHEME_NAME IN LISTS SCHEME_NAMES_LOWER_OPTIMIZATION)
     set(SCHEMES_TMP ${SCHEMES})
     # Need to determine the name of the scheme with its path
