@@ -52,7 +52,7 @@ contains
                                   ! clouds optical properties
          rrtmgp_lw_file_gas       ! RRTMGP file containing coefficients used to compute
                                   ! gaseous optical properties
-    character(len=*), dimension(:), intent(in), optional :: &
+    character(len=*), dimension(:), intent(in) :: &
          active_gases_array ! List of active gases from namelist as array)
     logical, intent(in) :: &
          doGP_cldoptics_PADE,   & ! Use RRTMGP cloud-optics: PADE approximation?
@@ -140,12 +140,12 @@ contains
          iovr_exp,           & ! Flag for exponential cloud overlap method
          iovr_exprand,       & ! Flag for exponential-random cloud overlap method
          isubc_lw              ! Flag for cloud-seeding (rng) for cloud-sampling
-    integer,intent(in),dimension(:), optional :: &
+    integer,intent(in),dimension(:) :: &
          icseed_lw             ! Seed for random number generation for longwave radiation
     real(kind_phys), dimension(:), intent(in) :: &
          semis,              & ! Surface-emissivity (1)
          tsfg                  ! Skin temperature (K)
-    real(kind_phys), dimension(:,:), intent(in), optional :: &
+    real(kind_phys), dimension(:,:), intent(in) :: &
          p_lay,               & ! Pressure @ model layer-centers (Pa)
          t_lay,               & ! Temperature (K)
          p_lev,               & ! Pressure @ model layer-interfaces (Pa)
@@ -166,7 +166,7 @@ contains
          cld_resnow,          & ! Effective radius for              snow   hydrometeors
          cld_rwp,             & ! Water path for                    rain   hydrometeors
          cld_rerain             ! Effective radius for              rain   hydrometeors
-    real(kind_phys), dimension(:,:), intent(in), optional :: &         
+    real(kind_phys), dimension(:,:), intent(in) :: &         
          precip_frac,         & ! Precipitation fraction (not active, currently precipitation optics uses cloud-fraction)
          cld_cnv_lwp,         & ! Water path for       convective   liquid cloud-particles
          cld_cnv_reliq,       & ! Effective radius for convective   liquid cloud-particles
@@ -181,11 +181,11 @@ contains
           aerlw_tau,          & ! Aerosol optical depth
           aerlw_ssa,          & ! Aerosol single scattering albedo
           aerlw_g               ! Aerosol asymmetry paramter
-    character(len=*), dimension(:), intent(in), optional :: &
+    character(len=*), dimension(:), intent(in) :: &
          active_gases_array     ! List of active gases from namelist as array
 
     ! Outputs
-    real(kind_phys), dimension(:,:), intent(inout), optional :: &
+    real(kind_phys), dimension(:,:), intent(inout) :: &
          fluxlwUP_jac,        & ! Jacobian of upwelling LW surface radiation (W/m2/K) 
          fluxlwUP_allsky,     & ! All-sky flux (W/m2)
          fluxlwDOWN_allsky,   & ! All-sky flux (W/m2)

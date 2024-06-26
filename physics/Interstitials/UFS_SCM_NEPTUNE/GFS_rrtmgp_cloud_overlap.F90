@@ -73,15 +73,15 @@ contains
          lat                     ! Latitude             
     real(kind_phys), dimension(:,:), intent(in) :: &
          cld_frac                ! Total cloud fraction
-    real(kind_phys), dimension(:,:), intent(in), optional :: &
+    real(kind_phys), dimension(:,:), intent(in) :: &
          cld_cnv_frac            ! Convective cloud-fraction
-    real(kind_phys), dimension(:,:), intent(in), optional :: &
+    real(kind_phys), dimension(:,:), intent(in) :: &
          deltaZc                 ! Layer thickness (from layer-centers)(m)
     
     ! Outputs     
     real(kind_phys), dimension(:),intent(out) :: &
          de_lgth                   ! Decorrelation length
-    real(kind_phys), dimension(:,:),intent(out), optional :: &
+    real(kind_phys), dimension(:,:),intent(out) :: &
          cloud_overlap_param,    & ! Cloud-overlap parameter
          cnv_cloud_overlap_param,& ! Convective cloud-overlap parameter
          precip_overlap_param      ! Precipitation overlap parameter
