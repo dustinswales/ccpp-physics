@@ -1,14 +1,18 @@
 ! ###########################################################################################
 !> \file rrtmgp_sampling.F90
 !!
+!> \defgroup rrtmgp_sampling rrtmgp_sampling.F90
+!!
 !! \brief This module provides a simple implementation of sampling for the  Monte Carlo
 !! Independent Pixel Approximation (McICA, doi:10.1029/2002jd003322)
-!! Cloud optical properties, defined by band and assumed homogenous within each cell (column/layer),
-!! are randomly sampled to preserve the mean cloud fraction and one of several possible overlap
-!! assumptions.
-!! Users supply random numbers with order ngpt,nlay,ncol
-!! These are only accessed if cloud_fraction(icol,ilay) > 0 so many values don't need to be filled in
-!
+!! Cloud optical properties, defined by band and assumed homogenous within each cell
+!! (column/layer), are randomly sampled to preserve the mean cloud fraction and one of several
+!! possible overlap assumptions.
+!!
+!! Users supply random numbers with order [ngpt,nlay,ncol]
+!! These are only accessed if cloud_fraction(icol,ilay) > 0 so many values don't need to be
+!! filled in
+!!
 ! ###########################################################################################
 module rrtmgp_sampling
   use mo_rte_kind,      only: wp, wl
@@ -22,10 +26,13 @@ module rrtmgp_sampling
 contains
   
 ! ###########################################################################################
+!> \ingroup rrtmgp_sampling
+!!
+!! \brief Apply a True/False sampled cloud mask to cloud optical properties defined by band
+!! to produce McICA-sampled cloud optical properties.
+!!
 !! \section draw_samples
 !> @{
-!! Apply a True/False sampled cloud mask to cloud optical properties defined by band to produce
-!! McICA-sampled cloud optical properties.
 ! ###########################################################################################
   function draw_samples(cloud_mask,do_twostream,clouds,clouds_sampled) result(error_msg)
 	! Inputs
@@ -70,9 +77,12 @@ contains
 !> @}
 
 ! ###########################################################################################
+!> \ingroup rrtmgp_sampling
+!!
+!! \brief Generate a McICA-sampled cloud mask
+!!
 !! \section sampled_mask
 !> @{
-!! Generate a McICA-sampled cloud mask
 ! ###########################################################################################  
   subroutine sampled_mask(randoms, cloud_frac, cloud_mask, overlap_param, randoms2)
     ! Inputs
@@ -176,9 +186,12 @@ contains
 !> @}
 
 ! ###########################################################################################
+!> \ingroup rrtmgp_sampling
+!!
+!! \brief Apply a true/false cloud mask to a homogeneous field
+!!
 !! \section apply_cloud_mask
 !> @{
-!! Apply a true/false cloud mask to a homogeneous field
 ! ###########################################################################################  
   subroutine apply_cloud_mask(ncol,nlay,nbnd,ngpt,band_lims_gpt,cloud_mask,input_field,sampled_field)
     integer,                                intent(in ) :: ncol,nlay,nbnd,ngpt

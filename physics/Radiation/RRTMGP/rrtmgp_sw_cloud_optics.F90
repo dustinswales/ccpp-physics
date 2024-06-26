@@ -1,3 +1,12 @@
+! ###########################################################################################
+!> \file rrtmgp_sw_cloud_optics.F90
+!!
+!> \defgroup rrtmgp_sw_cloud_optics rrtmgp_sw_cloud_optics.F90
+!!
+!! \brief This module contains a routine to initialize data and functions needed to compute
+!! the shortwave cloud radiative properteis in RRTMGP.
+!!
+! ###########################################################################################
 module rrtmgp_sw_cloud_optics
   use machine,                  only: kind_phys
   use mo_rte_kind,              only: wl
@@ -63,9 +72,24 @@ module rrtmgp_sw_cloud_optics
   real(kind_phys),dimension(:),allocatable :: b0r,b0s,b1s,c0r,c0s
 
 contains
-  ! ######################################################################################
-  ! SUBROUTINE sw_cloud_optics_init
-  ! ######################################################################################
+! ########################################################################################
+!!
+!> \ingroup rrtmgp_sw_cloud_optics
+!!  
+!! Initialize interface to RRTMGP cloud-optical routines.
+!! These routines are type-bound procedures contained within native rte-rrtmgp derived
+!! data types (DDTs).
+!!
+!! The procedures provide cloud optical properties as a function of effective radius for
+!! the RRTMGP shortwave bands.
+!! Based on Mie calculations for liquid and results from doi:10.1175/JAS-D-12-039.1 for
+!! ice with variable surface roughness.
+!! Can use either look-up tables or Pade approximates according to which data has been
+!! loaded.
+!!
+!! \section rrtmgp_sw_cloud_optics_init
+!> @{ 
+! ########################################################################################
   subroutine rrtmgp_sw_cloud_optics_init( rrtmgp_root_dir, rrtmgp_sw_file_clouds,        &
        doGP_cldoptics_PADE, doGP_cldoptics_LUT, nrghice, mpicomm, mpirank, mpiroot,      &
        errmsg, errflg)
@@ -381,4 +405,5 @@ contains
             0.970, 0.970,   0.970,   0.700, 0.700, 0.700, 0.700/)
 
   end subroutine rrtmgp_sw_cloud_optics_init
+!> @}
 end module rrtmgp_sw_cloud_optics

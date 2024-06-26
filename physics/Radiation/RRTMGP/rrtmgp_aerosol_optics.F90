@@ -21,12 +21,16 @@ module rrtmgp_aerosol_optics
 
 contains
 
-  ! #########################################################################################
+! ###########################################################################################
 !! \section arg_table_rrtmgp_aerosol_optics_run
 !! \htmlinclude rrtmgp_aerosol_optics_run.html
 !!
+!! \ingroup rrtmgp_aerosol_optics
+!!
+!! \brief Map optical properties from GFS aerosols to band structure expected by RRTMGP.
+!!
 !> @{
-  ! #########################################################################################
+! ###########################################################################################
   subroutine rrtmgp_aerosol_optics_run(doSWrad, doLWrad, nCol, nLev, nDay, idxday, p_lev,   &
        p_lay, p_lk, tv_lay, relhum, lsmask, tracer, aerfld, lon, lat, iaermdl, iaerflg,     &
        top_at_1, con_pi, con_rd, con_g, aerodp, aerlw_tau, aerlw_ssa, aerlw_g, aersw_tau,   &

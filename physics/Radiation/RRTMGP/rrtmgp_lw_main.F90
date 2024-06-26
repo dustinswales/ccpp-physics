@@ -29,7 +29,7 @@ module rrtmgp_lw_main
 
   public rrtmgp_lw_main_init, rrtmgp_lw_main_run
 contains
-  ! #########################################################################################
+! ###########################################################################################
 !! \section arg_table_rrtmgp_lw_main_init
 !! \htmlinclude rrtmgp_lw_main_int.html
 !!
@@ -39,7 +39,7 @@ contains
 !!
 !! \section rrtmgp_lw_main_init
 !> @{
-  ! #########################################################################################
+! ###########################################################################################
   subroutine rrtmgp_lw_main_init(rrtmgp_root_dir, rrtmgp_lw_file_gas, rrtmgp_lw_file_clouds,&
        active_gases_array, doGP_cldoptics_PADE, doGP_cldoptics_LUT, doGP_sgs_pbl,           &
        doGP_sgs_cnv, nrghice, mpicomm, mpirank, mpiroot, nLay, rrtmgp_phys_blksz,           &
@@ -79,18 +79,18 @@ contains
     errmsg = ''
     errflg = 0
 
-    ! RRTMGP longwave gas-optics (k-distribution) initialization
+    !> RRTMGP longwave gas-optics (k-distribution) initialization
     call rrtmgp_lw_gas_optics_init(rrtmgp_root_dir, rrtmgp_lw_file_gas,                  &
          active_gases_array, mpicomm, mpirank, mpiroot, errmsg, errflg)
 
-    ! RRTMGP longwave cloud-optics initialization
+    !> RRTMGP longwave cloud-optics initialization
     call rrtmgp_lw_cloud_optics_init(rrtmgp_root_dir, rrtmgp_lw_file_clouds,             &
          doGP_cldoptics_PADE, doGP_cldoptics_LUT, nrghice, mpicomm, mpirank, mpiroot,    &
          errmsg, errflg)
 
   end subroutine rrtmgp_lw_main_init
 !> @}
-  ! ######################################################################################
+! ########################################################################################
 !! \section arg_table_rrtmgp_lw_main_run
 !! \htmlinclude rrtmgp_lw_main_run.html
 !!
@@ -100,12 +100,10 @@ contains
 !! This scheme translates the physical representation of the atmospheric-state into an
 !! optical description and computes broadband fluxes over the RRTMGP Longwave bands.
 !! These fluxes are used to compute the longwave radiative heating-rates.
-
-!!
 !!
 !! \section rrtmgp_lw_main_run
 !> @{
-  ! ######################################################################################
+! ########################################################################################
   subroutine rrtmgp_lw_main_run(doLWrad, doLWclrsky, top_at_1, doGP_lwscat,              &
        use_LW_jacobian, doGP_sgs_cnv, doGP_sgs_pbl, nCol, nLay, nGases,rrtmgp_phys_blksz,&
        nGauss_angles, icseed_lw, iovr, iovr_convcld, iovr_max, iovr_maxrand, iovr_rand,  &
