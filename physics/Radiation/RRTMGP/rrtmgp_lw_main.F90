@@ -3,7 +3,7 @@
 !!
 !> \defgroup rrtmgp_lw_main rrtmgp_lw_main.F90
 !!
-!! \brief This module contains the longwave RRTMGP radiation scheme.
+!! \brief This module contains the CCPP interface to the RTE-RRTMGP longwave radiation scheme.
 !!
 ! ###########################################################################################
 module rrtmgp_lw_main
@@ -35,7 +35,7 @@ contains
 !!
 !> \ingroup rrtmgp_lw_main
 !!
-!! \brief 
+!! \brief Initialize RTE-RRTMGP Longwave gas-optics and cloud-optics.
 !!
 !! \section rrtmgp_lw_main_init
 !> @{
@@ -96,7 +96,12 @@ contains
 !!
 !> \ingroup rrtmgp_lw_main
 !!
-!! \brief
+!! \brief CCPP driver for RTE-RRTMGP Longwave radiation.
+!! This scheme translates the physical representation of the atmospheric-state into an
+!! optical description and computes broadband fluxes over the RRTMGP Longwave bands.
+!! These fluxes are used to compute the longwave radiative heating-rates.
+
+!!
 !!
 !! \section rrtmgp_lw_main_run
 !> @{
@@ -225,46 +230,54 @@ contains
 
     if (.not. doLWrad) return
 
-    !
-    ! Initialize RRTMGP DDTs (local)
-    !
-
-    ! ty_gas_concs
+    !> Initialize RRTMGP DDT for trace-gas concentrations, ty_gas_concs.
     call check_error_msg('rrtmgp_lw_main_gas_concs_run',gas_concs%init(active_gases_array))
 
-    ! ty_optical_props
+    !> Initialize RRTMGP DDT for clear-sky optical properties, ty_optical_props_1scl.
     call check_error_msg('rrtmgp_lw_main_gas_optics_run',&
          lw_optical_props_clrsky%alloc_1scl(rrtmgp_phys_blksz, nLay, lw_gas_props))
+
+    !> Initialize RRTMGP DDT for Planck source functions, ty_source_func_lw.
     call check_error_msg('rrtmgp_lw_main_sources_run',&
          sources%alloc(rrtmgp_phys_blksz, nLay, lw_gas_props))
+
+    !> Initialize RRTMGP DDT for cloudy optical properties (by-band), ty_optical_props_2str.
     call check_error_msg('rrtmgp_lw_main_cloud_optics_run',&
          lw_optical_props_cloudsByBand%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props%get_band_lims_wavenumber()))
+
+    !> Initialize RRTMGP DDT for precipitation optical properties, ty_optical_props_2str.
     call check_error_msg('rrtmgp_lw_main_precip_optics_run',&
          lw_optical_props_precipByBand%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props%get_band_lims_wavenumber()))
+
+    !> Initialize RRTMGP DDT for cloudy optical properties (sampled), ty_optical_props_2str.
     call check_error_msg('rrtmgp_lw_mian_cloud_sampling_run', &
          lw_optical_props_clouds%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props))
+
+    !> Initialize RRTMGP DDT for aerosol optical properties, ty_optical_props_1scl.
     call check_error_msg('rrtmgp_lw_main_aerosol_optics_run',&
          lw_optical_props_aerosol_local%alloc_1scl(rrtmgp_phys_blksz, nLay, lw_gas_props%get_band_lims_wavenumber()))
+
+    !> If radiatively active convective cloud, initialize RRTMGP DDT for convective cloud optical
+    !> properties (by-band), ty_optical_props_2str.
     if (doGP_sgs_cnv) then
        call check_error_msg('rrtmgp_lw_main_cnv_cloud_optics_run',&
             lw_optical_props_cnvcloudsByBand%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props%get_band_lims_wavenumber()))
     endif
+
+    !> If radiatively active PBL cloud, initialize RRTMGP DDT for PBL optical properties
+    !> (by-band), ty_optical_props_2str.
     if (doGP_sgs_pbl) then
        call check_error_msg('rrtmgp_lw_main_pbl_cloud_optics_run',&
             lw_optical_props_pblcloudsByBand%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props%get_band_lims_wavenumber()))
     endif
 
     ! ######################################################################################
-    !
-    ! Loop over all columns...
-    !
+    !> Loop over all columns, computing optical properties, fluxes and heating-rates.
     ! ###################################################################################### 
     do iCol=1,nCol,rrtmgp_phys_blksz
        iCol2 = iCol + rrtmgp_phys_blksz - 1
 
-       ! Initialize/reset
-
-       ! ty_optical_props
+       !> Reset/initialize RRTMGP native DDTs.
        lw_optical_props_clrsky%tau       = 0._kind_phys
        lw_optical_props_precipByBand%tau = 0._kind_phys
        lw_optical_props_precipByBand%ssa = 0._kind_phys
@@ -298,9 +311,7 @@ contains
        flux_clrsky%bnd_flux_dn => fluxLW_dn_clrsky
 
        ! ###################################################################################
-       !
-       ! Set gas-concentrations
-       !
+       !> Set trace gas-concentrations for radiatively active species.
        ! ###################################################################################
        call check_error_msg('rrtmgp_lw_main_set_vmr_o2',  &
             gas_concs%set_vmr(trim(active_gases_array(istr_o2)), vmr_o2(iCol:iCol2,:)))
@@ -316,9 +327,7 @@ contains
             gas_concs%set_vmr(trim(active_gases_array(istr_o3)), vmr_o3(iCol:iCol2,:)))
 
        ! ###################################################################################
-       !
-       ! Surface emissity in each band
-       !
+       !> Set surface emissity in each RRTMGP band.
        ! ###################################################################################
        ! Assign same emissivity to all band
        do iblck=1,rrtmgp_phys_blksz
@@ -332,9 +341,7 @@ contains
        enddo
 
        ! ###################################################################################
-       !
-       ! Compute gas-optics...
-       !
+       !> Compute clear-sky gaseous-optics (correlated-k-distribution).
        ! ###################################################################################
        call check_error_msg('rrtmgp_lw_main_gas_optics',lw_gas_props%gas_optics(&
             p_lay(iCol:iCol2,:),              & ! IN  - Pressure @ layer-centers (Pa)
@@ -347,11 +354,9 @@ contains
             tlev=t_lev(iCol:iCol2,:)))          ! IN  - Temperature @ layer-interfaces (K) (optional)
 
        ! ###################################################################################
-       !
-       ! Compute cloud-optics...
-       !
+       !> Compute cloud optical properties.
        ! ###################################################################################
-       ! Create clear/cloudy indicator
+       !> First, create clear/cloudy indicator.
        zcf0(:) = 1._kind_phys
        zcf1(:) = 1._kind_phys
        do iblck = 1, rrtmgp_phys_blksz
@@ -363,8 +368,9 @@ contains
           zcf1(iblck) = 1._kind_phys - zcf0(iblck)
        enddo
 
+       !> If we are in a cloudy-column, compute cloud-optics.
        if (any(zcf1 .gt. eps)) then
-          ! Microphysical (gridmean) cloud optics
+          !> a) Microphysical (gridmean) cloud optics.
           call check_error_msg('rrtmgp_lw_main_cloud_optics',lw_cloud_props%cloud_optics(&
                cld_lwp(iCol:iCol2,:),                & ! IN  - Cloud liquid water path (g/m2)
                cld_iwp(iCol:iCol2,:),                & ! IN  - Cloud ice water path (g/m2)
@@ -372,9 +378,8 @@ contains
                cld_reice(iCol:iCol2,:),              & ! IN  - Cloud ice effective radius (microns)
                lw_optical_props_cloudsByBand))         ! OUT - RRTMGP DDT containing cloud radiative properties
                                                        !       in each band
-          ! Include convective (subgrid scale) clouds?
+          !> b) Include convective (subgrid scale) clouds?
           if (doGP_sgs_cnv) then
-             ! Compute
              call check_error_msg('rrtmgp_lw_main_cnv_cloud_optics',lw_cloud_props%cloud_optics(&
                   cld_cnv_lwp(iCol:iCol2,:),         & ! IN  - Convective cloud liquid water path (g/m2)
                   cld_cnv_iwp(iCol:iCol2,:),         & ! IN  - Convective cloud ice water path (g/m2)
@@ -387,9 +392,8 @@ contains
                   lw_optical_props_cnvcloudsByBand%increment(lw_optical_props_cloudsByBand))
           endif
 
-          ! Include PBL (subgrid scale) clouds?
+          !> c) Include PBL (subgrid scale) clouds?
           if (doGP_sgs_pbl) then
-             ! Compute
              call check_error_msg('rrtmgp_lw_main_pbl_cloud_optics',lw_cloud_props%cloud_optics(&
                   cld_pbl_lwp(iCol:iCol2,:),         & ! IN  - PBL cloud liquid water path (g/m2)
                   cld_pbl_iwp(iCol:iCol2,:),         & ! IN  - PBL cloud ice water path (g/m2)
@@ -404,9 +408,7 @@ contains
        endif
 
        ! ###################################################################################
-       !
-       ! Cloud precipitation optics: rain and snow(+groupel)
-       !
+       !> Compute cloud precipitation optics: rain and snow(+groupel)
        ! ###################################################################################
        tau_rain(:) = 0._kind_phys
        tau_snow(:) = 0._kind_phys
@@ -433,10 +435,7 @@ contains
             lw_optical_props_precipByBand%increment(lw_optical_props_cloudsByBand))
 
        ! ###################################################################################
-       !
-       ! Cloud-sampling
-       ! *Note* All of the included cloud-types are sampled together, not independently.
-       !
+       !> Sample clouds using McICA.
        ! ###################################################################################
        if (any(zcf1 .gt. eps)) then
           ! Change random number seed value for each radiation invocation (isubc_lw =1 or 2).
@@ -496,16 +495,14 @@ contains
        endif
 
        ! ###################################################################################
-       !
-       ! Compute clear-sky fluxes (gaseous+aerosol) (optional)
-       !
+       !> Compute clear-sky fluxes (gaseous-absorption + aerosol).
        ! ###################################################################################
-       ! Increment
+       !> Increment aerosol optical properties (computed externally).
        lw_optical_props_aerosol_local%tau = aerlw_tau(iCol:iCol2,:,:)
        call check_error_msg('rrtmgp_lw_main_increment_aerosol_to_clrsky',&
             lw_optical_props_aerosol_local%increment(lw_optical_props_clrsky))
 
-       ! Call RTE solver
+       !> Call RTE solver to compute fluxes (optional).
        if (doLWclrsky) then
           call check_error_msg('rrtmgp_lw_main_opt_angle',&
                lw_gas_props%compute_optimal_angles(lw_optical_props_clrsky,lw_Ds))
@@ -526,7 +523,7 @@ contains
                   flux_clrsky,                     & ! OUT - Fluxes
                   lw_Ds = lw_Ds))
           endif
-          
+
           ! Store fluxes
           fluxlwUP_clrsky(iCol:iCol2,:)   = sum(flux_clrsky%bnd_flux_up, dim=3)
           fluxlwDOWN_clrsky(iCol:iCol2,:) = sum(flux_clrsky%bnd_flux_dn, dim=3)
@@ -537,7 +534,7 @@ contains
 
        ! ###################################################################################
        !
-       ! All-sky fluxes (clear-sky + clouds + precipitation)
+       !> Compute all-sky fluxes (clear-sky + clouds + precipitation).
        ! *Note* CCPP does not allow for polymorphic types, they are ambiguous to the CCPP
        ! framework. rte-rrtmgp uses polymorphic types extensively, for example, querying the
        ! type to determine physics configuration/pathway/etc...
@@ -550,7 +547,7 @@ contains
        ! 
        ! ###################################################################################
 
-       ! Include LW cloud-scattering?
+       !> Compute all-sky flxues including scattering (optional).
        if (doGP_lwscat) then 
           ! Increment
           call check_error_msg('rrtmgp_lw_main_increment_clrsky_to_clouds',&
@@ -575,7 +572,7 @@ contains
                   flux_allsky,                     & ! OUT - Flxues 
                   n_gauss_angles = nGauss_angles))   ! IN  - Number of angles in Gaussian quadrature    
           end if
-       ! No scattering in LW clouds.   
+       !> Compute all-sky flxues with no-scattering (default)
        else
           ! Increment
           call check_error_msg('rrtmgp_lw_main_increment_clouds_to_clrsky', &
