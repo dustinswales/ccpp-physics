@@ -1,6 +1,12 @@
+! ######################################################################################
 !> \file GFS_rrtmgp_setup.F90
-!! This file initializes the RRTMGP radiation scheme
-
+!!
+!> \defgroup GFS_rrtmgp_setup GFS_rrtmgp_setup.F90
+!!
+!! \brief This module contains interstitial schemes that call initialization and timestep
+!! configurations routines needed by the RRTMGP radiation scheme.
+!!
+! ###################################################################################### 
 module GFS_rrtmgp_setup
   use machine,                    only : kind_phys
   use module_radiation_astronomy, only : sol_init, sol_update
@@ -31,14 +37,22 @@ module GFS_rrtmgp_setup
   
 contains
 
+! ########################################################################################
 !> \defgroup GFS_rrtmgp_setup_mod GFS RRTMGP Scheme Setup Module
 !! \section arg_table_GFS_rrtmgp_setup_init
 !! \htmlinclude GFS_rrtmgp_setup_init.html
 !!
+!> \ingroup GFS_rrtmgp_setup
+!!
+!! \brief Routine that calls initialization routines for RRTMGP dependencies.
+!!
+!! \section GFS_rrtmgp_setup_init
+!> @{
+! ########################################################################################
   subroutine GFS_rrtmgp_setup_init(do_RRTMGP, imp_physics, imp_physics_fer_hires,        &
        imp_physics_gfdl, imp_physics_thompson, imp_physics_wsm6, imp_physics_zhao_carr,  &
        imp_physics_zhao_carr_pdf, imp_physics_mg,  si, levr, ictm, isol, ico2, iaer,     &
-       ntcw, ntoz, iovr, isubc_sw, isubc_lw, lalw1bd, idate,               &
+       ntcw, ntoz, iovr, isubc_sw, isubc_lw, lalw1bd, idate,                             &
        me, aeros_file, iaermdl, iaerflg, con_pi, con_t0c, con_c, con_boltz, con_plnk,    &
        solar_file, con_solr_2008, con_solr_2002, co2usr_file, co2cyc_file, ipsd0,        &
        errmsg, errflg)
@@ -74,6 +88,8 @@ contains
     ! Initialize the CCPP error handling variables
     errmsg = ''
     errflg = 0
+    
+    if (is_initialized) return
 
     ! Consistency checks
     if (.not. do_RRTMGP) then
@@ -123,12 +139,12 @@ contains
     iyear0 = 0
     monthd = 0
 
-    if (is_initialized) return
-
-    ! Call initialization routines..
+    !> Call initialization routine for solar data needed by RRTMGP.
     call sol_init ( me, isol, solar_file, con_solr_2008, con_solr_2002, con_pi )
+    !> Call initialization routine for aerosol data needed by RRTMGP.
     call aer_init ( levr, me, iaermdl, iaerflg, lalw1bd, aeros_file, con_pi, con_t0c,    &
          con_c, con_boltz, con_plnk, errflg, errmsg)
+    !> Call initialization routine for gas concentrations needed by RRTMGP.
     call gas_init ( me, co2usr_file, co2cyc_file, ico2, ictm, con_pi, errflg, errmsg )
 
     if ( me == 0 ) then
@@ -139,13 +155,18 @@ contains
 
     return
   end subroutine GFS_rrtmgp_setup_init
+!> @}
 
-  ! #########################################################################################
-  ! SUBROUTINE GFS_rrtmgp_setup_timestep_init
-  ! #########################################################################################
+! ###########################################################################################
 !> \section arg_table_GFS_rrtmgp_setup_timestep_init
 !! \htmlinclude GFS_rrtmgp_setup_timestep_init.html
 !!
+!> \ingroup GFS_rrtmgp_setup 
+!!
+!! \brief Routine that updates data forcurrent timestep needed by RRTMGP.
+!! \section GFS_rrtmgp_setup_timestep_init
+!> @{
+! ###########################################################################################
   subroutine GFS_rrtmgp_setup_timestep_init (idate, jdate, deltsw, deltim, doSWrad, me,     &
        iaermdl, aeros_file, isol, slag, sdec, cdec, solcon, con_pi, co2dat_file,            &
        co2gbl_file, ictm, ico2, ntoz, ozphys, errmsg, errflg)
@@ -250,13 +271,17 @@ contains
 
     return
   end subroutine GFS_rrtmgp_setup_timestep_init
+!> @}
 
-  ! #########################################################################################
-  ! SUBROUTINE GFS_rrtmgp_setup_finalize
-  ! ######################################################################################### 
+! ###########################################################################################
 !> \section arg_table_GFS_rrtmgp_setup_finalize
 !! \htmlinclude GFS_rrtmgp_setup_finalize.html
 !!
+!> \ingroup GFS_rrtmgp_setup
+!!
+!! \section GFS_rrtmgp_setup_finalize
+!> @{
+! ###########################################################################################
   subroutine GFS_rrtmgp_setup_finalize (errmsg, errflg)
     character(len=*),          intent(  out) :: errmsg
     integer,                   intent(  out) :: errflg
@@ -271,4 +296,5 @@ contains
     is_initialized = .false.
     
   end subroutine GFS_rrtmgp_setup_finalize
+!> @}
 end module GFS_rrtmgp_setup

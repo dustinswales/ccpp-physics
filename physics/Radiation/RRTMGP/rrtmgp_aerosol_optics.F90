@@ -1,6 +1,12 @@
+! ###########################################################################################
 !>\file rrtmgp_aerosol_optics.F90
 !!
-
+!> \defgroup rrtmgp_aerosol_optics rrtmgp_aerosol_optics.F90
+!!
+!! \brief This module contains the interface between the GFS provided aerosols and the RRTMGP
+!! radiaiton parameterization.
+!!
+! ###########################################################################################
 module rrtmgp_aerosol_optics
   use machine,                   only: kind_phys
   use radiation_tools,           only: check_error_msg
@@ -15,15 +21,16 @@ module rrtmgp_aerosol_optics
 
 contains
 
-  ! #########################################################################################
-  ! SUBROUTINE rrtmgp_aerosol_optics_run()
-  ! #########################################################################################
-
-!>\defgroup rrtmgp_aerosol_optics_mod GFS RRTMGP Aerosol Optics Module
-!> @{
+! ###########################################################################################
 !! \section arg_table_rrtmgp_aerosol_optics_run
 !! \htmlinclude rrtmgp_aerosol_optics_run.html
 !!
+!! \ingroup rrtmgp_aerosol_optics
+!!
+!! \brief Map optical properties from GFS aerosols to band structure expected by RRTMGP.
+!!
+!> @{
+! ###########################################################################################
   subroutine rrtmgp_aerosol_optics_run(doSWrad, doLWrad, nCol, nLev, nDay, idxday, p_lev,   &
        p_lay, p_lk, tv_lay, relhum, lsmask, tracer, aerfld, lon, lat, iaermdl, iaerflg,     &
        top_at_1, con_pi, con_rd, con_g, aerodp, aerlw_tau, aerlw_ssa, aerlw_g, aersw_tau,   &
@@ -50,16 +57,17 @@ contains
          lon,                   & ! Longitude
          lat,                   & ! Latitude
          lsmask                   ! Land/sea/sea-ice mask
-    real(kind_phys), dimension(:,:),intent(in) :: &
+    real(kind_phys), dimension(:,:),intent(in), optional :: &
          p_lay,                 & ! Pressure @ layer-centers (Pa)
          tv_lay,                & ! Virtual-temperature @ layer-centers (K)
-         relhum,                & ! Relative-humidity @ layer-centers
+         relhum                   ! Relative-humidity @ layer-centers
+    real(kind_phys), dimension(:,:),intent(in) :: &
          p_lk                     ! Exner function @ layer-centers (1)
     real(kind_phys), dimension(:, :,:),intent(in) :: &
          tracer                   ! trace gas concentrations
     real(kind_phys), dimension(:, :,:),intent(in) :: &
          aerfld                   ! aerosol input concentrations
-    real(kind_phys), dimension(:,:),intent(in) :: &
+    real(kind_phys), dimension(:,:),intent(in), optional :: &
          p_lev                    ! Pressure @ layer-interfaces (Pa)
     real (kind=kind_phys), dimension(:,:), intent(out) :: &
          ext550                   ! 3d optical extinction for total aerosol species
@@ -92,17 +100,16 @@ contains
 
     if (.not. (doSWrad .or. doLWrad)) return
 
-    ! Call module_radiation_aerosols::setaer(),to setup aerosols property profile
+    !> Call module_radiation_aerosols::setaer(),to setup aerosols property profile for
+    !> provided atmospheric scene.
     call setaer(p_lev*0.01, p_lay*0.01, p_lk, tv_lay, relhum, lsmask, tracer, aerfld, lon, lat, nCol, nLev, &
          nLev+1, .true., .true., iaermdl, iaerflg, top_at_1, con_pi, con_rd, con_g, aerosolssw2, aerosolslw, &
          aerodp, ext550, errflg, errmsg)
 
-    ! Shortwave
-    if (doSWrad .and. (nDay .gt. 0)) then
-       ! Store aerosol optical properties
-       ! SW. 
-       ! For RRTMGP SW the bands are now ordered from [IR(band) -> nIR -> UV], in RRTMG the 
-       ! band ordering was [nIR -> UV -> IR(band)]
+    !> Set shortwave aerosol optical properties.
+    if (doSWrad .and. (nDay .gt. 0)) then 
+       !> For RRTMGP SW the bands are now ordered from [IR(band) -> nIR -> UV], in RRTMG the 
+       !> band ordering was [nIR -> UV -> IR(band)]
        aerosolssw(1:nCol,:,1,1)                          = aerosolssw2(1:nCol,:,sw_gas_props%get_nband(),1)
        aerosolssw(1:nCol,:,1,2)                          = aerosolssw2(1:nCol,:,sw_gas_props%get_nband(),2)
        aerosolssw(1:nCol,:,1,3)                          = aerosolssw2(1:nCol,:,sw_gas_props%get_nband(),3)
@@ -110,13 +117,13 @@ contains
        aerosolssw(1:nCol,:,2:sw_gas_props%get_nband(),2) = aerosolssw2(1:nCol,:,1:sw_gas_props%get_nband()-1,2)
        aerosolssw(1:nCol,:,2:sw_gas_props%get_nband(),3) = aerosolssw2(1:nCol,:,1:sw_gas_props%get_nband()-1,3)
      
-       ! Copy aerosol optical information/
+       ! Copy aerosol optical information.
        aersw_tau = aerosolssw(:,:,:,1)
        aersw_ssa = aerosolssw(:,:,:,2)
        aersw_g   = aerosolssw(:,:,:,3)
     endif
 
-    ! Longwave
+    !> Set longwave aerosol optical properties.
     if (doLWrad) then
        aerlw_tau = aerosolslw(:,:,:,1)
        aerlw_ssa = aerosolslw(:,:,:,2)

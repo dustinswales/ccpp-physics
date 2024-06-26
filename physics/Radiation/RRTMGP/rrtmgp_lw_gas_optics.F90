@@ -1,12 +1,12 @@
+! ########################################################################################### 
 !> \file rrtmgp_lw_gas_optics.F90 
 !!
 !> \defgroup rrtmgp_lw_gas_optics rrtmgp_lw_gas_optics.F90 
 !!
-!! \brief This module contains two routines: One to initialize the k-distribution data
-!! and functions needed to compute the longwave gaseous optical properties in RRTMGP.
-!! The second routine is a ccpp scheme within the "radiation loop", where the longwave
-!! optical prperties (optical-depth) are computed for clear-sky conditions (no aerosols).
-!!                                                
+!! \brief This module contains a routine to initialize the k-distribution data and functions
+!! needed to compute the longwave gaseous optical properties in RRTMGP.
+!!
+! ###########################################################################################
 module rrtmgp_lw_gas_optics
   use machine,               only: kind_phys
   use mo_rte_kind,           only: wl
@@ -75,9 +75,18 @@ module rrtmgp_lw_gas_optics
 
 contains
 
-  ! #########################################################################################
-  ! SUBROUTINE rrtmgp_lw_gas_optics_init
-  ! #########################################################################################
+! ###########################################################################################
+!> \ingroup rrtmgp_lw_gas_optics
+!!
+!! RRTMGP relies heavility on derived-data-types, which contain type-bound procedures
+!! that are referenced frequently throughout the RRTMGP longwave scheme. The data needed
+!! for the correlated k-distribution is also contained within this type. Within this module,
+!! the full k-distribution data is read in, reduced by the "active gases" provided, and
+!! loaded into the RRTMGP DDT, ty_gas_optics_rrtmgp.
+!!
+!! \section rrtmgp_lw_gas_optics_init
+!> @{
+! ###########################################################################################
   subroutine rrtmgp_lw_gas_optics_init(rrtmgp_root_dir, rrtmgp_lw_file_gas,                 &
        active_gases_array, mpicomm, mpirank, mpiroot, errmsg, errflg)
 
@@ -448,5 +457,5 @@ contains
          planck_fracLW, rayl_lowerLW, rayl_upperLW, optimal_angle_fitLW))
     
   end subroutine rrtmgp_lw_gas_optics_init
-
+!> @}
 end module rrtmgp_lw_gas_optics

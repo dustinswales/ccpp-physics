@@ -1,25 +1,19 @@
-! This code is part of RRTM for GCM Applications - Parallel (RRTMGP)
-!
-! Contacts: Robert Pincus and Eli Mlawer
-! email:  rrtmgp@aer.com
-!
-! Copyright 2015-2019,  Atmospheric and Environmental Research and
-! Regents of the University of Colorado.  All right reserved.
-!
-! Use and duplication is permitted under the terms of the
-!    BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
-! -------------------------------------------------------------------------------------------------
-!
-! This module provides a simple implementation of sampling for the
-!   Monte Carlo Independent Pixel Approximation (McICA, doi:10.1029/2002jd003322)
-! Cloud optical properties, defined by band and assumed homogenous within each cell (column/layer),
-!   are randomly sampled to preserve the mean cloud fraction and one of several possible overlap assumptions
-! Users supply random numbers with order ngpt,nlay,ncol
-!   These are only accessed if cloud_fraction(icol,ilay) > 0 so many values don't need to be filled in
-!
-! Adapted by Dustin Swales on 8/11/2020 for use in UFS (NOAA-PSL/CU-CIRES)
-!
-! -------------------------------------------------------------------------------------------------
+! ###########################################################################################
+!> \file rrtmgp_sampling.F90
+!!
+!> \defgroup rrtmgp_sampling rrtmgp_sampling.F90
+!!
+!! \brief This module provides a simple implementation of sampling for the  Monte Carlo
+!! Independent Pixel Approximation (McICA, doi:10.1029/2002jd003322)
+!! Cloud optical properties, defined by band and assumed homogenous within each cell
+!! (column/layer), are randomly sampled to preserve the mean cloud fraction and one of several
+!! possible overlap assumptions.
+!!
+!! Users supply random numbers with order [ngpt,nlay,ncol]
+!! These are only accessed if cloud_fraction(icol,ilay) > 0 so many values don't need to be
+!! filled in
+!!
+! ###########################################################################################
 module rrtmgp_sampling
   use mo_rte_kind,      only: wp, wl
   use mo_optical_props, only: ty_optical_props_arry, &
@@ -30,12 +24,16 @@ module rrtmgp_sampling
   private
   public :: draw_samples, sampled_mask
 contains
-  ! -------------------------------------------------------------------------------------------------
-  !
-  ! Apply a T/F sampled cloud mask to cloud optical properties defined by band to produce
-  !   McICA-sampled cloud optical properties
-  !
-  ! -------------------------------------------------------------------------------------------------
+  
+! ###########################################################################################
+!> \ingroup rrtmgp_sampling
+!!
+!! \brief Apply a True/False sampled cloud mask to cloud optical properties defined by band
+!! to produce McICA-sampled cloud optical properties.
+!!
+!! \section draw_samples
+!> @{
+! ###########################################################################################
   function draw_samples(cloud_mask,do_twostream,clouds,clouds_sampled) result(error_msg)
 	! Inputs
     logical, dimension(:,:,:),      intent(in   ) :: cloud_mask     ! Dimensions ncol,nlay,ngpt
@@ -76,11 +74,16 @@ contains
       end select
     end select
   end function draw_samples
-  ! -------------------------------------------------------------------------------------------------
-  !
-  ! Generate a McICA-sampled cloud mask
-  !
-  ! -------------------------------------------------------------------------------------------------
+!> @}
+
+! ###########################################################################################
+!> \ingroup rrtmgp_sampling
+!!
+!! \brief Generate a McICA-sampled cloud mask
+!!
+!! \section sampled_mask
+!> @{
+! ###########################################################################################  
   subroutine sampled_mask(randoms, cloud_frac, cloud_mask, overlap_param, randoms2)
     ! Inputs
     real(wp), dimension(:,:,:),  intent(in )           :: randoms       ! ngpt,nlay,ncol
@@ -114,7 +117,7 @@ contains
     ! Using a second RNG?
     if (present(randoms2)) l_use_second_rng = .true.
     
-    ! Construct the cloud mask for each column
+    !> Construct the cloud mask for each column
     do icol = 1, ncol
        cloud_mask_layer(1:nlay) = cloud_frac(icol,1:nlay) > 0._wp
        if(.not. any(cloud_mask_layer)) then
@@ -130,9 +133,9 @@ contains
        cloud_mask(icol,ilay,1:ngpt) = local_rands(1:ngpt) > (1._wp - cloud_frac(icol,ilay))
        do ilay = cloud_lay_fst+1, cloud_lay_lst
           ! ################################################################################
-          ! Max-random overlap
-          !   new  random deviates if the adjacent layer isn't cloudy
-          !   same random deviates if the adjacent layer is    cloudy
+          !> Max-random overlap:
+          !>   new  random deviates if the adjacent layer isn't cloudy
+          !>   same random deviates if the adjacent layer is    cloudy
           ! ################################################################################
           if (.not. l_use_overlap_param) then
              if(cloud_mask_layer(ilay)) then
@@ -143,9 +146,9 @@ contains
              end if
           end if   ! END COND: Maximum-random overlap
           ! ################################################################################
-          ! Exponential-random overlap
-          !   new  random deviates if the adjacent layer isn't cloudy
-          !   correlated  deviates if the adjacent layer is    cloudy
+          !> Exponential-random overlap:
+          !>   new  random deviates if the adjacent layer isn't cloudy
+          !>   correlated  deviates if the adjacent layer is    cloudy
           ! ################################################################################
           if (l_use_overlap_param) then
              if(cloud_mask_layer(ilay)) then
@@ -162,9 +165,9 @@ contains
              endif
           endif   ! END COND: Exponential/Exponential-random overlap
           ! ################################################################################
-          ! Exponential-decorrelation overlap
-          !   new  random deviates if the adjacent layer isn't cloudy
-          !   correlated  deviates if the adjacent layer is    cloudy and decorrelation-length
+          !> Exponential-decorrelation overlap:
+          !>   new  random deviates if the adjacent layer isn't cloudy
+          !>   correlated  deviates if the adjacent layer is    cloudy and decorrelation-length
           ! ################################################################################		
           if (l_use_overlap_param .and. l_use_second_rng) then
              where(randoms2(1:nGpt,iLay,iCol) .le. overlap_param(iCol,iLay-1))
@@ -180,12 +183,16 @@ contains
     end do		! END LOOP: Columns
     
   end subroutine sampled_mask
-  ! -------------------------------------------------------------------------------------------------
-  !
-  ! Apply a true/false cloud mask to a homogeneous field
-  !   This could be a kernel
-  !
-  ! -------------------------------------------------------------------------------------------------
+!> @}
+
+! ###########################################################################################
+!> \ingroup rrtmgp_sampling
+!!
+!! \brief Apply a true/false cloud mask to a homogeneous field
+!!
+!! \section apply_cloud_mask
+!> @{
+! ###########################################################################################  
   subroutine apply_cloud_mask(ncol,nlay,nbnd,ngpt,band_lims_gpt,cloud_mask,input_field,sampled_field)
     integer,                                intent(in ) :: ncol,nlay,nbnd,ngpt
     integer,     dimension(2,nbnd),         intent(in ) :: band_lims_gpt
@@ -203,5 +210,5 @@ contains
       end do
     end do
   end subroutine apply_cloud_mask
-
+!> @}
 end module rrtmgp_sampling

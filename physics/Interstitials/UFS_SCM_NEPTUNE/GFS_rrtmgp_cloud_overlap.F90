@@ -1,11 +1,13 @@
+! ########################################################################################
 !> \file GFS_rrtmgp_cloud_overlap.F90
 !! 
 !> \defgroup GFS_rrtmgp_cloud_overlap GFS_rrtmgp_cloud_overlap.F90
 !!
 !! \brief This module contains EMC's interface to the different assumptions of vertical cloud 
-!! structuce, cloud overlap, used by McICA for cloud sampling in the RRTMGP longwave
+!! structuce (i.e. cloud overlap) used by McICA for cloud sampling in the RRTMGP longwave
 !! and shortwave schemes.
 !!
+! ########################################################################################
 module GFS_rrtmgp_cloud_overlap
   use machine,      only: kind_phys
   use radiation_tools,   only: check_error_msg
@@ -14,23 +16,25 @@ module GFS_rrtmgp_cloud_overlap
   public GFS_rrtmgp_cloud_overlap_run
 
 contains  
-
+! ########################################################################################
 !>\defgroup gfs_rrtmgp_cloud_overlap_mod GFS RRTMGP Cloud Overlap Module
 !! \section arg_table_GFS_rrtmgp_cloud_overlap_run
 !! \htmlinclude GFS_rrtmgp_cloud_overlap_run.html
 !!
 !> \ingroup GFS_rrtmgp_cloud_overlap
 !!
-!! This is identical (shares common-code) to RRTMG. The motivation for RRTMGP to have
-!! its own scheme is both organizational and philosophical*.
+!! \brief This shares common-code with the RRTMG radiations scheme. The motivation for RRTMGP
+!! to have its own scheme is both organizational and philosophical*.
 !!
 !! *The number of "clouds" being produced by the model physics is often greater than one.
 !! rte-rrtmgp can accomodate multiple cloud-types. This module preservers this enhancement
 !! in the EMCs coupling to the RRTMGP scheme.
 !!
 !! \section GFS_rrtmgp_cloud_overlap_run
+!> @{
+! ########################################################################################
   subroutine GFS_rrtmgp_cloud_overlap_run(nCol, nLev, yearlen, doSWrad, doLWrad,         &
-       julian, lat, p_lev, p_lay, tv_lay, deltaZc, con_pi, con_g, con_rd, con_epsq,      &
+       julian, lat, deltaZc, con_pi, con_g, con_rd, con_epsq,                            &
        dcorr_con, idcor, iovr, iovr_dcorr, iovr_exp, iovr_exprand, idcor_con,            &
        idcor_hogan, idcor_oreopoulos, cld_frac, cld_cnv_frac, iovr_convcld, top_at_1,    &
        imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_samf, de_lgth, cloud_overlap_param,         &
@@ -67,19 +71,17 @@ contains
          dcorr_con               ! Decorrelation-length (used if idcor = idcor_con)
     real(kind_phys), dimension(:), intent(in) :: &
          lat                     ! Latitude             
-    real(kind_phys), dimension(:,:), intent(in) :: &         
-         tv_lay,               & ! Virtual temperature (K)
-         p_lay,                & ! Pressure at model-layers (Pa)
-         cld_frac,             & ! Total cloud fraction
+    real(kind_phys), dimension(:,:), intent(in) :: &
+         cld_frac                ! Total cloud fraction
+    real(kind_phys), dimension(:,:), intent(in), optional :: &
          cld_cnv_frac            ! Convective cloud-fraction
-    real(kind_phys), dimension(:,:), intent(in) :: &         
-         p_lev,                & ! Pressure at model-level interfaces (Pa)
+    real(kind_phys), dimension(:,:), intent(in), optional :: &
          deltaZc                 ! Layer thickness (from layer-centers)(m)
     
     ! Outputs     
     real(kind_phys), dimension(:),intent(out) :: &
          de_lgth                   ! Decorrelation length
-    real(kind_phys), dimension(:,:),intent(out) :: &
+    real(kind_phys), dimension(:,:),intent(out), optional :: &
          cloud_overlap_param,    & ! Cloud-overlap parameter
          cnv_cloud_overlap_param,& ! Convective cloud-overlap parameter
          precip_overlap_param      ! Precipitation overlap parameter
@@ -97,9 +99,7 @@ contains
 
     if (.not. (doSWrad .or. doLWrad)) return
 
-    !
-    ! Cloud decorrelation length
-    !
+    !> Compute cloud decorrelation length.
     de_lgth(:) = 0.
     if (idcor == idcor_hogan) then
        call cmp_dcorr_lgth(nCol, lat, con_pi, de_lgth)
@@ -111,18 +111,14 @@ contains
        de_lgth(:) = dcorr_con
     endif
 
-    !
-    ! Cloud overlap parameter
-    !
+    !> Compute cloud overlap parameter.
     if (iovr == iovr_dcorr .or. iovr == iovr_exp .or. iovr == iovr_exprand) then
        call get_alpha_exper(nCol, nLev, iovr, iovr_exprand, deltaZc*0.001, de_lgth, cld_frac, cloud_overlap_param)
     else
        cloud_overlap_param(:,:) = 0.
     endif
 
-    !
-    ! Convective cloud overlap parameter
-    !
+    !> Compute convective cloud overlap parameter (Only is treating independently from macro clouds)
     if (imfdeepcnv == imfdeepcnv_samf .or. imfdeepcnv == imfdeepcnv_gf) then
        if (iovr_convcld == iovr_dcorr .or. iovr_convcld == iovr_exp .or. iovr_convcld == iovr_exprand) then
           call get_alpha_exper(nCol, nLev, iovr_convcld, iovr_exprand, deltaZc*0.001, de_lgth, cld_cnv_frac, cnv_cloud_overlap_param)
@@ -131,10 +127,9 @@ contains
        endif
     endif
 
-    ! 
-    ! Compute precipitation overlap parameter (Hack. Using same as cloud for now)
-    !
-    precip_overlap_param = cloud_overlap_param    
-    
+    ! Compute precipitation overlap parameter. (Using same as cloud for now, but highlights distinction)
+    precip_overlap_param = cloud_overlap_param
+
   end subroutine GFS_rrtmgp_cloud_overlap_run
+!> @}
 end module GFS_rrtmgp_cloud_overlap

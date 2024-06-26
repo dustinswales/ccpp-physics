@@ -1,10 +1,12 @@
+! ###########################################################################################
 !> \file rrtmgp_sw_gas_optics.F90
 !!
 !> \defgroup rrtmgp_sw_gas_optics rrtmgp_sw_gas_optics.F90
 !!
-!! \brief This module contains a routine to initialize the k-distribution data used
-!! by the RRTMGP shortwave radiation scheme.
+!! \brief This module contains a routine to initialize the k-distribution data and functions
+!! needed to compute the shortwacewave gaseous optical properties in RRTMGP.
 !!
+! ###########################################################################################
 module rrtmgp_sw_gas_optics
   use machine,                only: kind_phys
   use mo_rte_kind,            only: wl
@@ -79,12 +81,7 @@ module rrtmgp_sw_gas_optics
        scale_by_complement_upperSW          ! Absorption is scaled by concentration of scaling_gas (F) or its complement (T)
 contains
 
-  ! ######################################################################################
-!>\defgroup rrtmgp_sw_gas_optics_mod GFS RRTMGP-SW Gas Optics Module
-!> @{
-!! \section arg_table_rrtmgp_sw_gas_optics_init
-!! \htmlinclude rrtmgp_sw_gas_optics.html
-!!
+! ########################################################################################
 !> \ingroup rrtmgp_sw_gas_optics
 !!
 !! RRTMGP relies heavility on derived-data-types, which contain type-bound procedures 
@@ -95,7 +92,7 @@ contains
 !!
 !! \section rrtmgp_sw_gas_optics_init
 !> @{ 
-  ! ######################################################################################  
+! ########################################################################################  
   subroutine rrtmgp_sw_gas_optics_init(rrtmgp_root_dir, rrtmgp_sw_file_gas,              &
        active_gases_array, mpicomm, mpirank, mpiroot, errmsg, errflg)
 

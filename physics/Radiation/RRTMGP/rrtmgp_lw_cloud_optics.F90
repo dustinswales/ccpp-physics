@@ -1,13 +1,12 @@
+! ###########################################################################################
 !> \file rrtmgp_lw_cloud_optics.F90
 !!
 !> \defgroup rrtmgp_lw_cloud_optics rrtmgp_lw_cloud_optics.F90
 !!
-!! \brief This module contains two routines: The first initializes data and functions
-!! needed to compute the longwave cloud radiative properteis in RRTMGP. The second routine
-!! is a ccpp scheme within the "radiation loop", where the shortwave optical prperties
-!! (optical-depth, single-scattering albedo, asymmetry parameter) are computed for ALL
-!! cloud types visible to RRTMGP.
+!! \brief This module contains a routine that initializes data and functions needed to compute
+!! the longwave cloud radiative properteis in RRTMGP.
 !!
+! ########################################################################################### 
 module rrtmgp_lw_cloud_optics
   use machine,                  only: kind_phys
   use mo_rte_kind,              only: wl
@@ -72,9 +71,24 @@ module rrtmgp_lw_cloud_optics
 
 contains
 
-  ! ######################################################################################
-  ! SUBROUTINE rrtmgp_lw_cloud_optics_init()
-  ! ######################################################################################
+! ########################################################################################
+!!
+!> \ingroup rrtmgp_lw_cloud_optics
+!!
+!! Initialize interface to RRTMGP cloud-optical routines.
+!! These routines are type-bound procedures contained within native rte-rrtmgp derived
+!! data types (DDTs).
+!!
+!! The procedures provide cloud optical properties as a function of effective radius for
+!! the RRTMGP longwave bands.
+!! Based on Mie calculations for liquid and results from doi:10.1175/JAS-D-12-039.1 for
+!! ice with variable surface roughness.
+!! Can use either look-up tables or Pade approximates according to which data has been
+!! loaded.
+!!
+!! \section rrtmgp_lw_cloud_optics_init
+!> @{    
+! ########################################################################################
   subroutine rrtmgp_lw_cloud_optics_init(rrtmgp_root_dir, rrtmgp_lw_file_clouds,         &
        doGP_cldoptics_PADE, doGP_cldoptics_LUT, nrghice, mpicomm, mpirank, mpiroot,      &
        errmsg, errflg)
@@ -377,4 +391,5 @@ contains
     call check_error_msg('lw_cloud_optics_init',lw_cloud_props%set_ice_roughness(nrghice))
  
   end subroutine rrtmgp_lw_cloud_optics_init
+!> @}
 end module rrtmgp_lw_cloud_optics

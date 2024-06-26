@@ -1,9 +1,11 @@
+! ###########################################################################################
 !> \file GFS_rrtmgp_pre.F90
 !!
 !> \defgroup GFS_rrtmgp_pre GFS_rrtmgp_pre.F90
 !!
 !! \brief This module contains code to prepare model fields for use by the RRTMGP 
 !! radiation scheme.  
+! ###########################################################################################
 module GFS_rrtmgp_pre
   use machine,                    only: kind_phys
   use funcphys,                   only: fpvs
@@ -33,22 +35,24 @@ module GFS_rrtmgp_pre
   public GFS_rrtmgp_pre_run,GFS_rrtmgp_pre_init
 contains
 
-!>\defgroup gfs_rrtmgp_pre GFS RRTMGP Pre Module
+! ###########################################################################################
 !! \section arg_table_GFS_rrtmgp_pre_init
 !! \htmlinclude GFS_rrtmgp_pre_init.html
 !!
 !> \ingroup GFS_rrtmgp_pre
 !!
-!! \brief Actuve gas-names are read from namelist. Set to interstitial%active_gases.
+!! \brief Active gas-names are read from namelist. Set to interstitial%active_gases.
 !!
 !! \section GFS_rrtmgp_pre_init
+!> @{
+! ###########################################################################################
   subroutine GFS_rrtmgp_pre_init(nGases, active_gases, active_gases_array, errmsg, errflg)
     ! Inputs
     integer, intent(in) :: &
          nGases       ! Number of active gases in RRTMGP
     character(len=*), intent(in) :: &
          active_gases ! List of active gases from namelist
-    character(len=*), dimension(:), intent(out) :: &
+    character(len=*), dimension(:), intent(out), optional :: &
          active_gases_array ! List of active gases from namelist as array
 
     ! Outputs
@@ -100,8 +104,9 @@ contains
     enddo
 
   end subroutine GFS_rrtmgp_pre_init
-
-  ! #########################################################################################
+!> @}
+  
+! ###########################################################################################
 !> \section arg_table_GFS_rrtmgp_pre_run
 !! \htmlinclude GFS_rrtmgp_pre_run.html
 !!
@@ -110,7 +115,8 @@ contains
 !! \brief Sanitize inputs for use in RRTMGP.
 !!
 !! \section GFS_rrtmgp_pre_run
-  ! ######################################################################################### 
+!> @{
+! ###########################################################################################
   subroutine GFS_rrtmgp_pre_run(me, nCol, nLev, i_o3, doSWrad, doLWrad, fhswr, fhlwr,       &
        xlat, xlon,  prsl, tgrs, prslk, prsi, qgrs, tsfc, coslat, sinlat, con_g, con_rd,     &
        con_eps, con_epsm1, con_fvirt, con_epsqs, solhr, raddt, p_lay, t_lay, p_lev, t_lev,  &
@@ -158,7 +164,7 @@ contains
          prsi                 ! Pressure at model-interfaces (Pa)
     real(kind_phys), dimension(:,:,:), intent(in) :: & 
          qgrs                 ! Tracer concentrations (kg/kg)
-    character(len=*), dimension(:), intent(in) :: &
+    character(len=*), dimension(:), intent(in), optional :: &
          active_gases_array   ! List of active gases from namelist as array
 
     ! Outputs
@@ -182,7 +188,7 @@ contains
          coszdg               ! Cosine of SZA, daytime
     integer, dimension(:), intent(inout) ::  &
          idxday               ! Indices for daylit points 
-    real(kind_phys), dimension(:,:), intent(inout) :: &
+    real(kind_phys), dimension(:,:), intent(inout), optional :: &
          p_lay,             & ! Pressure at model-layer
          t_lay,             & ! Temperature at model layer
          q_lay,             & ! Water-vapor mixing ratio (kg/kg)
@@ -411,5 +417,5 @@ contains
     enddo
 
   end subroutine GFS_rrtmgp_pre_run
-  
+!> @}
 end module GFS_rrtmgp_pre
