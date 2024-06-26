@@ -1,10 +1,13 @@
+! #########################################################################################
 !> \file GFS_rrtmgp_cloud_mp.F90
 !!
 !> \defgroup GFS_rrtmgp_cloud_mp GFS_rrtmgp_cloud_mp.F90
 !!
-!! \brief This module contains the interface for ALL cloud microphysics assumptions and 
-!! the RRTMGP radiation scheme. Specific details below in subroutines.
+!! \brief This module contains the interface(s) for all cloud microphysics schemes that are
+!! coupled with RRTMGP for GFS applications. This includes coupling to subgridscale (SGS)
+!! clouds that are radiatively active.
 !!
+! #########################################################################################
 module GFS_rrtmgp_cloud_mp
   use machine,      only: kind_phys
   use radiation_tools,   only: check_error_msg
@@ -30,7 +33,7 @@ module GFS_rrtmgp_cloud_mp
   public GFS_rrtmgp_cloud_mp_init, GFS_rrtmgp_cloud_mp_run, GFS_rrtmgp_cloud_mp_finalize
 
 contains  
-
+! #########################################################################################
 !>\defgroup gfs_rrtmgp_cloud_mp_mod GFS RRTMGP Cloud MP Module
 !! \section arg_table_GFS_rrtmgp_cloud_mp_run
 !! \htmlinclude GFS_rrtmgp_cloud_mp_run_html
@@ -38,10 +41,17 @@ contains
 !> \ingroup GFS_rrtmgp_cloud_mp
 !!
 !! Here the cloud-radiative properties (optical-path, particle-size and sometimes cloud-
-!! fraction) are computed for cloud producing physics schemes (e.g GFDL-MP, Thompson-MP,
-!! MYNN-EDMF-pbl, GF-convective, and SAMF-convective clouds).
+!! fraction) are computed for cloud producing physics schemes.
+!! Interfaces exists for the following cloud-physics parameterizations:
+!! - GFDL (MP)
+!! - Thompson (MP)
+!! - MYNN-EDMF (SGS-PBL)
+!! - GF (SGS-CONV)
+!! - SAMF (SGSCONV)
 !!
 !! \section GFS_rrtmgp_cloud_mp_run
+!> @{
+! #########################################################################################
   subroutine GFS_rrtmgp_cloud_mp_run(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice,     &
        i_cldrain, i_cldsnow, i_cldgrpl, i_cldtot, i_cldliq_nc, i_cldice_nc, i_twa, kdt,  &
        imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_samf, doSWrad, doLWrad, effr_in, lmfshal,   &
@@ -180,8 +190,8 @@ contains
     errflg = 0
 
     ! ###################################################################################
-    ! GFDL Microphysics
-    ! ("Implicit" SGS cloud-coupling to the radiation)
+    !> a) GFDL Microphysics
+    !! ("Implicit" SGS cloud-coupling to the radiation)
     ! ###################################################################################
     if (imp_physics == imp_physics_gfdl) then
        ! GFDL-Lin
@@ -192,36 +202,33 @@ contains
        ! GFDL-EMC
        else
 
-          ! "cld_frac" is modified prior to include subgrid scale cloudiness, see 
-          ! module_SGSCloud_RadPre.F90.
+          !> "cld_frac" is modified prior to include subgrid scale (SGS) cloudiness, see 
+          !> module_SGSCloud_RadPre.F90.
           do iLay = 1, nLev
              do iCol = 1, nCol
-                ! 
-                ! SGS clouds present, use cloud-fraction modified to include sgs clouds.
-                !
+                !> If SGS clouds present, use cloud-fraction modified earlier to include SGS clouds.
                 if ((imfdeepcnv==imfdeepcnv_gf .or. do_mynnedmf) .and. kdt>1) then
-                   ! MYNN sub-grid cloud fraction.
+                   !> Include MYNN PBL SGS cloud fraction.
                    if (do_mynnedmf) then
-                      ! If rain/snow present, use GFDL MP cloud-fraction...
+                      !> If rain/snow present, use GFDL MP cloud-fraction...
                       if (tracer(iCol,iLay,i_cldrain)>1.0e-7 .OR. tracer(iCol,iLay,i_cldsnow)>1.0e-7) then
                          cld_frac(iCol,iLay) = tracer(iCol,iLay,i_cldtot)
                       endif
-                   ! GF sub-grid cloud fraction.
+                   !> Include Grell-Freitas SGS cloud fraction.
                    else
-                      ! If no convective cloud condensate present, use GFDL MP cloud-fraction....
+                      !> If no convective cloud condensate present, default to using GFDL MP cloud-fraction.
                       if (qci_conv(iCol,iLay) <= 0.) then
                          cld_frac(iCol,iLay) = tracer(iCol,iLay,i_cldtot)
                       endif
                    endif
-                !
-                ! No SGS clouds, use GFDL MP cloud-fraction...
-                !
+                !> No SGS clouds, use GFDL MP cloud-fraction.
                 else
                    cld_frac(iCol,iLay) = tracer(iCol,iLay,i_cldtot)
                 endif
              enddo
           enddo
-
+          
+          !> Compute cloud radiative properties.
           call cloud_mp_uni(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice, i_cldrain,  &
                i_cldsnow, i_cldgrpl, i_cldtot,  effr_in, kdt, lsmask, p_lev, p_lay,     &
                t_lay, tv_lay, effrin_cldliq, effrin_cldice, effrin_cldsnow, tracer,     &
@@ -231,19 +238,19 @@ contains
     endif
 
     ! ###################################################################################
-    ! Thompson Microphysics
-    ! ("Explicit" SGS cloud-coupling to the radiation)
+    !> Thompson Microphysics
+    !> ("Explicit" SGS cloud-coupling to the radiation)
     ! ###################################################################################
     if (imp_physics == imp_physics_thompson) then
 
-       ! MYNN-EDMF PBL clouds?
+       !> Compute cloud radiative properties for MYNN-EDMF SGS PBL clouds.
        if(do_mynnedmf) then
           call cloud_mp_MYNN(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,   &
                qc_mynn, qi_mynn, con_ttp, con_g,                                        &
                cld_pbl_lwp, cld_pbl_reliq, cld_pbl_iwp, cld_pbl_reice, cld_pbl_frac)
        endif
 
-       ! Grell-Freitas convective clouds?
+       !> Compute cloud radiative properties for Grell-Freitas convective clouds.
        if (imfdeepcnv == imfdeepcnv_gf) then
           alpha0 = 100.
           call cloud_mp_GF(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,     &
@@ -251,7 +258,8 @@ contains
                cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_cnv_frac)
        endif
 
-       ! SAMF scale & aerosol-aware mass-flux convective clouds?
+       !> Compute cloud radiative properties for SAMF scale & aerosol-aware mass-flux
+       !> convective clouds.
        if (imfdeepcnv == imfdeepcnv_samf) then
           alpha0 = 200.
           call cloud_mp_SAMF(nCol, nLev, t_lay, p_lev, p_lay, qs_lay, relhum,           &
@@ -259,7 +267,7 @@ contains
                cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_cnv_frac)
        endif
 
-       ! Update particle size using modified mixing-ratios from Thompson.
+       !> Update particle size using modified mixing-ratios from Thompson.
        call cmp_reff_Thompson(nLev, nCol, i_cldliq, i_cldice, i_cldsnow, i_cldice_nc,   &
             i_cldliq_nc, i_twa, q_lay, p_lay, t_lay, tracer, con_eps, con_rd, ltaerosol,&
             mraerosol, lsmask,  effrin_cldliq, effrin_cldice, effrin_cldsnow)
@@ -267,7 +275,8 @@ contains
        cld_reice  = effrin_cldice
        cld_resnow = effrin_cldsnow
 
-       ! Thomson MP using modified Xu-Randall cloud-fraction (additionally conditioned on RH)
+       !> Compute cloud radiative properties for Thomson MP using modified Xu-Randall
+       !> cloud-fraction (additionally conditioned on RH)
        alpha0 = 2000.
        if (lmfshal) then
           alpha0 = 100.
@@ -280,9 +289,9 @@ contains
             cond_cfrac_onRH = .true., doGP_smearclds = doGP_smearclds)
     endif
 
-    ! Bound effective radii for RRTMGP, LUT's for cloud-optics go from
-    !   2.5 - 21.5 microns for liquid clouds,
-    !   10  - 180  microns for ice-clouds
+    !> Bound effective radii for RRTMGP, LUT's for cloud-optical calculations go from
+    !>   2.5 - 21.5 microns for liquid clouds,
+    !>   10  - 180  microns for ice-clouds
     if (doGP_cldoptics_PADE .or. doGP_cldoptics_LUT) then
        where(cld_reliq .lt. radliq_lwr) cld_reliq = radliq_lwr
        where(cld_reliq .gt. radliq_upr) cld_reliq = radliq_upr
@@ -302,7 +311,7 @@ contains
        endif
     endif
 
-    ! Instantaneous 2D (max-in-column) cloud fraction
+    !> Instantaneous 2D (max-in-column) cloud fraction (diagnostic).
     do iCol = 1, nCol
        cldfra2d(iCol) = 0._kind_phys
        do iLay = 1, nLev-1
@@ -313,23 +322,21 @@ contains
     precip_frac(1:nCol,1:nLev) = cld_frac(1:nCol,1:nLev)
 
   end subroutine GFS_rrtmgp_cloud_mp_run
-
+  !> @}
+! ########################################################################################
 !> \ingroup GFS_rrtmgp_cloud_mp
-!! Compute cloud radiative properties for Grell-Freitas convective cloud scheme.
-!!                 (Adopted from module_SGSCloud_RadPre)
+!!
+!! \brief Compute cloud radiative properties for Grell-Freitas convective cloud scheme.
+!!                 (Adopted from module_SGSCloud_RadPre in 2023)
 !!  
-!! - The total convective cloud condensate is partitoned by phase, using temperature, into
-!!     liquid/ice convective cloud mixing-ratios. Compute convective cloud LWP and IWP's.
-!!
-!! - The liquid and ice cloud effective particle sizes are assigned reference values*.
-!!   *TODO* Find references, include DOIs, parameterize magic numbers, etc...
-!!
-!! - The convective cloud-fraction is computed using Xu-Randall (1996).
-!!   (DJS asks: Does the GF scheme produce a cloud-fraction? If so, maybe use instead of 
-!!              Xu-Randall? Xu-Randall is consistent with the Thompson MP scheme, but 
-!!              not GFDL-EMC)
+!! The total convective cloud condensate is partitoned by phase, using temperature, into
+!! liquid/ice convective cloud mixing-ratios, then the convective cloud LWP and IWP's are
+!! computed.
+!! The convective cloud-fraction is computed using Xu-Randall (1996).
 !!
 !! \section cloud_mp_GF_gen General Algorithm
+!> @{
+! ########################################################################################
   subroutine cloud_mp_GF(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,        &
        qci_conv, con_ttp, con_g, alpha0, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp,        &
        cld_cnv_reice, cld_cnv_frac)
@@ -393,20 +400,21 @@ contains
        enddo
     enddo
   end subroutine cloud_mp_GF
-
+!> @}
+! ##########################################################################################
 !> \ingroup GFS_rrtmgp_cloud_mp 
-!! Compute cloud radiative properties for MYNN-EDMF PBL cloud scheme.
-!!                    (Adopted from module_SGSCloud_RadPre)
 !!
-!! - Cloud-fraction, liquid, and ice condensate mixing-ratios from MYNN-EDMF cloud scheme
-!!   are provided as inputs. Cloud LWP and IWP are computed.
+!! \brief Compute cloud radiative properties for MYNN-EDMF PBL cloud scheme.
+!!                    (Adopted from module_SGSCloud_RadPre 2023)
 !!
-!! - The liquid and ice cloud effective particle sizes are assigned reference values*.
-!!   *TODO* Find references, include DOIs, parameterize magic numbers, etc...
+!! Cloud-fraction, liquid, and ice condensate mixing-ratios from MYNN-EDMF cloud scheme
+!! are provided as inputs. Cloud LWP and IWP are computed.
 !!
 !! \section cloud_mp_MYNN_gen General Algorithm
-  subroutine cloud_mp_MYNN(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,      &
-       qc_mynn, qi_mynn, con_ttp, con_g, cld_pbl_lwp, cld_pbl_reliq, cld_pbl_iwp,     &
+!> @{
+! ##########################################################################################
+  subroutine cloud_mp_MYNN(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,        &
+       qc_mynn, qi_mynn, con_ttp, con_g, cld_pbl_lwp, cld_pbl_reliq, cld_pbl_iwp,          &
        cld_pbl_reice, cld_pbl_frac)
     implicit none
 
@@ -465,20 +473,20 @@ contains
        enddo
     enddo
   end subroutine cloud_mp_MYNN
-
-
-!> \ingroup GFS_rrtmgp_cloud_mp 
-!! Compute cloud radiative properties for SAMF convective cloud scheme.
+!> @}
+! ########################################################################################
+!> \ingroup GFS_rrtmgp_cloud_mp
 !!
-!! - The total-cloud convective mixing-ratio is partitioned by phase into liquid/ice 
-!!   cloud properties. LWP and IWP are computed.
+!! \brief Compute cloud radiative properties for SAMF convective cloud scheme.
 !!
-!! - The liquid and ice cloud effective particle sizes are assigned reference values.
-!!
-!! - The convective cloud-fraction is computed using Xu-Randall (1996).
-!!   (DJS asks: Does the SAMF scheme produce a cloud-fraction?)
+!! The total-cloud convective mixing-ratio is partitioned by phase into liquid/ice 
+!! cloud properties. LWP and IWP are computed.
+!! The liquid and ice cloud effective particle sizes are assigned reference values.
+!! The convective cloud-fraction is computed using Xu-Randall (1996).
 !!
 !! \section cloud_mp_SAMF_gen General Algorithm
+!> @{
+! ########################################################################################
   subroutine cloud_mp_SAMF(nCol, nLev, t_lay, p_lev, p_lay, qs_lay, relhum,              &
        cnv_mixratio, con_ttp, con_g, alpha0, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp,    &
        cld_cnv_reice, cld_cnv_frac)
@@ -528,15 +536,20 @@ contains
           endif
        enddo
     enddo
-
   end subroutine cloud_mp_SAMF
-
+!> @}
+! ########################################################################################
 !> \ingroup GFS_rrtmgp_cloud_mp 
-!! This routine computes the cloud radiative properties for a "unified cloud".
+!!
+!! \brief This routine computes the cloud radiative properties for a "unified cloud".
+!!
 !! - "unified cloud" implies that the cloud-fraction is PROVIDED.
 !! - The cloud water path is computed for all provided cloud mixing-ratios and hydrometeors.
 !! - If particle sizes are provided, they are used. If not, default values are assigned.
+!!
 !! \section cloud_mp_uni_gen General Algorithm
+!> @{
+! ########################################################################################
   subroutine cloud_mp_uni(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice, i_cldrain,     &
        i_cldsnow, i_cldgrpl, i_cldtot, effr_in, kdt, lsmask, p_lev, p_lay, t_lay, tv_lay,&
        effrin_cldliq, effrin_cldice, effrin_cldsnow, tracer, con_g, con_rd, con_ttp,     &
@@ -605,7 +618,7 @@ contains
                                          tracer(1:nCol,1:nLev,i_cldgrpl) 
     endif
 
-    ! Cloud water path (g/m2)
+    !> Compute cloud water path (g/m2)
     tem1 = 1.0e5/con_g
     do iLay = 1, nLev
        do iCol = 1, nCol
@@ -622,10 +635,10 @@ contains
        enddo
     enddo
 
-    ! Particle size
+    !> Compute cloud particle size
     do iLay = 1, nLev
        do iCol = 1, nCol
-          ! Use radii provided from the macrophysics
+          !> Use radii provided from the macrophysics?
           if (effr_in) then
              cld_reliq(iCol,iLay)  = effrin_cldliq(iCol,iLay)
              cld_reice(iCol,iLay)  = max(reice_min, min(reice_max,effrin_cldice(iCol,iLay)))
@@ -636,12 +649,12 @@ contains
                 cld_rerain(iCol,iLay) = rerain_def
              endif
           else
-             ! Compute effective liquid cloud droplet radius over land.
+             !> Compute effective liquid cloud droplet radius over land.
              if (nint(lsmask(iCol)) == 1) then
                 cld_reliq(iCol,iLay) = 5.0 + 5.0 * min(1.0, max(0.0, (con_ttp-t_lay(iCol,iLay))*0.05))
              endif
-             ! Compute effective ice cloud droplet radius following Heymsfield
-             ! and McFarquhar (1996) \cite heymsfield_and_mcfarquhar_1996.
+             !> Compute effective ice cloud droplet radius following Heymsfield
+             !> and McFarquhar (1996) \cite heymsfield_and_mcfarquhar_1996.
              tem2 = t_lay(iCol,iLay) - con_ttp
              if (cld_iwp(iCol,iLay) > 0.0) then
                 deltaP = abs(p_lev(iCol,iLay+1)-p_lev(iCol,iLay))*0.01
@@ -660,21 +673,23 @@ contains
           endif ! effr_in
        enddo    ! nCol
     enddo       ! nLev
-
   end subroutine cloud_mp_uni
+!> @}
+! ########################################################################################
 !> \ingroup GFS_rrtmgp_cloud_mp 
-!! This routine computes the cloud radiative properties for the Thompson cloud micro-
+!!
+!! \brief This routine computes the cloud radiative properties for the Thompson cloud micro-
 !! physics scheme.
 !!
 !! - The cloud water path is computed for all provided cloud mixing-ratios and hydrometeors.
-!!
 !! - There are no assumptions about particle size applied here. Effective particle sizes 
 !!   are updated prior to this routine, see cmp_reff_Thompson().
-!!
 !! - The cloud-fraction is computed using Xu-Randall** (1996).
 !!   **Additionally, Conditioned on relative-humidity**
 !!
 !! \section cloud_mp_thompson_gen General Algorithm
+!> @{
+! ########################################################################################
   subroutine cloud_mp_thompson(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice, i_cldrain,&
        i_cldsnow, i_cldgrpl, p_lev, p_lay, tv_lay, t_lay, tracer, qs_lay, q_lay, relhum, &
        con_ttp, con_g, con_rd, con_eps, alpha0, cnv_mixratio, lwp_ex, iwp_ex, lwp_fc,    &
@@ -746,20 +761,20 @@ contains
     tem1 = 1.0e5/con_g
     do iLay = 1, nLev-1
        do iCol = 1, nCol
-          ! Add convective cloud to gridmean cloud?
+          !> Add convective cloud to gridmean cloud?
           if (doGP_smearclds) then
              tem2 = min(1.0, max(0.0, (con_ttp-t_lay(iCol,iLay))*0.05))
              cld_condensate(iCol,iLay,1) = cld_condensate(iCol,iLay,1) + cnv_mixratio(iCol,iLay)*(1._kind_phys - tem2)
              cld_condensate(iCol,iLay,2) = cld_condensate(iCol,iLay,2) + cnv_mixratio(iCol,iLay)*tem2
           endif
-          ! Compute liquid/ice condensate path from mixing ratios (kg/kg)->(g/m2)
+          !> Compute liquid/ice condensate path from mixing ratios (kg/kg)->(g/m2)
           deltaP              = abs(p_lev(iCol,iLay+1)-p_lev(iCol,iLay))*0.01
           cld_lwp(iCol,iLay)  = max(0., cld_condensate(iCol,iLay,1) * tem1 * deltaP)
           cld_iwp(iCol,iLay)  = max(0., cld_condensate(iCol,iLay,2) * tem1 * deltaP)
           cld_rwp(iCol,iLay)  = max(0., cld_condensate(iCol,iLay,3) * tem1 * deltaP)
           cld_swp(iCol,iLay)  = max(0., cld_condensate(iCol,iLay,4) * tem1 * deltaP)
        
-          ! Xu-Randall (1996) cloud-fraction. **Additionally, Conditioned on relative-humidity**
+          !> Compute Xu-Randall (1996) cloud-fraction. **Additionally, Conditioned on relative-humidity**
           if (present(cond_cfrac_onRH) .and. relhum(iCol,iLay) > 0.99) then
              cld_frac(iCol,iLay) = 1._kind_phys
           else
@@ -771,8 +786,8 @@ contains
        enddo
     enddo
 
-    ! Sum the liquid water and ice paths that come from explicit micro 
-    ! What portion of water and ice contents is associated with the partly cloudy boxes?
+    !> Sum the liquid water and ice paths that come from explicit micro 
+    !> What portion of water and ice contents is associated with the partly cloudy boxes?
     do iCol = 1, nCol
        lwp_ex(iCol) = 0.0
        iwp_ex(iCol) = 0.0
@@ -794,15 +809,20 @@ contains
     enddo
 
   end subroutine cloud_mp_thompson
+!> @}
 
+! ########################################################################################
 !> \ingroup GFS_rrtmgp_cloud_mp 
-!! This function computes the cloud-fraction following.
+!!
+!! \brief This function computes the cloud-fraction following.
 !! Xu-Randall(1996) A Semiempirical Cloudiness Parameterization for Use in Climate Models
 !! https://doi.org/10.1175/1520-0469(1996)053<3084:ASCPFU>2.0.CO;2
 !!
 !! cld_frac = {1-exp[-alpha*cld_mr/((1-relhum)*qs_lay)**lambda]}*relhum**P
 !!
 !! \section cld_frac_XuRandall_gen General Algorithm
+!> @{
+! ########################################################################################
   function cld_frac_XuRandall(p_lay, qs_lay, relhum, cld_mr, alpha)
     implicit none
     ! Inputs
@@ -838,12 +858,17 @@ contains
 
     return
   end function
+!> @}
 
-  ! ######################################################################################
-  ! This routine is a wrapper to update the Thompson effective particle sizes used by the
-  ! RRTMGP radiation scheme.
-  !
-  ! ######################################################################################
+! ########################################################################################
+!> \ingroup GFS_rrtmgp_cloud_mp
+!!
+!! \brief This routine is a wrapper to update the Thompson effective particle sizes used
+!! by the RRTMGP radiation scheme.
+!!
+!! \section cmp_reff_Thompson_gen General Algorithm
+!> @{
+! ########################################################################################
   subroutine cmp_reff_Thompson(nLev, nCol, i_cldliq, i_cldice, i_cldsnow, i_cldice_nc,   &
        i_cldliq_nc, i_twa, q_lay, p_lay, t_lay, tracer, con_eps, con_rd, ltaerosol,      &
        mraerosol, lsmask, effrin_cldliq, effrin_cldice, effrin_cldsnow)
@@ -869,7 +894,7 @@ contains
          nwfa, re_cloud, re_ice, re_snow
     integer :: ilsmask 
 
-    ! Prepare cloud mixing-ratios and number concentrations for calc_effectRa
+    !> Prepare cloud mixing-ratios and number concentrations for calc_effectRa
     do iLay = 1, nLev
        do iCol = 1, nCol
           qv_mp(iCol,iLay) = q_lay(iCol,iLay)/(1.-q_lay(iCol,iLay))
@@ -898,7 +923,7 @@ contains
        enddo
     enddo
 
-    ! Compute effective radii for liquid/ice/snow.
+    !> Compute effective radii for liquid/ice/snow (call calc_effectRad from Thompson MP)
     do iCol=1,nCol
        ilsmask = nint(lsmask(iCol))
        call calc_effectRad (t_lay(iCol,:), p_lay(iCol,:), qv_mp(iCol,:), qc_mp(iCol,:),  &
@@ -912,7 +937,7 @@ contains
        enddo
     enddo
 
-    ! Scale to microns.
+    !> Scale to microns.
     do iLay = 1, nLev
        do iCol = 1, nCol
           effrin_cldliq(iCol,iLay)  = re_cloud(iCol,iLay)*1.e6
@@ -922,5 +947,5 @@ contains
     enddo
 
   end subroutine cmp_reff_Thompson
-
+!> @}
 end module GFS_rrtmgp_cloud_mp

@@ -1,9 +1,11 @@
+! ###########################################################################################
 !> \file GFS_rrtmgp_pre.F90
 !!
 !> \defgroup GFS_rrtmgp_pre GFS_rrtmgp_pre.F90
 !!
 !! \brief This module contains code to prepare model fields for use by the RRTMGP 
 !! radiation scheme.  
+! ###########################################################################################
 module GFS_rrtmgp_pre
   use machine,                    only: kind_phys
   use funcphys,                   only: fpvs
@@ -33,15 +35,17 @@ module GFS_rrtmgp_pre
   public GFS_rrtmgp_pre_run,GFS_rrtmgp_pre_init
 contains
 
-!>\defgroup gfs_rrtmgp_pre GFS RRTMGP Pre Module
+! ###########################################################################################
 !! \section arg_table_GFS_rrtmgp_pre_init
 !! \htmlinclude GFS_rrtmgp_pre_init.html
 !!
 !> \ingroup GFS_rrtmgp_pre
 !!
-!! \brief Actuve gas-names are read from namelist. Set to interstitial%active_gases.
+!! \brief Active gas-names are read from namelist. Set to interstitial%active_gases.
 !!
 !! \section GFS_rrtmgp_pre_init
+!> @{
+! ###########################################################################################
   subroutine GFS_rrtmgp_pre_init(nGases, active_gases, active_gases_array, errmsg, errflg)
     ! Inputs
     integer, intent(in) :: &
@@ -100,8 +104,9 @@ contains
     enddo
 
   end subroutine GFS_rrtmgp_pre_init
-
-  ! #########################################################################################
+!> @}
+  
+! ###########################################################################################
 !> \section arg_table_GFS_rrtmgp_pre_run
 !! \htmlinclude GFS_rrtmgp_pre_run.html
 !!
@@ -110,7 +115,8 @@ contains
 !! \brief Sanitize inputs for use in RRTMGP.
 !!
 !! \section GFS_rrtmgp_pre_run
-  ! ######################################################################################### 
+!> @{
+! ###########################################################################################
   subroutine GFS_rrtmgp_pre_run(me, nCol, nLev, i_o3, doSWrad, doLWrad, fhswr, fhlwr,       &
        xlat, xlon,  prsl, tgrs, prslk, prsi, qgrs, tsfc, coslat, sinlat, con_g, con_rd,     &
        con_eps, con_epsm1, con_fvirt, con_epsqs, solhr, raddt, p_lay, t_lay, p_lev, t_lev,  &
@@ -411,5 +417,5 @@ contains
     enddo
 
   end subroutine GFS_rrtmgp_pre_run
-  
+!> @}
 end module GFS_rrtmgp_pre

@@ -1,9 +1,11 @@
+! ##########################################################################################
 !> \file GFS_rrtmgp_post.F90
 !!
 !> \defgroup GFS_rrtmgp_post GFS_rrtmgp_post.F90
 !!
 !! \brief RRTMGP post-processing routine.
 !!
+! ##########################################################################################
 module GFS_rrtmgp_post
   use machine,                   only: kind_phys
   use module_radlw_parameters,   only: topflw_type, sfcflw_type
@@ -15,8 +17,7 @@ module GFS_rrtmgp_post
   public GFS_rrtmgp_post_run
 
 contains
-  ! ######################################################################################## 
-!>\defgroup gfs_rrtmgp_post_mod GFS RRTMGP Post Module
+! ##########################################################################################
 !> \section arg_table_GFS_rrtmgp_post_run
 !! \htmlinclude GFS_rrtmgp_post.html
 !!
@@ -31,7 +32,8 @@ contains
 !! (optional) Save additional diagnostics.
 !!
 !! \section GFS_rrtmgp_post_run
-  ! ######################################################################################## 
+!> @{
+! ########################################################################################## 
   subroutine GFS_rrtmgp_post_run (nCol, nLev, nDay, iSFC, iTOA, idxday, doLWrad, doSWrad,  &
        do_lw_clrsky_hr, do_sw_clrsky_hr, save_diag, fhlwr, fhswr, sfc_alb_nir_dir,         &
        sfc_alb_nir_dif, sfc_alb_uvvis_dir, sfc_alb_uvvis_dif, p_lev, tsfa, coszen, coszdg, &
@@ -197,12 +199,12 @@ contains
        htrlwu = htrlw
        
        ! #######################################################################################
-       ! Save LW diagnostics
-       ! - For time averaged output quantities (including total-sky and clear-sky SW and LW
-       !   fluxes at TOA and surface; conventional 3-domain cloud amount, cloud top and base
-       !   pressure, and cloud top temperature; aerosols AOD, etc.), store computed results in
-       !   corresponding slots of array fluxr with appropriate time weights.
-       ! - Collect the fluxr data for wrtsfc
+       !> Save LW diagnostics
+       !> - For time averaged output quantities (including total-sky and clear-sky SW and LW
+       !>   fluxes at TOA and surface; conventional 3-domain cloud amount, cloud top and base
+       !>   pressure, and cloud top temperature; aerosols AOD, etc.), store computed results in
+       !>   corresponding slots of array fluxr with appropriate time weights.
+       !> - Collect the fluxr data for wrtsfc
        ! #######################################################################################
        if (save_diag) then
           do i=1,nCol
@@ -324,12 +326,12 @@ contains
        enddo
        
        ! #################################################################################
-       ! Save SW diagnostics
-       ! - For time averaged output quantities (including total-sky and clear-sky SW and LW 
-       !   fluxes at TOA and surface; conventional 3-domain cloud amount, cloud top and base 
-       !   pressure, and cloud top temperature; aerosols AOD, etc.), store computed results in
-       !   corresponding slots of array fluxr with appropriate time weights.
-       ! - Collect the fluxr data for wrtsfc
+       !> Save SW diagnostics
+       !> - For time averaged output quantities (including total-sky and clear-sky SW and LW 
+       !>   fluxes at TOA and surface; conventional 3-domain cloud amount, cloud top and base 
+       !>   pressure, and cloud top temperature; aerosols AOD, etc.), store computed results in
+       !>   corresponding slots of array fluxr with appropriate time weights.
+       !> - Collect the fluxr data for wrtsfc
        ! #################################################################################
        if (save_diag) then
           do i=1,nCol
@@ -392,4 +394,5 @@ contains
     endif
 
   end subroutine GFS_rrtmgp_post_run
+!> @}
 end module GFS_rrtmgp_post
