@@ -71,12 +71,12 @@ contains
          dcorr_con               ! Decorrelation-length (used if idcor = idcor_con)
     real(kind_phys), dimension(:), intent(in) :: &
          lat                     ! Latitude             
-    real(kind_phys), dimension(:,:), intent(in) :: &
+    real(kind_phys), dimension(:,:), intent(in) :: &         
          tv_lay,               & ! Virtual temperature (K)
          p_lay,                & ! Pressure at model-layers (Pa)
          cld_frac,             & ! Total cloud fraction
          cld_cnv_frac            ! Convective cloud-fraction
-    real(kind_phys), dimension(:,:), intent(in) :: &
+    real(kind_phys), dimension(:,:), intent(in) :: &         
          p_lev,                & ! Pressure at model-level interfaces (Pa)
          deltaZc                 ! Layer thickness (from layer-centers)(m)
     

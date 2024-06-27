@@ -115,15 +115,14 @@ contains
          xlon,                      & ! Longitude
          xlat,                      & ! Latitude 
          dx                           ! Characteristic grid lengthscale (m)
-    real(kind_phys), dimension(:,:), intent(in) :: &        
+    real(kind_phys), dimension(:,:), intent(in) :: &         
          tv_lay,                    & ! Virtual temperature (K)
          t_lay,                     & ! Temperature (K)
          qs_lay,                    & ! Saturation vapor pressure (Pa)
          q_lay,                     & ! water-vapor mixing ratio (kg/kg)
          relhum,                    & ! Relative humidity
          p_lay,                     & ! Pressure at model-layers (Pa)
-         cnv_mixratio                 ! Convective cloud mixing-ratio (kg/kg)
-    real(kind_phys), dimension(:,:), intent(in) :: &
+         cnv_mixratio,              & ! Convective cloud mixing-ratio (kg/kg)
          qci_conv,                  & ! Convective cloud condesate after rainout (kg/kg)
          deltaZ,                    & ! Layer-thickness (m)
          deltaZc,                   & ! Layer-thickness, from layer centers (m)
