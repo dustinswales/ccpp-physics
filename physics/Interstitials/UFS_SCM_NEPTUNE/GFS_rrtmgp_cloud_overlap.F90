@@ -34,7 +34,7 @@ contains
 !> @{
 ! ########################################################################################
   subroutine GFS_rrtmgp_cloud_overlap_run(nCol, nLev, yearlen, doSWrad, doLWrad,         &
-       julian, lat, deltaZc, con_pi, con_g, con_rd, con_epsq,                            &
+       julian, lat, p_lev, p_lay, tv_lay, deltaZc, con_pi, con_g, con_rd, con_epsq,      &
        dcorr_con, idcor, iovr, iovr_dcorr, iovr_exp, iovr_exprand, idcor_con,            &
        idcor_hogan, idcor_oreopoulos, cld_frac, cld_cnv_frac, iovr_convcld, top_at_1,    &
        imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_samf, de_lgth, cloud_overlap_param,         &
@@ -72,10 +72,12 @@ contains
     real(kind_phys), dimension(:), intent(in) :: &
          lat                     ! Latitude             
     real(kind_phys), dimension(:,:), intent(in) :: &
-         cld_frac                ! Total cloud fraction
-    real(kind_phys), dimension(:,:), intent(in) :: &
+         tv_lay,               & ! Virtual temperature (K)
+         p_lay,                & ! Pressure at model-layers (Pa)
+         cld_frac,             & ! Total cloud fraction
          cld_cnv_frac            ! Convective cloud-fraction
     real(kind_phys), dimension(:,:), intent(in) :: &
+         p_lev,                & ! Pressure at model-level interfaces (Pa)
          deltaZc                 ! Layer thickness (from layer-centers)(m)
     
     ! Outputs     

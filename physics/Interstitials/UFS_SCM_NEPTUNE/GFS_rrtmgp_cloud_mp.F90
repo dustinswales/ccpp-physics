@@ -115,14 +115,13 @@ contains
          xlon,                      & ! Longitude
          xlat,                      & ! Latitude 
          dx                           ! Characteristic grid lengthscale (m)
-    real(kind_phys), dimension(:,:), intent(in) :: &
+    real(kind_phys), dimension(:,:), intent(in) :: &        
          tv_lay,                    & ! Virtual temperature (K)
          t_lay,                     & ! Temperature (K)
          qs_lay,                    & ! Saturation vapor pressure (Pa)
          q_lay,                     & ! water-vapor mixing ratio (kg/kg)
          relhum,                    & ! Relative humidity
-         p_lay                        ! Pressure at model-layers (Pa)
-    real(kind_phys), dimension(:,:), intent(in) :: &
+         p_lay,                     & ! Pressure at model-layers (Pa)
          cnv_mixratio                 ! Convective cloud mixing-ratio (kg/kg)
     real(kind_phys), dimension(:,:), intent(in) :: &
          qci_conv,                  & ! Convective cloud condesate after rainout (kg/kg)
@@ -130,8 +129,7 @@ contains
          deltaZc,                   & ! Layer-thickness, from layer centers (m)
          deltaP,                    & ! Layer-thickness (Pa)
          qc_mynn,                   & !
-         qi_mynn                      !
-    real(kind_phys), dimension(:,:), intent(in) :: &
+         qi_mynn,                   & !
          cld_pbl_frac                 !
     real(kind_phys), dimension(:,:), intent(inout) :: &
          effrin_cldliq,             & ! Effective radius for stratiform liquid cloud-particles (microns)
@@ -161,8 +159,7 @@ contains
          cld_swp,                   & ! Water path for                    snow   hydrometeors
          cld_resnow,                & ! Effective radius for              snow   hydrometeors
          cld_rwp,                   & ! Water path for                    rain   hydrometeors
-         cld_rerain                   ! Effective radius for              rain   hydrometeors
-    real(kind_phys), dimension(:,:),intent(inout) :: &
+         cld_rerain,                & ! Effective radius for              rain   hydrometeors
          precip_frac,               & ! Precipitation fraction
          cld_cnv_frac,              & ! Cloud-fraction for   convective clouds
          cld_cnv_lwp,               & ! Water path for       convective   liquid cloud-particles
@@ -586,7 +583,7 @@ contains
          effrin_cldliq,        & ! Effective radius for liquid cloud-particles (microns)
          effrin_cldice,        & ! Effective radius for ice cloud-particles (microns)
          effrin_cldsnow          ! Effective radius for snow cloud-particles (microns)
-    real(kind_phys), dimension(:,:), intent(in) :: &
+    real(kind_phys), dimension(:,:), intent(in) ,optional :: &
          effrin_cldrain          ! Effective radius for rain cloud-particles (microns) 
     real(kind_phys), dimension(:,:), intent(in) :: &
          p_lev                   ! Pressure at model-level interfaces (Pa)
@@ -697,7 +694,7 @@ contains
     implicit none
 
     ! Inputs
-    logical, intent(in) :: &
+    logical, intent(in), optional :: &
          cond_cfrac_onRH,   & ! If true, cloud-fracion set to unity when rh>99%
          doGP_smearclds       ! If true, add sgs clouds to gridmean clouds
     integer, intent(in)    :: &

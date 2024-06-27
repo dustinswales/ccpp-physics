@@ -120,8 +120,7 @@ contains
          sfcdsw               ! SW sfc all-sky     downward flux   (W/m2)
     real(kind_phys), dimension(:,:), intent(inout) :: &
          htrlw,             & ! LW all-sky heating rate (K/s)
-         htrsw                ! SW all-sky heating rate (K/s)
-    real(kind_phys), dimension(:,:), intent(inout) :: &
+         htrsw,             & ! SW all-sky heating rate (K/s)
          htrlwu               ! LW all-sky heating-rate updated in-between radiation calls.
     type(sfcflw_type), dimension(:), intent(inout) :: &
          sfcflw               ! LW radiation fluxes at sfc

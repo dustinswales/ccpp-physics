@@ -139,8 +139,7 @@ contains
          isubc_sw,            & !
          iSFC
     integer,intent(in),dimension(:) :: &
-         idx                    ! Index array for daytime points
-    integer,intent(in),dimension(:) :: &
+         idx,                 & ! Index array for daytime points
          icseed_sw              ! Seed for random number generation for shortwave radiation
     real(kind_phys), dimension(:), intent(in) :: &
          sfc_alb_nir_dir,     & ! Surface albedo (direct)
@@ -158,8 +157,7 @@ contains
          vmr_o3,              & ! Molar-mixing ratio ozone
          vmr_ch4,             & ! Molar-mixing ratio methane
          vmr_n2o,             & ! Molar-mixing ratio nitrous oxide
-         vmr_co2                ! Molar-mixing ratio carbon dioxide
-    real(kind_phys), dimension(:,:), intent(in) :: &
+         vmr_co2,             & ! Molar-mixing ratio carbon dioxide
          cld_frac,            & ! Cloud-fraction for   stratiform   clouds
          cld_lwp,             & ! Water path for       stratiform   liquid cloud-particles
          cld_reliq,           & ! Effective radius for stratiform   liquid cloud-particles
@@ -168,8 +166,7 @@ contains
          cld_swp,             & ! Water path for                    snow   hydrometeors
          cld_resnow,          & ! Effective radius for              snow   hydrometeors
          cld_rwp,             & ! Water path for                    rain   hydrometeors
-         cld_rerain             ! Effective radius for              rain   hydrometeors
-    real(kind_phys), dimension(:,:), intent(in) :: &    
+         cld_rerain,          & ! Effective radius for              rain   hydrometeors
          precip_frac,         & ! Precipitation fraction
          cld_cnv_lwp,         & ! Water path for       convective   liquid cloud-particles
          cld_cnv_reliq,       & ! Effective radius for convective   liquid cloud-particles

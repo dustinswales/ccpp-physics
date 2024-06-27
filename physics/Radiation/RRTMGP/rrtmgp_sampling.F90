@@ -9,6 +9,8 @@
 !! (column/layer), are randomly sampled to preserve the mean cloud fraction and one of several
 !! possible overlap assumptions.
 !!
+!! Adapted by Dustin Swales on 8/11/2020 for use in UFS (NOAA-PSL/CU-CIRES)
+!!
 !! Users supply random numbers with order [ngpt,nlay,ncol]
 !! These are only accessed if cloud_fraction(icol,ilay) > 0 so many values don't need to be
 !! filled in
