@@ -24,15 +24,15 @@
   type = integer
   intent = in
 [iSFC]
-  standard_name = vertical_index_for_surface_in_RRTMGP
-  long_name = index for surface layer in RRTMGP
+  standard_name = vertical_index_for_surface
+  long_name = index for surface layer
   units = flag
   dimensions = ()
   type = integer
   intent = in
 [iTOA]
-  standard_name = vertical_index_for_TOA_in_RRTMGP
-  long_name = index for TOA layer in RRTMGP
+  standard_name = vertical_index_for_TOA
+  long_name = index for TOA layer
   units = flag
   dimensions = ()
   type = integer

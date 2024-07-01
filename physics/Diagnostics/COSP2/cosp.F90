@@ -1,38 +1,42 @@
 ! ###########################################################################################
-!> \file cosp_simulator.F90
+!> \file cosp.F90
 !!
-!> \defgroup cosp_simulator cosp_simulator.F90
+!> \defgroup cosp cosp.F90
 !!
 !! \brief This module contains the CCPP interface to the Cloud-Feedback Model Intercomparison
 !! Project (CFMIP) Observational Simulator Package Version 2.0 (COSP)
 !!
 ! ###########################################################################################
-module cosp_simulator
+module cosp
   use machine,                  only: kind_phys
   use mod_cosp,                 only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs,&
-      				      cosp_simulator
+                                      cosp_simulator
+  use mod_cosp_config,          only: R_UNDEF
   use mod_cosp_modis_interface, only: cosp_modis_init
   use mod_cosp_misr_interface,  only: cosp_misr_init
   use mod_cosp_isccp_interface, only: cosp_isccp_init
+  use mod_rng,                  only: rng_state, init_rng
+  use mod_scops,                only: scops
+  use mod_prec_scops,           only: prec_scops
   implicit none
 
 contains
 
 ! ###########################################################################################
-!! \section arg_table_cosp_simulator_init
-!! \htmlinclude cosp_simulator_init.html
+!! \section arg_table_cosp_init
+!! \htmlinclude cosp_init.html
 !!
 !!
-!> \ingroup cosp_simulator
+!> \ingroup cosp
 !!
 !! \brief
 !!
-!! \section cosp_simulator_init
+!! \section cosp_init
 !> @{
 ! ###########################################################################################
-  subroutine cosp_simulator_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,    &
+  subroutine cosp_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,              &
        cosp_nsubcol, imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht,      &
-       isccp_topht_dir, top_at_1, iSFC, iTOA, errmsg, errflg)
+       isccp_topht_dir, errmsg, errflg)
 
     ! Inputs
     logical, intent(in)    :: &
@@ -49,22 +53,12 @@ contains
          isccp_topht,          & ! Cloud top height adjustment in cosp isccp simulator
          isccp_topht_dir,      & ! Cloud top height direction in cosp isccp simulator
          cosp_nsubcol            ! Number of COSP subcolumns.
-    real(kind_phys), dimension(:,:), intent(in) :: &
-         prsi                    ! Pressure at model-interfaces (Pa)
 
     ! Outputs
-    logical, intent(out), :: &
-         top_at_1              ! Vertical ordering flag
-    integer, intent(out) :: &
-         iSFC,               & ! Vertical index for surface
-         iTOA                  ! Vertical index for TOA
     character(len=*), intent(out) :: &
          errmsg                ! CCPP error message
     integer, intent(out) :: &
          errflg                ! CCPP error flag
-
-    ! Local
-    integer :: nLev, nLay
 
     ! Initialize CCPP error handling variables
     errmsg = ''
@@ -72,18 +66,6 @@ contains
 
     ! Has COSP been requested?
     if (.not. do_cosp) return
-
-    ! What is vertical ordering of the host?
-    nLay = size(prsl,2)
-    nLev = size(prsi,2)
-    top_at_1 = (prsi(1,1) .lt.  prsi(1, nLev))
-    if (top_at_1) then
-       iSFC = nLay
-       iTOA = 1
-    else
-       iSFC = 1
-       iTOA = nLay
-    endif
 
     ! Initialize requested simulators
     if (do_isccp) then
@@ -109,26 +91,26 @@ contains
        print*,'  Enable MODIS simulator    = ', do_modis
     endif
 
-  end subroutine cosp_simulator_init
+  end subroutine cosp_init
 !> @}
 
 ! ###########################################################################################
-!! \section arg_table_cosp_simulator_run
-!! \htmlinclude cosp_simulator_run.html
+!! \section arg_table_cosp_run
+!! \htmlinclude cosp_run.html
 !!
-!> \ingroup cosp_simulator
+!> \ingroup cosp
 !!
 !! \brief
 !!
-!! \section cosp_simulator_run
+!! \section cosp_run
 !> @{
 ! ###########################################################################################
-  subroutine cosp_simulator_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,&
+  subroutine cosp_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,          &
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
        top_at_1, con_g, iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
        isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
        n_misr_pres_bins, misr_pres_bins, n_misr_tau_bins, misr_tau_bins, do_cosp, do_isccp, &
-       do_misr, do_modis, overlap, cosp_mp, cosp_mp_ufs,                                    &
+       do_misr, do_modis, overlap,                                                          &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
        meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
 
@@ -152,9 +134,7 @@ contains
          n_misr_tau_bins,    & ! Number of optical-depth bins in MISR CFAD.
          overlap,            & ! Cloud overlap assumption
          iSFC,               & ! Vertical index for surface
-         iTOA,               & ! Vertical index for TOA
-         cosp_mp,            & ! Choice of subsampling and optics.
-         cosp_mp_ufs           ! Choice of subsampling and optics UFS method.
+         iTOA                  ! Vertical index for TOA
     real(kind_phys), intent(in) :: &
          con_g                 ! Physical constant: gravitational constant
     real(kind_phys), dimension(:), intent(in) :: & 
@@ -162,7 +142,11 @@ contains
          coszen,             & ! Cosine of SZA
          slmsk,              & ! Area type
 	 isccp_pres_bins,    & ! Pressure bin boundaries for ISCCP CFAD.
-	 isccp_tau_bins        ! Optical-depth bin boundaries for ISCCP CFAD.
+	 isccp_tau_bins,     & ! Optical-depth bin boundaries for ISCCP CFAD.
+         modis_pres_bins,    & ! Pressure bin boundaries for MODIS CFAD.
+         modis_tau_bins,     & ! Optical-depth bin boundaries for  MODIS CFAD.
+         misr_pres_bins,     & ! Pressure bin boundaries for MISR CFAD.
+         misr_tau_bins         ! Optical-depth bin boundaries for MISR CFAD.
     real(kind_phys), dimension(:,:), intent(in) :: & 
          prsl,               & ! Pressure at model-layer centers (Pa)
          tgrs,               & ! Temperature at model-layer centers (K)
@@ -243,7 +227,7 @@ contains
     !
     ! Call subsample_and_optics
     !
-    call subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,          &
+    call subsample_and_optics(nCol, cosp_nsubcol, nLay, do_isccp, do_misr, do_modis,     &
     	 prsi(:,iSFC), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
 
     !
@@ -256,7 +240,7 @@ contains
     nerror = 0
     do iErr = 1, ubound(cosp_status, 1)
        if (len_trim(cosp_status(iErr)) > 0) then
-          errmsg = "cosp_simulator: ERROR: "//trim(cosp_status(iErr))
+          errmsg = "cosp: ERROR: "//trim(cosp_status(iErr))
           nerror = nerror + 1
        end if
     end do
@@ -301,7 +285,7 @@ contains
     meantb_isccp     = cospOUT%isccp_meantb
     meantbclr_isccp  = cospOUT%isccp_meantbclr
 
-  end subroutine cosp_simulator_run
+  end subroutine cosp_run
 !> @}
 
   ! ######################################################################################
@@ -338,6 +322,8 @@ contains
     type(rng_state), dimension(nCol) :: rngs
     integer,         dimension(nCol) :: seed
     integer :: iSub
+    real(kind_phys), dimension(nCol,nLay) :: cldemis_lw_strat, cldemis_lw_conv
+    real(kind_phys), dimension(nCol,nLay) :: cldtau_sw_conv, cldtau_sw_strat
 
     ! RNG used for subcolumn generation
     seed = int(sfcP)
@@ -510,4 +496,4 @@ contains
 
   end subroutine construct_cospIN
 
-end module cosp_simulator
+end module cosp
