@@ -1,6 +1,7 @@
 [ccpp-table-properties]
-  name = cosp
+  name = GFS_cosp
   type = scheme
+  relative_path = ../../Diagnostics/COSP2
   dependencies = cosp_kinds.F90,cosp/src/cosp_config.F90,cosp/src/cosp.F90
   dependencies = cosp/src/cosp_stats.F90,cosp/subsample_and_optics_example/subcol/rng/mo_rng.F90
   dependencies = cosp/subsample_and_optics_example/subcol/scops.F90
@@ -8,7 +9,7 @@
 
 ########################################################################
 [ccpp-arg-table]
-  name = cosp_init
+  name = GFS_cosp_init
   type = scheme
 [mpirank]
   standard_name = mpi_rank
@@ -112,7 +113,7 @@
 
 ########################################################################
 [ccpp-arg-table]
-  name = cosp_run
+  name = GFS_cosp_run
   type = scheme
 [nCol]
   standard_name = horizontal_loop_extent
@@ -363,6 +364,20 @@
   units = count
   dimensions = ()
   type = integer
+  intent = in
+[doSWrad]
+  standard_name = flag_for_calling_shortwave_radiation
+  long_name = logical flags for sw radiation calls
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[doLWrad]
+  standard_name = flag_for_calling_longwave_radiation
+  long_name = logical flags for lw radiation calls
+  units = flag
+  dimensions = ()
+  type = logical
   intent = in
 [do_cosp]
   standard_name = flag_for_cosp_diagnostics

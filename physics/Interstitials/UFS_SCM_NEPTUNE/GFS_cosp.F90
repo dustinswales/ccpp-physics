@@ -1,13 +1,13 @@
 ! ###########################################################################################
-!> \file cosp.F90
+!> \file GFS_cosp.F90
 !!
-!> \defgroup cosp cosp.F90
+!> \defgroup GFS_cosp GFS_cosp.F90
 !!
 !! \brief This module contains the CCPP interface to the Cloud-Feedback Model Intercomparison
 !! Project (CFMIP) Observational Simulator Package Version 2.0 (COSP)
 !!
 ! ###########################################################################################
-module cosp
+module GFS_cosp
   use machine,                  only: kind_phys
   use mod_cosp,                 only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs,&
                                       cosp_simulator
@@ -23,18 +23,18 @@ module cosp
 contains
 
 ! ###########################################################################################
-!! \section arg_table_cosp_init
-!! \htmlinclude cosp_init.html
+!! \section arg_table_GFS_cosp_init
+!! \htmlinclude GFS_cosp_init.html
 !!
 !!
-!> \ingroup cosp
+!> \ingroup GFS_cosp
 !!
 !! \brief
 !!
-!! \section cosp_init
+!! \section GFS_cosp_init
 !> @{
 ! ###########################################################################################
-  subroutine cosp_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,              &
+  subroutine GFS_cosp_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,          &
        cosp_nsubcol, imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht,      &
        isccp_topht_dir, errmsg, errflg)
 
@@ -91,31 +91,33 @@ contains
        print*,'  Enable MODIS simulator    = ', do_modis
     endif
 
-  end subroutine cosp_init
+  end subroutine GFS_cosp_init
 !> @}
 
 ! ###########################################################################################
-!! \section arg_table_cosp_run
-!! \htmlinclude cosp_run.html
+!! \section arg_table_GFS_cosp_run
+!! \htmlinclude GFS_cosp_run.html
 !!
-!> \ingroup cosp
+!> \ingroup GFS_cosp
 !!
 !! \brief
 !!
-!! \section cosp_run
+!! \section GFS_cosp_run
 !> @{
 ! ###########################################################################################
-  subroutine cosp_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,          &
+  subroutine GFS_cosp_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,      &
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
        top_at_1, con_g, iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
        isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
-       n_misr_pres_bins, misr_pres_bins, n_misr_tau_bins, misr_tau_bins, do_cosp, do_isccp, &
-       do_misr, do_modis, overlap,                                                          &
+       n_misr_pres_bins, misr_pres_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,  &
+       do_cosp, do_isccp, do_misr, do_modis, overlap,                                       &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
        meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
 
     ! Inputs
     logical, intent(in) :: &
+         doSWrad,            & ! Logical flags for sw radiation calls
+         doLWrad,            & ! Logical flags for lw radiation calls
          do_cosp,            & ! Flag for COSP diagnostics
 	 do_isccp,           & ! Flag for COSP ISCCP diagnostics
 	 do_misr,            & ! Flag for COSP MISR diagnostics
@@ -188,6 +190,9 @@ contains
 
     if (.not. do_cosp) return
 
+    ! Only call COSP on radiation time-step.
+    if (.not. (doLWrad .or. doSWrad)) return
+    
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
@@ -220,6 +225,7 @@ contains
     cospstateIN%qv              = qgrs(:,iTOA:iSFC:vs,1)
     cospstateIN%hgt_matrix      = phil/con_g
     cospstateIN%hgt_matrix_half = phii/con_g
+    where(cospstateIN%qv .lt. 1.e-6) cospstateIN%qv = 1.e-6
 
     ! Derived (optical) inputs for COSP.
     call construct_cospIN(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay, cospIN)
@@ -285,7 +291,7 @@ contains
     meantb_isccp     = cospOUT%isccp_meantb
     meantbclr_isccp  = cospOUT%isccp_meantbclr
 
-  end subroutine cosp_run
+  end subroutine GFS_cosp_run
 !> @}
 
   ! ######################################################################################
@@ -319,50 +325,55 @@ contains
          cospIN       ! DDT containing optical inputs needed by COSP.
 
     ! Locals
-    type(rng_state), dimension(nCol) :: rngs
-    integer,         dimension(nCol) :: seed
+    type(rng_state), dimension(nSubCol) :: rngs
+    integer,         dimension(nSubCol) :: seed
     integer :: iSub
     real(kind_phys), dimension(nCol,nLay) :: cldemis_lw_strat, cldemis_lw_conv
     real(kind_phys), dimension(nCol,nLay) :: cldtau_sw_conv, cldtau_sw_strat
 
-    ! RNG used for subcolumn generation
-    seed = int(sfcP)
-    if (nCol .gt. 1) seed=(sfcP-int(sfcP))*1000000
-    call init_rng(rngs, seed)
+    if (nSubCol .gt. 1) then
+    
+       ! RNG used for subcolumn generation
+       seed = int(sfcP)
+       if (nCol .gt. 1) seed=(sfcP-int(sfcP))*1000000
+       call init_rng(rngs, seed)
 
-    ! Call scops
-    call scops(nCol, nLay, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
+       ! Call scops
+       call scops(nCol, nLay, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
 
-    ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
-    if (do_isccp) then
-       cldemis_lw_strat = 1._kind_phys - exp(-cldtau_lw)
-       cldemis_lw_conv  = cldemis_lw_strat
-       !
-       cospIN%emiss_11(:,:,:) = 0._kind_phys
-       do iSub=1,nSubCol
-          where(cospIN%frac_out(:,iSub,:) .eq. 1)
-             cospIN%emiss_11(:,iSub,:) = cldemis_lw_conv
-          endwhere
-          where(cospIN%frac_out(:,iSub,:) .eq. 2)
-             cospIN%emiss_11(:,iSub,:) = cldemis_lw_strat
-          endwhere
-       enddo
-    endif
-
-    ! 0.67 micron optical-depth (in-cloud), needed by ISCCP, MISR and MODIS simulators.
-    if (do_isccp .or. do_modis .or. do_misr) then
-       cldtau_sw_strat = cldtau_sw
-       cldtau_sw_conv  = cldtau_sw
-       !
-       cospIN%tau_067(:,:,:) = 0._kind_phys
-       do iSub=1,nSubCol
-          where(cospIN%frac_out(:,iSub,:) .eq. 1)
-             cospIN%tau_067(:,iSub,:) = cldtau_sw_conv
-          endwhere
-          where(cospIN%frac_out(:,iSub,:) .eq. 2)
-             cospIN%tau_067(:,iSub,:) = cldtau_sw_strat
-          endwhere
-       enddo
+       ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
+       if (do_isccp) then
+          cldemis_lw_strat = 1._kind_phys - exp(-cldtau_lw)
+          cldemis_lw_conv  = cldemis_lw_strat
+          !
+          cospIN%emiss_11(:,:,:) = 0._kind_phys
+          do iSub=1,nSubCol
+             where(cospIN%frac_out(:,iSub,:) .eq. 1)
+                cospIN%emiss_11(:,iSub,:) = cldemis_lw_conv
+             endwhere
+             where(cospIN%frac_out(:,iSub,:) .eq. 2)
+                cospIN%emiss_11(:,iSub,:) = cldemis_lw_strat
+             endwhere
+          enddo
+       endif
+       
+       ! 0.67 micron optical-depth (in-cloud), needed by ISCCP, MISR and MODIS simulators.
+       if (do_isccp .or. do_modis .or. do_misr) then
+          cldtau_sw_strat = cldtau_sw
+          cldtau_sw_conv  = cldtau_sw
+          !
+          cospIN%tau_067(:,:,:) = 0._kind_phys
+          do iSub=1,nSubCol
+             where(cospIN%frac_out(:,iSub,:) .eq. 1)
+                cospIN%tau_067(:,iSub,:) = cldtau_sw_conv
+             endwhere
+             where(cospIN%frac_out(:,iSub,:) .eq. 2)
+                cospIN%tau_067(:,iSub,:) = cldtau_sw_strat
+             endwhere
+          enddo
+       endif
+    else
+       cospIN%frac_out = 1
     endif
 
   end subroutine subsample_and_optics
@@ -496,4 +507,4 @@ contains
 
   end subroutine construct_cospIN
 
-end module cosp
+end module GFS_cosp
