@@ -1,3 +1,6 @@
+!>\file cires_tauamf_data.F90
+!!
+
 module cires_tauamf_data
 
   use machine, only: kind_phys
@@ -16,6 +19,7 @@ implicit none
 
 contains
   
+!>
    subroutine read_tau_amf(me, master, errmsg, errflg)
   
     use  netcdf
@@ -70,6 +74,7 @@ contains
 	
   end  subroutine read_tau_amf  
   
+!>
     subroutine cires_indx_ugwp (npts, me, master, dlat,j1_tau,j2_tau, w1_j1tau, w2_j2tau)
      
     use machine, only: kind_phys
@@ -110,6 +115,7 @@ contains
       return
     end subroutine cires_indx_ugwp   
     
+!>
     subroutine tau_amf_interp(me, master, im, idate, fhour, j1_tau,j2_tau, ddy_j1, ddy_j2, tau_ddd)    
     use machine, only: kind_phys	           
     implicit none
@@ -163,6 +169,7 @@ contains
              
     end subroutine tau_amf_interp  
     
+!>
     subroutine gfs_idate_calendar(idate, fhour, ddd, fddd) 
     
     use machine, only: kind_phys    		 
@@ -180,7 +187,6 @@ contains
       integer              :: jdow, jdoy, jday
       real(8)              :: rinc(5)
       real(4)              :: rinc4(5)
-      integer              :: w3kindreal, w3kindint
       
       integer ::  iw3jdn
       integer :: jd1, jddd
@@ -196,13 +202,7 @@ contains
       rinc(1:5)    = 0.
       rinc(2) = fhour
 !    
-      call w3kind(w3kindreal,w3kindint)
-      if(w3kindreal==4) then
-        rinc4 = rinc
-        call w3movdat(rinc4, idat,jdat)
-      else
-        call w3movdat(rinc,  idat,jdat)
-      endif           
+      call w3movdat(rinc,  idat,jdat)
 !     jdate(8)- date and time (yr, mo, day, [tz], hr, min, sec)
       jdow = 0
       jdoy = 0

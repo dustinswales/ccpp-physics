@@ -1,12 +1,12 @@
 !> \file sfc_diag_post.F90
 !!  Contains code related to the surface diagnostic scheme.
 
+!> This module contains code related to the surface diagnostic scheme.
       module sfc_diag_post
 
       contains
 
 !>\defgroup sfc_diag_post_mod GFS sfc_diag_post Module
-!! This module contains code related to the surface diagnostic scheme.
 !> @{
 #if 0
 !> \section arg_table_sfc_diag_post_run Argument Table
@@ -28,7 +28,7 @@
         logical             , dimension(:),  intent(in) :: dry
         real(kind=kind_phys), dimension(:),  intent(in) :: pgr, u10m, v10m
         real(kind=kind_phys), dimension(:),  intent(inout) :: t2m, q2m, tmpmin, tmpmax, spfhmin, spfhmax
-        real(kind=kind_phys), dimension(:),  intent(inout) :: t2mmp, q2mp
+        real(kind=kind_phys), dimension(:),  intent(in), optional :: t2mmp, q2mp
         real(kind=kind_phys), dimension(:),  intent(inout) :: wind10mmax, u10mmax, v10mmax, dpt2m
 
         character(len=*),                     intent(out) :: errmsg

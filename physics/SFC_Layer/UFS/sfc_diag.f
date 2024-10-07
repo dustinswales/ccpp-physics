@@ -1,18 +1,15 @@
 !>  \file sfc_diag.f
 !!  This file contains the land surface diagnose calculation scheme.
 
+!> This module contains the land surface diagnose calcualtion
       module sfc_diag
       contains
 
 !> \defgroup sfc_diag_mod GFS sfc_diag module
-!! This module contains the land surface diagose calculation.
-!> @{
 !! \section arg_table_sfc_diag_run Argument Table
 !! \htmlinclude sfc_diag_run.html
 !!
-!!  \section general General Algorithm
-!!  \section detailed Detailed Algorithm
-!!  @{
+!>  @{
       subroutine sfc_diag_run (im,xlat_d,xlon_d,                        &
      &                    lsm,lsm_ruc,grav,cp,eps,epsm1,con_rocp,       &
      &                    con_karman,                                   &
@@ -44,9 +41,9 @@
      &                      qsurf, prslki, evap, fm, fh, fm10, fh2,     &
      &                      shflx, cdq, wind, xlat_d, xlon_d
       real(kind=kind_phys), dimension(:), intent(out) ::                &
-     &                       f10m, u10m, v10m, t2m, q2m, dpt2m
-      real(kind=kind_phys), dimension(:), intent(in) :: lake_t2m,       &
-     &                       lake_q2m
+     &                      f10m, u10m, v10m, t2m, q2m, dpt2m
+      real(kind=kind_phys), dimension(:), intent(in), optional ::       &
+     &                      lake_t2m, lake_q2m
       integer, dimension(:), intent(in) :: use_lake_model
       character(len=*), intent(out) :: errmsg
       integer,          intent(out) :: errflg

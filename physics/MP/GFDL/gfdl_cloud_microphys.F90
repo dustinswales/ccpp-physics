@@ -1,6 +1,9 @@
 !> \file gfdl_cloud_microphys.F90
 !! This file contains the CCPP entry point for the column GFDL cloud microphysics ( Chen and Lin (2013)
 !! \cite chen_and_lin_2013 ).
+
+!> This module contains the CCPP entry point for the column GFDL cloud microphysics ( Chen and Lin (2013)
+!! \cite chen_and_lin_2013 ).
 module gfdl_cloud_microphys
 
    use gfdl_cloud_microphys_mod, only: gfdl_cloud_microphys_mod_init,   &
@@ -144,10 +147,10 @@ contains
       real(kind=kind_phys), intent(in   ), dimension(:,:)   :: phii
 
       ! rain/snow/ice/graupel/precip amounts, fraction of frozen precip
-      real(kind_phys),      intent(out  ), dimension(:) :: rain0
-      real(kind_phys),      intent(out  ), dimension(:) :: snow0
-      real(kind_phys),      intent(out  ), dimension(:) :: ice0
-      real(kind_phys),      intent(out  ), dimension(:) :: graupel0
+      real(kind_phys),      intent(out  ), dimension(:), optional :: rain0
+      real(kind_phys),      intent(out  ), dimension(:), optional :: snow0
+      real(kind_phys),      intent(out  ), dimension(:), optional :: ice0
+      real(kind_phys),      intent(out  ), dimension(:), optional :: graupel0
       real(kind_phys),      intent(out  ), dimension(:) :: prcp0
       real(kind_phys),      intent(out  ), dimension(:) :: sr
 
@@ -157,10 +160,10 @@ contains
       logical, intent (in) :: lradar
       real(kind=kind_phys), intent(inout), dimension(:,:) :: refl_10cm
       logical, intent (in) :: reset, effr_in
-      real(kind=kind_phys), intent(inout), dimension(:,:) :: rew, rei, rer, res, reg
+      real(kind=kind_phys), intent(inout), dimension(:,:), optional :: rew, rei, rer, res, reg
       logical, intent (in) :: cplchm
       ! ice and liquid water 3d precipitation fluxes - only allocated if cplchm is .true.
-      real(kind=kind_phys), intent(inout), dimension(:,:) :: pfi_lsan, pfl_lsan
+      real(kind=kind_phys), intent(inout), dimension(:,:), optional :: pfi_lsan, pfl_lsan
 
       character(len=*), intent(out) :: errmsg
       integer, intent(out)          :: errflg

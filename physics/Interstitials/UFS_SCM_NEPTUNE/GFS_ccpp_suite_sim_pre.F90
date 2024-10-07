@@ -1,3 +1,6 @@
+!>\file GFS_ccpp_suite_sim_pre.F90
+!! Interstitial CCPP suite to couple UFS physics to CCPP suite simulator.
+
 ! ########################################################################################
 ! 
 ! Description: Interstitial CCPP suite to couple UFS physics to ccpp_suite_simulator.
@@ -17,12 +20,7 @@ module GFS_ccpp_suite_sim_pre
   public GFS_ccpp_suite_sim_pre_run, load_ccpp_suite_sim
 contains
 
-  ! ######################################################################################
-  !
-  ! SUBROUTINE GFS_ccpp_suite_sim_pre_run
-  !
-  ! ######################################################################################
-!! \section arg_table_GFS_ccpp_suite_sim_pre_run
+!> \section arg_table_GFS_ccpp_suite_sim_pre_run Argument Table
 !! \htmlinclude GFS_ccpp_suite_sim_pre_run.html
 !! 
   subroutine GFS_ccpp_suite_sim_pre_run(do_ccpp_suite_sim, dtend, ntqv, dtidx, dtp,      &
@@ -40,7 +38,7 @@ contains
          index_of_temperature, index_of_x_wind, index_of_y_wind
     integer, intent(in), dimension(:,:) :: dtidx
     real(kind_phys), intent(in) :: dtp
-    real(kind_phys), intent(in), dimension(:,:,:) :: dtend
+    real(kind_phys), intent(in), dimension(:,:,:), optional :: dtend
     type(base_physics_process),intent(in) :: physics_process(:)
     integer,         intent(in) :: iactive_T, iactive_u, iactive_v, iactive_q
 
@@ -110,6 +108,7 @@ contains
   end subroutine GFS_ccpp_suite_sim_pre_run
 
   ! ######################################################################################
+!>
   subroutine load_ccpp_suite_sim(nlunit, nml_file, physics_process, iactive_T,           &
        iactive_u, iactive_v, iactive_q, errmsg, errflg)
 

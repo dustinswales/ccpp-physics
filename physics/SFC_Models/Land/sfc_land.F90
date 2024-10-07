@@ -13,21 +13,10 @@
 
    contains
 
-!> \defgroup sfc_land for coupling to land
-!! @{
-!! \section diagram Calling Hierarchy Diagram
-!! \section intraphysics Intraphysics Communication
-!!
 !> \brief Brief description of the subroutine
-!!
 !! \section arg_table_sfc_land_run Arguments
 !! \htmlinclude sfc_land_run.html
 !!
-
-!!
-!! \section general General Algorithm
-!! \section detailed Detailed Algorithm
-!! @{
    subroutine sfc_land_run(im, cpllnd, cpllnd2atm, flag_iter, dry,   &
      sncovr1_lnd, qsurf_lnd, evap_lnd, hflx_lnd,                     &
      ep_lnd, t2mmp_lnd, q2mp_lnd, gflux_lnd,                         &
@@ -44,27 +33,27 @@
    logical             , intent(in)    :: cpllnd2atm
    logical             , intent(in)    :: flag_iter(:)
    logical             , intent(in)    :: dry(:)
-   real(kind=kind_phys), intent(in)    :: sncovr1_lnd(:)
-   real(kind=kind_phys), intent(in)    :: qsurf_lnd(:)
-   real(kind=kind_phys), intent(in)    :: evap_lnd(:)
-   real(kind=kind_phys), intent(in)    :: hflx_lnd(:)
-   real(kind=kind_phys), intent(in)    :: ep_lnd(:)
-   real(kind=kind_phys), intent(in)    :: t2mmp_lnd(:)
-   real(kind=kind_phys), intent(in)    :: q2mp_lnd(:)
-   real(kind=kind_phys), intent(in)    :: gflux_lnd(:)
-   real(kind=kind_phys), intent(in)    :: runoff_lnd(:)
-   real(kind=kind_phys), intent(in)    :: drain_lnd(:)
-   real(kind=kind_phys), intent(in)    :: cmm_lnd(:)
-   real(kind=kind_phys), intent(in)    :: chh_lnd(:)
-   real(kind=kind_phys), intent(in)    :: zvfun_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: sncovr1_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: qsurf_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: evap_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: hflx_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: ep_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: t2mmp_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: q2mp_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: gflux_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: runoff_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: drain_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: cmm_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: chh_lnd(:)
+   real(kind=kind_phys), intent(in), optional :: zvfun_lnd(:)
    ! Inputs/Outputs
    real(kind=kind_phys), intent(inout) :: sncovr1(:)
    real(kind=kind_phys), intent(inout) :: qsurf(:)
    real(kind=kind_phys), intent(inout) :: evap(:)
    real(kind=kind_phys), intent(inout) :: hflx(:)
    real(kind=kind_phys), intent(inout) :: ep(:)
-   real(kind=kind_phys), intent(inout) :: t2mmp(:)
-   real(kind=kind_phys), intent(inout) :: q2mp(:)
+   real(kind=kind_phys), intent(inout), optional :: t2mmp(:)
+   real(kind=kind_phys), intent(inout), optional :: q2mp(:)
    real(kind=kind_phys), intent(inout) :: gflux(:)
    real(kind=kind_phys), intent(inout) :: runoff(:)
    real(kind=kind_phys), intent(inout) :: drain(:)
@@ -104,5 +93,4 @@
  
    end subroutine sfc_land_run
 
-!> @}
    end module sfc_land

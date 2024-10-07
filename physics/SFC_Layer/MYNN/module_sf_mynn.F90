@@ -3,6 +3,8 @@
 !WRF:MODEL_LAYER:PHYSICS
 !
 !>\ingroup mynn_sfc
+!> This module contain routines to calculate stability parameters, kinematic siscosity
+!! in MYNN surface layer scheme
 MODULE module_sf_mynn
 
 !-------------------------------------------------------------------
@@ -284,7 +286,7 @@ CONTAINS
                                                         th3d,pi3d
 
       !GJF: This array must be assumed-shape since it is conditionally-allocated
-      REAL(kind_phys), DIMENSION( :,: ),                           &
+      REAL(kind_phys), DIMENSION( :,: ), OPTIONAL,                 &
                             INTENT(IN) ::         pattern_spp_sfc
 !===================================
 ! 2D VARIABLES
@@ -304,21 +306,23 @@ CONTAINS
       REAL(kind_phys), DIMENSION( ims:ime )                      , &
                             INTENT(INOUT)          ::    HFLX,HFX, &
                                                          QFLX,QFX, &
-                                                               LH, &
-                                                         MOL,RMOL, &
+                                                             RMOL, &
                                                              QSFC, &
                                                               QGH, &
                                                               ZNT, &
-                                                              ZOL, &
-                                                             USTM, &
                                                               CPM, &
-                                                             CHS2, &
-                                                             CQS2, &
                                                               CHS, &
                                                                CH, &
                                                         FLHC,FLQC, &
                                                       GZ1OZ0,WSPD, &
-                                                        PSIM,PSIH, &
+                                                        PSIM,PSIH
+      REAL(kind_phys), DIMENSION( ims:ime ), OPTIONAL            , &
+                            INTENT(INOUT)          ::        USTM, &
+                                                             CHS2, &
+                                                             CQS2, &
+                                                               LH, &
+                                                              ZOL, &
+                                                              MOL, &
                                                             WSTAR
 
       LOGICAL, DIMENSION( ims:ime ), INTENT(IN)    ::              &
@@ -607,18 +611,20 @@ CONTAINS
                                                              RMOL
       REAL(kind_phys), DIMENSION( ims:ime ),                       &
                             INTENT(INOUT)           ::  HFLX,QFLX, &
-                                                           LH,MOL, &
                                                          QGH,QSFC, &
                                                               ZNT, &
-                                                              ZOL, &
                                                               CPM, &
-                                                        CHS2,CQS2, &
                                                            CHS,CH, &
                                                         FLHC,FLQC, &
                                                            GZ1OZ0, &
                                                              WSPD, &
                                                              PSIM, &
-                                                             PSIH, &
+                                                             PSIH
+      REAL(kind_phys), DIMENSION( ims:ime ), OPTIONAL,             &
+                            INTENT(INOUT)           ::        MOL, &
+                                                              ZOL, &
+                                                               LH, &
+                                                        CHS2,CQS2, &
                                                              USTM
 
       LOGICAL, DIMENSION( ims:ime ), INTENT(IN)    ::              &
@@ -656,8 +662,10 @@ CONTAINS
 !--------------------------------------------
 !JOE-additinal output
       REAL(kind_phys), DIMENSION( ims:ime ),                       &
-     &                      INTENT(OUT)            ::       wstar, &
-     &                                                      qstar
+     &                      INTENT(OUT)            ::       qstar
+      REAL(kind_phys), DIMENSION( ims:ime ), OPTIONAL,             &
+     &                      INTENT(OUT)            ::       wstar
+
 !JOE-end
 
 ! CCPP error handling
@@ -3167,19 +3175,18 @@ END SUBROUTINE SFCLAY1D_mynn
       END SUBROUTINE znot_m_v6
 !--------------------------------------------------------------------
 !>\ingroup mynn_sfc
-!!
-      SUBROUTINE znot_t_v6(uref, znott)
-
-      !$acc routine seq
-      IMPLICIT NONE
-!> Calculate scalar roughness over water with input 10-m wind
+!> Calculate scalar roughness over water with input 10-m wind 
 !! For low-to-moderate winds, try to match the Ck-U10 relationship from COARE algorithm
 !! For high winds, try to retain the Ck-U10 relationship of FY2015 HWRF
 !!
 !!\author Bin Liu, NOAA/NCEP/EMC 2017
-!
+!   
 ! uref(m/s)   :   wind speed at 10-m height
 ! znott(meter):   scalar roughness scale over water
+      SUBROUTINE znot_t_v6(uref, znott)
+
+      !$acc routine seq
+      IMPLICIT NONE
 !
       REAL(kind_phys), INTENT(IN) :: uref
       REAL(kind_phys), INTENT(OUT):: znott
@@ -3234,17 +3241,16 @@ END SUBROUTINE SFCLAY1D_mynn
 
 !-------------------------------------------------------------------
 !>\ingroup mynn_sfc
-!!
-      SUBROUTINE znot_m_v7(uref, znotm)
-
-      !$acc routine seq
-      IMPLICIT NONE
 !> Calculate areodynamical roughness over water with input 10-m wind
 !! For low-to-moderate winds, try to match the Cd-U10 relationship from COARE V3.5 (Edson et al. 2013)
 !! For high winds, try to fit available observational data
 !! Comparing to znot_t_v6, slightly decrease Cd for higher wind speed
-!!
+!!   
 !!\author Bin Liu, NOAA/NCEP/EMC 2018
+      SUBROUTINE znot_m_v7(uref, znotm)
+
+      !$acc routine seq
+      IMPLICIT NONE
 !
 ! uref(m/s)   :   wind speed at 10-m height
 ! znotm(meter):   areodynamical roughness scale over water
@@ -3284,17 +3290,16 @@ END SUBROUTINE SFCLAY1D_mynn
       END SUBROUTINE znot_m_v7
 !--------------------------------------------------------------------
 !>\ingroup mynn_sfc
-!!
-      SUBROUTINE znot_t_v7(uref, znott)
-
-      !$acc routine seq
-      IMPLICIT NONE
 !> Calculate scalar roughness over water with input 10-m wind
 !! For low-to-moderate winds, try to match the Ck-U10 relationship from COARE algorithm
 !! For high winds, try to retain the Ck-U10 relationship of FY2015 HWRF
 !! To be compatible with the slightly decreased Cd for higher wind speed
-!!
+!!    
 !!\author Bin Liu, NOAA/NCEP/EMC 2018
+      SUBROUTINE znot_t_v7(uref, znott)
+
+      !$acc routine seq
+      IMPLICIT NONE
 !
 ! uref(m/s)   :   wind speed at 10-m height
 ! znott(meter):   scalar roughness scale over water
