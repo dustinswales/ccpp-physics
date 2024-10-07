@@ -129,6 +129,13 @@
   dimensions = ()
   type = logical
   intent = in
+[do_norm]
+  standard_name = flag_for_machine_learning_radiation_scheme_normalization
+  long_name = flag for normalization in machine learning radiation scheme
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
 [mlrad_data]
   standard_name = training_data_used_in_machine_learning_radiation
   long_name = training data used in machine learning radiation
@@ -160,6 +167,13 @@
 [nLev]
   standard_name = vertical_layer_dimension
   long_name = number of vertical levels
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[ntrac]
+  standard_name = number_of_tracers
+  long_name = number of tracers
   units = count
   dimensions = ()
   type = integer
@@ -451,6 +465,14 @@
   long_name = height_above_mean_sea_level
   units = m
   dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[fhour]
+  standard_name = forecast_time
+  long_name = current forecast time
+  units = h
+  dimensions = ()
   type = real
   kind = kind_phys
   intent = in

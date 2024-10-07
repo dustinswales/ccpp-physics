@@ -94,8 +94,16 @@ module mlrad_driver
   ! This is set by the host using, effr_in=F
   real (kind_phys), parameter :: &
        reliq_def  = 10.0, & ! Default liquid radius: 10 microns
-       reice_def  = 50.0    ! Default ice radius:  50 microns
+       reice_def  = 50.0, & ! Default ice radius:  50 microns
+       epsm1      = 0.999999, eps=0.000001
+!       eps        = epsilon(1._kind_phys), &
+!       epsm1      = 1._kind_phys - epsilon(1._kind_phys)
+  integer :: cmode,ncid,status,varID0,varID1,varID2,varID3,varID4,varID5,varID6,varID7,     &
+       varID8,varID9,varID10,varID11,varID12,varID13,varID14,varID15,varID16,varID17,       &
+       varID18,varID19,varID20,varID21,dimID1,dimID2,record_counter(1),varID22,varID23,     &
+       varID24,varID25,varID26,varID27,varID28
 
+  
   public mlrad_driver_init, mlrad_driver_run
 
 contains
@@ -128,7 +136,6 @@ contains
     ! Locals
     character(1024) :: yaml_config_lw, yaml_config_sw
     integer :: iCol, iPred, iLay, iName, count
-    integer :: ncid,status,varID
 
     ! Initialize CCPP error handling variables
     errmsg = ''
@@ -136,7 +143,41 @@ contains
 
     if (.not. do_mlrad) return
 
+    status = nf90_create('debug.mlrad_driver.fluxes.nc',cmode=nf90_clobber,ncid=ncid)
+    status = nf90_def_dim(ncid,'lev',127,dimID1)
+    status = nf90_def_dim(ncid,'time',nf90_unlimited,dimID2)
+    status = nf90_def_var(ncid,'time_rad',     nf90_real, dimID2, varID0)
+    status = nf90_def_var(ncid,'lwdnsfc_rrtmg',nf90_real, dimID2, varID1)
+    status = nf90_def_var(ncid,'lwuptoa_rrtmg',nf90_real, dimID2, varID2)
+    status = nf90_def_var(ncid,'lwdnsfc_mlrad',nf90_real, dimID2, varID3)
+    status = nf90_def_var(ncid,'lwuptoa_mlrad',nf90_real, dimID2, varID4)
+    status = nf90_def_var(ncid,'lwc',          nf90_real, (/dimID1,dimID2/), varID5)
+    status = nf90_def_var(ncid,'iwc',          nf90_real, (/dimID1,dimID2/), varID6)
+    status = nf90_def_var(ncid,'z',            nf90_real, (/dimID1,dimID2/), varID7)
+    status = nf90_def_var(ncid,'dlwp',         nf90_real, (/dimID1,dimID2/), varID8)
+    status = nf90_def_var(ncid,'diwp',         nf90_real, (/dimID1,dimID2/), varID9)
+    status = nf90_def_var(ncid,'dwvp',         nf90_real, (/dimID1,dimID2/), varID10)
+    status = nf90_def_var(ncid,'qv',           nf90_real, (/dimID1,dimID2/), varID11)
+    status = nf90_def_var(ncid,'rho',          nf90_real, (/dimID1,dimID2/), varID12)
+    status = nf90_def_var(ncid,'ulwp',         nf90_real, (/dimID1,dimID2/), varID13)
+    status = nf90_def_var(ncid,'uiwp',         nf90_real, (/dimID1,dimID2/), varID14)
+    status = nf90_def_var(ncid,'uwvp',         nf90_real, (/dimID1,dimID2/), varID15)
+    status = nf90_def_var(ncid,'mr_liq',       nf90_real, (/dimID1,dimID2/), varID16)
+    status = nf90_def_var(ncid,'mr_ice',       nf90_real, (/dimID1,dimID2/), varID17)
+    status = nf90_def_var(ncid,'mr_rain',      nf90_real, (/dimID1,dimID2/), varID18)
+    status = nf90_def_var(ncid,'mr_snow',      nf90_real, (/dimID1,dimID2/), varID19)
+    status = nf90_def_var(ncid,'mr_grpl',      nf90_real, (/dimID1,dimID2/), varID20)
+    status = nf90_def_var(ncid,'mr_tcld',      nf90_real, (/dimID1,dimID2/), varID21)
+    status = nf90_def_var(ncid,'dp',           nf90_real, (/dimID1,dimID2/), varID22)
+    status = nf90_def_var(ncid,'dz',  	       nf90_real, (/dimID1,dimID2/), varID23)
+    status = nf90_def_var(ncid,'p',            nf90_real, (/dimID1,dimID2/), varID24)
+
+    status = nf90_enddef(ncid)
+    record_counter(1) = 1    
     if (debug) then
+       open(93, file='debug.mlrad_driver.heating_rates.txt',   status='unknown')
+       open(94, file='debug.mlrad_driver.fluxes.txt',          status='unknown')
+       write(94,'(4a18)'  ) 'ML(LW down @ SFC)','G(LW down @ SFC)','ML(LW up @ TOA)', 'G(LW up @ TOA)'
        open(95, file='debug.mlrad_driver.upmatrix.example.txt',status='unknown')
        open(96, file='debug.mlrad_driver.npmatrix.example.txt',status='unknown')
        open(97, file='debug.mlrad_driver.upmatrix.inline.txt', status='unknown')
@@ -224,11 +265,11 @@ contains
 !! \htmlinclude mlrad_driver_run.html
 !!
 ! ###########################################################################################
-  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, i_cldliq,         &
+  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, do_norm, nCol, nLev, nDay, ntrac, i_cldliq,&
        i_cldice, i_ozone, ico2, isubc, iaermdl, iaerflg, icseed, idx, lsmask, semis, sfcalb,&
        coszen, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, cld_reice, qgrs, aerfld,       &
        mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd, con_fvirt, con_g, con_pi, htrlw,  &
-       htrsw, sfcflw, sfcfsw, topflw, topfsw, oro, errmsg, errflg, ref_data)
+       htrsw, sfcflw, sfcfsw, topflw, topfsw, oro, fhour, errmsg, errflg, ref_data)
     use module_radsw_parameters, only: topfsw_type, sfcfsw_type
     use module_radlw_parameters, only: topflw_type, sfcflw_type
 
@@ -239,11 +280,13 @@ contains
     logical, intent(in) :: &
          do_mlrad,    & ! Use ML emulator for LW radiation?
          effr_in,     & ! Provide hydrometeor radii from macrophysics? 
-         debug          ! Debug mode?
+         debug,       & ! Debug mode?
+         do_norm        ! Normalize (LW) predictor matrix?
     integer, intent(in) ::  &
          nCol,        & ! Number of horizontal grid points
          nLev,        & ! Number of vertical layers
          nDay,        & ! Number of daylit columns
+         ntrac,       & ! Number of tracers
          i_cldliq,    & ! Index into tracer array for cloud liquid.
          i_cldice,    & ! Index into tracer array for cloud ice.
          i_ozone,     & ! Index into tracer array for ozone concentration.
@@ -254,6 +297,8 @@ contains
     integer,intent(in),dimension(:) :: &
          icseed,      & ! Seed for random number generation for longwave radiation
          idx            ! Index array for daytime points
+    real(kind_phys), intent(in) :: &
+         fhour          ! Forecast time in hours
     real(kind_phys), dimension(:), intent(in) :: &
          lsmask,      & ! Land/sea/sea-ice mask
          lon,         & ! Longitude
@@ -303,7 +348,7 @@ contains
 
     ! Locals
     logical :: top_at_1
-    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd, nbpts, ibpt
+    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd, nbpts, ibpt, itrac
     integer, dimension(nCol) :: ipseed
     real(kind_phys) :: es, qs, dp, tem1, tem2, pfac, ranku(nCol), rankn(nCol), rankk(1), &
          bin(1), edge(nLev+1), bot, top
@@ -320,9 +365,9 @@ contains
     real(c_float), dimension(nDay, nLev, size(pnames_sw)) :: predictor_matrix_sw, upredictor_matrix_sw
     real(c_float), dimension(nCol, nLev+2) :: target_matrix_lw
     real(c_float), dimension(nDay, nLev+2) :: target_matrix_sw
-
     real(kind_phys), dimension(nCol, nLev+1) :: plev, zlev
     real(kind_phys), dimension(nCol, nLev)   :: play, dprs, dz
+    real(kind=kind_phys), dimension(nCol,nLev,2:ntrac)  :: tracer1
 
     ! Initialize CCPP error handling variables
     errmsg = ''
@@ -357,6 +402,12 @@ contains
     ! Get trace-gas concentrations.
     call getgases (prsi/100., lon, lat, nCol, nLev, ico2, top_at_1, con_pi, gas_vmr)
 
+    do itrac = 2, ntrac
+       do iLev = 1, nLev
+          tracer1(:,iLev,itrac) = max(0.0, qgrs(:,iLev,itrac))
+       enddo
+    enddo
+    
     ! #######################################################################################
     !
     ! Compute prediction matrices for longwave and shortwave
@@ -403,16 +454,27 @@ contains
           ! Compute layer relative-humidity (kg/kg)->(1)
           predictor_matrix_lw(iCol,iLay,ilw_rh)  = rh(iCol,iLay)
 
-          ! Compute layer liquid/Ice water content (kg/kg)->(kg/m3).
-          predictor_matrix_lw(iCol,iLay,ilw_lwc)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq)*rho(iLay))
-          predictor_matrix_lw(iCol,iLay,ilw_iwc)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice)*rho(iLay))
+          ! Compute layer liquid/Ice water content (kg/kg)->(g/m3).
+          ! tracer1 in           (kg/kg)  *
+          ! rho in               (kg/m3)  *
+          ! conversion-factor    (1e3g/kg)*
+          predictor_matrix_lw(iCol,iLay,ilw_lwc)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldliq)*rho(iLay)*1.e3)
+          predictor_matrix_lw(iCol,iLay,ilw_iwc)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldice)*rho(iLay)*1.e3)
 
-          ! Compute layer liquid/ice/vapor condensate path, from mixing ratios (kg/kg)->(kg/m2).
-          predictor_matrix_lw(iCol,iLay,ilw_dlwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq) * &
+          ! Compute layer liquid/ice/vapor condensate path, from mixing ratios (kg/kg)->(g/m2).
+          ! tracer1 in           (kg/kg)  *
+          ! dp in                (kg/ms2) * - Pressure=Force/Area=mass*acceleration/Area=(kg*m*s-2)/(m2) => (kg/ms2)
+          ! tem1 in              (s2/m)   * 
+          ! conversion-factor in (1e3g/kg)*
+          !
+          !                      (kg/kg)  * (kg/ms2) * (s2/m) * (1e3g/kg) = > (g/m2)
+          !
+          ! *NOTE* Multiplying by 1e3 makes to answers worse!!!!!! 
+          predictor_matrix_lw(iCol,iLay,ilw_dlwp)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldliq) * &
                tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
-          predictor_matrix_lw(iCol,iLay,ilw_diwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice) * &
+          predictor_matrix_lw(iCol,iLay,ilw_diwp)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldice) * &
                tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
-          predictor_matrix_lw(iCol,iLay,ilw_dwvp)  = max(0._kind_phys, qgrs(iCol,iLay,1       ) * &
+          predictor_matrix_lw(iCol,iLay,ilw_dwvp)  = max(0._kind_phys, qgrs(iCol,iLay,1          ) * &
                tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
 
           ! Cloud effective radii (m).
@@ -426,7 +488,7 @@ contains
 
           ! Ozone mixing-ratio (kg/kg).
           if (i_ozone .gt. 0) then
-             predictor_matrix_lw(iCol,iLay,ilw_o3mr) = qgrs(iCol,iLay,i_ozone)
+             predictor_matrix_lw(iCol,iLay,ilw_o3mr) = tracer1(iCol,iLay,i_ozone)
           else
              predictor_matrix_lw(iCol,iLay,ilw_o3mr) = o3_lay(iCol,iLay)
           endif
@@ -482,7 +544,7 @@ contains
 
        ! SW Aerosol optics
        ! aerosolssw contains the MERRA aerosol optics properties for the RRTMG SW bands (14).
-       call setaer(prsi*0.01, prsl*0.01, prslk, tv, rh, lsmask, qgrs, aerfld, lon, lat,    &
+       call setaer(prsi*0.01, prsl*0.01, prslk, tv, rh, lsmask, tracer1, aerfld, lon, lat, &
             nCol, nLev, nLev+1, .true., .true., iaermdl, iaerflg, top_at_1, con_pi, con_rd,&
             con_g, aerosolssw, aerosolslw, aerodp, ext550, errflg, errmsg)
 
@@ -584,10 +646,10 @@ contains
              if (is2D_lw(iPred)) then
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%vector_breakpoint(  1, iLay, ip2io_lw(iPred))) then
                    rankk(1) = 1
-                   ranku(iCol) = 0.999999!epsilon(1._kind_phys)
+                   ranku(iCol) = eps
                 elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%vector_breakpoint(nbpts, iLay, ip2io_lw(iPred))) then
                    rankk(1) = nbpts
-                   ranku(iCol) = 0.000001!1._kind_phys - epsilon(1._kind_phys)
+                   ranku(iCol) = epsm1
                 else
                    rankk = max(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%vector_breakpoint(:,iLay, ip2io_lw(iPred)))) - 1, 1)
                    ranku(iCol) = mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred)) + &
@@ -606,10 +668,10 @@ contains
              else
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
                    rankk(1) = 1
-                   ranku(iCol) = 0.999999!epsilon(1._kind_phys)
+                   ranku(iCol) = eps
                 elseif (predictor_matrix_lw(iCol,iLay,iPred) >= mlrad_data%lw%scalar_breakpoint(nbpts, ip2io_lw(iPred))) then
                    rankk(1) = nbpts
-                   ranku(iCol) = 0.000001!1._kind_phys - epsilon(1._kind_phys)
+                   ranku(iCol) = epsm1
                 else
                    rankk = max(minloc(abs(predictor_matrix_lw(iCol,iLay,iPred) - mlrad_data%lw%scalar_breakpoint(:, ip2io_lw(iPred)))) - 1, 1)
                    ranku(iCol) = mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred)) + &
@@ -627,7 +689,9 @@ contains
              endif
              
              ! Normalize.
-             predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1._kind_phys)
+             if (do_norm) then
+                predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1._kind_phys)
+             endif
 
              if (debug .and. do_debug_once) then
                 write(99,'(a14,f14.6)')     "       nval = ",predictor_matrix_lw(iCol,iLay,iPred)
@@ -672,10 +736,10 @@ contains
                 if (is2D_sw(iPred)) then
                    if     (predictor_matrix_sw(iCol,iLay,iPred) <= mlrad_data%sw%vector_breakpoint(  1, iLay, ip2io_sw(iPred))) then
                       rankk(1) = 1
-                      ranku(iCol) = epsilon(1._kind_phys)
+                      ranku(iCol) = eps
                    elseif (predictor_matrix_sw(iCol,iLay,iPred) >= mlrad_data%sw%vector_breakpoint(nbpts, iLay, ip2io_sw(iPred))) then
                       rankk(1) = nbpts
-                      ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
+                      ranku(iCol) = epsm1
                    else
                       rankk = max(minloc(abs(predictor_matrix_sw(iCol,iLay,iPred) - mlrad_data%sw%vector_breakpoint(:,iLay, ip2io_sw(iPred)))) - 1, 1)
                       ranku(iCol) = mlrad_data%sw%vector_intercept(rankk(1), iLay, ip2io_sw(iPred)) + &
@@ -694,10 +758,10 @@ contains
                 else
                    if     (predictor_matrix_sw(iCol,iLay,iPred) <= mlrad_data%sw%scalar_breakpoint(  1, ip2io_sw(iPred))) then
                       rankk(1) = 1
-                      ranku(iCol) = epsilon(1._kind_phys)
+                      ranku(iCol) = eps
                    elseif (predictor_matrix_sw(iCol,iLay,iPred) >= mlrad_data%sw%scalar_breakpoint(nbpts, ip2io_sw(iPred))) then
                       rankk(1) = nbpts
-                      ranku(iCol) = 1._kind_phys - epsilon(1._kind_phys)
+                      ranku(iCol) = epsm1
                    else
                       rankk = max(minloc(abs(predictor_matrix_sw(iCol,iLay,iPred) - mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))) - 1, 1)
                       ranku(iCol) = mlrad_data%sw%scalar_intercept(rankk(1), ip2io_sw(iPred)) + &
@@ -734,6 +798,57 @@ contains
        call infero_check(model_sw%infer(predictor_matrix_sw, target_matrix_sw))
     endif
 
+    if (debug) then
+       do iCol=1,nCol
+          status = nf90_put_var(ncid,varID0, fhour,                                start=record_counter)
+          status = nf90_put_var(ncid,varID1, sfcflw(iCol)%dnfxc,                   start=record_counter)
+          status = nf90_put_var(ncid,varID2, topflw(iCol)%upfxc,                   start=record_counter)
+          status = nf90_put_var(ncid,varID3, target_matrix_lw(iCol,nLev+1),        start=record_counter)
+          status = nf90_put_var(ncid,varID4, target_matrix_lw(iCol,nLev+2),        start=record_counter)
+          status = nf90_put_var(ncid,varID5, predictor_matrix_lw(iCol,:,ilw_lwc),  start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID6, predictor_matrix_lw(iCol,:,ilw_iwc),  start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID7, predictor_matrix_lw(iCol,:,ilw_z),    start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID8, predictor_matrix_lw(iCol,:,ilw_dlwp), start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID9, predictor_matrix_lw(iCol,:,ilw_diwp), start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID10,predictor_matrix_lw(iCol,:,ilw_dwvp), start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID12, rho,                                 start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID13, predictor_matrix_lw(iCol,:,ilw_ulwp),start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID14, predictor_matrix_lw(iCol,:,ilw_uiwp),start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID15, predictor_matrix_lw(iCol,:,ilw_uwvp),start=(/1,record_counter/),count=(/127,1/))
+
+          status = nf90_put_var(ncid,varID11, qgrs(iCol,:,       1),               start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID16, tracer1(iCol,:,i_cldliq),            start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID17, tracer1(iCol,:,i_cldice),            start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID18, tracer1(iCol,:,       3),            start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID19, tracer1(iCol,:,       5),            start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID20, tracer1(iCol,:,       6),            start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID21, tracer1(iCol,:,       9),            start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID22, predictor_matrix_lw(iCol,:,ilw_dp),  start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID23, predictor_matrix_lw(iCol,:,ilw_dz),  start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varID24, predictor_matrix_lw(iCol,:,ilw_p),   start=(/1,record_counter/),count=(/127,1/))
+       enddo
+       record_counter(1) = record_counter(1) + 1
+       do iCol=1,nCol
+          !write(94,'(a20,4a18)'  ) '                  ','ML(LW down @ SFC)','G(LW down @ SFC)','ML(LW up @ TOA)', 'G(LW up @ TOA)'
+          !write(94,'(a20,3f12.2)') 'LW surface(down): ',target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,sfcflw(iCol)%dnfx0
+          !write(94,'(a20,3f12.2)') 'LW toa(up):       ',target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc,topflw(iCol)%upfx0
+          write(94,'(4f18.2)') target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc
+          !write(94,'(a20,3f12.2)') 'SW surface(down): ',target_matrix_sw(iCol,nLev+1),sfcfsw(iCol)%dnfxc,sfcfsw(iCol)%dnfx0
+          !write(94,'(a20,3f12.2)') 'SW toa(up):       ',target_matrix_sw(iCol,nLev+2),topfsw(iCol)%upfxc,topfsw(iCol)%upfx0
+       enddo
+
+       do iCol=1,nCol
+          !write(93,'(a30)') 'heating profile (K/day): '
+          !write(93,'(3a12)'  ) 'Layer','ML(all)','G(all)'
+          !write(93,'(3a12)'  ) '     ','(LW)',   '(LW)'
+          !do iLay=1,nLev
+          !   write(93,'(a9,i3,2f12.2)') '',iLay,target_matrix_lw(iCol,iLay),htrlw(iCol,iLay)*3600.*24.
+          !enddo
+          write(93,'(127f12.2)') target_matrix_lw(iCol,:)
+          write(93,'(127f12.2)') htrlw(iCol,:)*3600.*24.
+       enddo
+    end if
+    
     ! #######################################################################################
     ! #######################################################################################
     ! #######################################################################################
@@ -913,7 +1028,7 @@ contains
           enddo
        enddo
     endif
-!    do_debug_once = .false.
+    do_debug_once = .false.
     ! #######################################################################################
     ! #######################################################################################
     ! #######################################################################################
@@ -924,16 +1039,16 @@ contains
  
     ! Copy from prediction-matrix to ccpp interstitials (for prognostic ML rad)
     do iCol=1,nCol
-       htrlw(iCol,1:nLev) = target_matrix_lw(iCol,1:nLev)/(3600.*24.) ! K/day -> K/sec
-       sfcflw(iCol)%dnfxc = target_matrix_lw(iCol,nLev+1)
+!       htrlw(iCol,1:nLev) = target_matrix_lw(iCol,1:nLev)/(3600.*24.) ! K/day -> K/sec
+!       sfcflw(iCol)%dnfxc = target_matrix_lw(iCol,nLev+1)
 !       sfcflw(iCol)%upfxc = 0.
-       topflw(iCol)%upfxc = target_matrix_lw(iCol,nLev+2)
+!       topflw(iCol)%upfxc = target_matrix_lw(iCol,nLev+2)
     enddo
     do iDay=1,nDay
-       htrsw(idx(iDay),1:nLev) = target_matrix_sw(iDay,1:nLev)/(3600.*24.) ! K/day -> K/sec
-       sfcfsw(idx(iDay))%dnfxc = target_matrix_sw(iDay,nLev+1)
+!       htrsw(idx(iDay),1:nLev) = target_matrix_sw(iDay,1:nLev)/(3600.*24.) ! K/day -> K/sec
+!       sfcfsw(idx(iDay))%dnfxc = target_matrix_sw(iDay,nLev+1)
 !       sfcfsw(idx(iDay))%upfxc = 0.
-       topfsw(idx(iDay))%upfxc = target_matrix_sw(iDay,nLev+2)
+!       topfsw(idx(iDay))%upfxc = target_matrix_sw(iDay,nLev+2)
 !       topfsw(idx(iDay))%dnfxc = 0.
     enddo
 
@@ -964,7 +1079,10 @@ contains
     ! Finalize
     call infero_check(infero_finalise())
 
+    status = nf90_close(ncid)
     if (debug) then
+       close(93)
+       close(94)
        close(95)
        close(96)
        close(97)
