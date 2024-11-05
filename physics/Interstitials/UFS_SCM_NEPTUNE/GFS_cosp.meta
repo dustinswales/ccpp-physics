@@ -214,6 +214,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [cldtau_lw]
   standard_name = cloud_optical_depth_layers_at_10mu_band
   long_name = approx 10mu band layer cloud optical depth
@@ -335,9 +336,9 @@
   dimensions = ()
   type = integer
   intent = in
-[n_misr_pres_bins]
-  standard_name = number_of_misr_simulator_pressure_bins
-  long_name = number of pressure bins in MISR CFAD.
+[n_misr_hgt_bins]
+  standard_name = number_of_misr_simulator_height_bins
+  long_name = number of height bins in MISR CFAD.
   units = count
   dimensions = ()
   type = integer
@@ -422,7 +423,7 @@
   dimensions = (horizontal_loop_extent,number_of_isccp_simulator_optical_depth_bins,number_of_isccp_simulator_pressure_bins)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [cldtot_isccp]
   standard_name = isccp_mean_cloud_fraction
   long_name = ISCCP mean cloud fraction
@@ -430,7 +431,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [meancldalb_isccp]
   standard_name = isccp_mean_cloud_albedo
   long_name = ISCCP mean cloud albedo
@@ -438,7 +439,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [meanptop_isccp]
   standard_name = isccp_mean_cloud_top_pressure
   long_name = ISCCP mean cloud top pressure
@@ -446,7 +447,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [meantau_isccp]
   standard_name = isccp_mean_cloud_optical_depth
   long_name = ISCCP mean cloud optical depth
@@ -454,7 +455,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [meantb_isccp]
   standard_name = isccp_mean_cloud_brightness_temperature
   long_name = ISCCP mean cloud brightness temperature
@@ -462,7 +463,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [meantbclr_isccp]
   standard_name = isccp_mean_cloud_brightness_temperature_for_clear_sky_conditions
   long_name = ISCCP mean cloud brightness temperature for clear sky conditions
@@ -470,7 +471,7 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [tau_isccp]
   standard_name = isccp_cloud_optical_depth
   long_name = ISCCP cloud optical depth
@@ -478,7 +479,7 @@
   dimensions = (horizontal_loop_extent,number_of_cosp_subcolumns)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [cldptop_isccp]
   standard_name = isccp_cloud_top_pressure
   long_name = ISCCP cloud top pressure
@@ -486,7 +487,7 @@
   dimensions = (horizontal_loop_extent,number_of_cosp_subcolumns)
   type = real
   kind = kind_phys
-  intent = inout
+  intent = out
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP

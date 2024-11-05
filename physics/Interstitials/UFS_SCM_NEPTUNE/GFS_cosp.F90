@@ -109,7 +109,7 @@ contains
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
        top_at_1, con_g, iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
        isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
-       n_misr_pres_bins, misr_pres_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,  &
+       n_misr_hgt_bins, misr_pres_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,   &
        do_cosp, do_isccp, do_misr, do_modis, overlap,                                       &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
        meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
@@ -132,7 +132,7 @@ contains
 	 n_isccp_tau_bins,   & ! Number of optical-depth bins in ISCCP CFAD.
          n_modis_pres_bins,  & ! Number of pressure      bins in MODIS CFAD.
          n_modis_tau_bins,   & ! Number of optical-depth bins in MODIS CFAD.
-         n_misr_pres_bins,   & ! Number of pressure      bins in MISR CFAD.
+         n_misr_hgt_bins,    & ! Number of height        bins in MISR CFAD.
          n_misr_tau_bins,    & ! Number of optical-depth bins in MISR CFAD.
          overlap,            & ! Cloud overlap assumption
          iSFC,               & ! Vertical index for surface
@@ -167,12 +167,12 @@ contains
          errmsg                ! CCPP error message
     integer, intent(out) :: &
          errflg                ! CCPP error flag
-    real(kind_phys), dimension(:,:,:), intent(inout) :: &
+    real(kind_phys), dimension(:,:,:), intent(out) :: &
          f1isccp_cosp          ! ISCCP CFAD
-    real(kind_phys), dimension(:,:), intent(inout) :: &
+    real(kind_phys), dimension(:,:), intent(out) :: &
          tau_isccp,          & ! ISCCP subcolumn optical-depth
          cldptop_isccp         ! ISCCP subcolumn cloud-top pressure
-    real(kind_phys), dimension(:), intent(inout) :: &
+    real(kind_phys), dimension(:), intent(out) :: &
          cldtot_isccp,       & ! ISCCP mean cloud-fraction
          meancldalb_isccp,   & ! ISCCP mean cloud albedo
          meanptop_isccp,     & ! ISCCP mean cloud-top pressure
@@ -197,6 +197,17 @@ contains
     errmsg = ''
     errflg = 0
 
+    ! Initialize.
+    f1isccp_cosp     = 0._kind_phys
+    tau_isccp        = 0._kind_phys
+    cldptop_isccp    = 0._kind_phys
+    cldtot_isccp     = 0._kind_phys
+    meanptop_isccp   = 0._kind_phys
+    meantau_isccp    = 0._kind_phys
+    meancldalb_isccp = 0._kind_phys
+    meantb_isccp     = 0._kind_phys
+    meantbclr_isccp  = 0._kind_phys
+
     ! Vertical stride direction
     if (top_at_1)       vs = 1
     if (.not. top_at_1) vs = -1
@@ -204,7 +215,7 @@ contains
     ! Compute sunlit flag.
     sunlit(:) = 0
     do iCol = 1, nCol
-       if (coszen(iCol) >= 0.0001) then
+       if (coszen(iCol) > 0._kind_phys) then
           sunlit(iCol) = 1
        endif
     enddo
@@ -212,7 +223,7 @@ contains
     ! Type containing COSP outputs.
     call construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay,      &
     	 cosp_nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins, n_modis_pres_bins,              &
-	 n_modis_tau_bins, n_misr_pres_bins, n_misr_tau_bins, cospOUT)
+	 n_modis_tau_bins, n_misr_hgt_bins, n_misr_tau_bins, cospOUT)
 
     ! Host-model state for COSP (toa-2-sfc vertical ordering).
     call construct_cospstateIN(nCol, nLay, cospstateIN)
@@ -256,30 +267,39 @@ contains
     if (do_isccp) then
        ! 1D
        where(sunlit(1:nCol) .eq. 0)
-          cospOUT%isccp_totalcldarea(1:nCol)  = R_UNDEF
-          cospOUT%isccp_meanptop(1:nCol)      = R_UNDEF
-          cospOUT%isccp_meantaucld(1:nCol)    = R_UNDEF
-          cospOUT%isccp_meanalbedocld(1:nCol) = R_UNDEF
-          cospOUT%isccp_meantb(1:nCol)        = R_UNDEF
-          cospOUT%isccp_meantbclr(1:nCol)     = R_UNDEF
+          cospOUT%isccp_totalcldarea(1:nCol)  = 0._kind_phys
+          cospOUT%isccp_meanptop(1:nCol)      = 0._kind_phys
+          cospOUT%isccp_meantaucld(1:nCol)    = 0._kind_phys
+          cospOUT%isccp_meanalbedocld(1:nCol) = 0._kind_phys
+          cospOUT%isccp_meantb(1:nCol)        = 0._kind_phys
+          cospOUT%isccp_meantbclr(1:nCol)     = 0._kind_phys
        end where
        ! 2D
        do iSubCol=1,cosp_nsubcol
           where (sunlit(1:nCol) .eq. 0)
-             cospOUT%isccp_boxtau(1:nCol,iSubCol)  = R_UNDEF
-             cospOUT%isccp_boxptop(1:nCol,iSubCol) = R_UNDEF
+             cospOUT%isccp_boxtau(1:nCol,iSubCol)  = 0._kind_phys
+             cospOUT%isccp_boxptop(1:nCol,iSubCol) = 0._kind_phys
           end where
        enddo
        ! 3D
        do iprs=1,n_isccp_pres_bins
           do itau=1,n_isccp_tau_bins
              where(sunlit(1:nCol) .eq. 0)
-                cospOUT%isccp_fq(1:nCol,iprs,itau) = R_UNDEF
+                cospOUT%isccp_fq(1:nCol,iprs,itau) = 0._kind_phys
              end where
           end do
        end do
     endif
-
+    if (do_misr) then
+       do iprs=1,n_misr_hgt_bins
+          do itau=1,n_misr_tau_bins
+             where(cam_sunlit(1:ncol) .eq. 0)
+                cospOUT%misr_fq(1:ncol,itau,iprs) = R_UNDEF
+             end where
+          end do
+       end do
+    end if
+    
     ! Copy COSP outputs to host interstitials.
     f1isccp_cosp     = cospOUT%isccp_fq
     tau_isccp        = cospOUT%isccp_boxtau
@@ -325,8 +345,8 @@ contains
          cospIN       ! DDT containing optical inputs needed by COSP.
 
     ! Locals
-    type(rng_state), dimension(nSubCol) :: rngs
-    integer,         dimension(nSubCol) :: seed
+    type(rng_state), dimension(nCol) :: rngs
+    integer,         dimension(nCol) :: seed
     integer :: iSub
     real(kind_phys), dimension(nCol,nLay) :: cldemis_lw_strat, cldemis_lw_conv
     real(kind_phys), dimension(nCol,nLay) :: cldtau_sw_conv, cldtau_sw_strat
@@ -383,7 +403,7 @@ contains
   ! ######################################################################################
   subroutine construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, nSubCol, nLay,    &
   	     Nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins, n_modis_pres_bins,            &
-	     n_modis_tau_bins, n_misr_pres_bins, n_misr_tau_bins, x)
+	     n_modis_tau_bins, n_misr_hgt_bins, n_misr_tau_bins, x)
 
     ! Inputs
     logical, intent(in) :: &
@@ -399,7 +419,7 @@ contains
          n_isccp_tau_bins,  & ! Number of optical-depth bins in ISCCP CFAD.
          n_modis_pres_bins, & ! Number of pressure      bins in MODIS CFAD.
          n_modis_tau_bins,  & ! Number of optical-depth bins in MODIS CFAD.
-         n_misr_pres_bins,  & ! Number of pressure      bins in MISR CFAD.
+         n_misr_hgt_bins,   & ! Number of height        bins in MISR CFAD.
          n_misr_tau_bins      ! Number of optical-depth bins in MISR CFAD.
     
     ! Outputs
@@ -421,7 +441,7 @@ contains
 
     ! MISR simulator
     if (do_misr) then 
-       allocate(x%misr_fq(nCol, n_misr_tau_bins, n_modis_pres_bins))
+       allocate(x%misr_fq(nCol, n_misr_tau_bins, n_misr_hgt_bins))
     endif
     
     ! MODIS simulator
