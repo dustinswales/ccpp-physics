@@ -11,7 +11,7 @@ module GFS_cosp
   use machine,                  only: kind_phys
   use mod_cosp,                 only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs,&
                                       cosp_simulator
-  use mod_cosp_config,          only: R_UNDEF
+  use mod_cosp_config,          only: R_UNDEF_COSP => R_UNDEF
   use mod_cosp_modis_interface, only: cosp_modis_init
   use mod_cosp_misr_interface,  only: cosp_misr_init
   use mod_cosp_isccp_interface, only: cosp_isccp_init
@@ -20,6 +20,8 @@ module GFS_cosp
   use mod_prec_scops,           only: prec_scops
   implicit none
 
+  real(kind_phys), parameter :: R_UNDEF  = 0._kind_phys
+  real(kind_phys), parameter :: emsfc_lw = 0.99_kind_phys ! longwave emissivity of surface at 10.5 microns 
 contains
 
 ! ###########################################################################################
@@ -109,7 +111,7 @@ contains
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
        top_at_1, con_g, iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
        isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
-       n_misr_hgt_bins, misr_pres_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,   &
+       n_misr_hgt_bins, misr_hgt_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,    &
        do_cosp, do_isccp, do_misr, do_modis, overlap,                                       &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
        meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
@@ -147,7 +149,7 @@ contains
 	 isccp_tau_bins,     & ! Optical-depth bin boundaries for ISCCP CFAD.
          modis_pres_bins,    & ! Pressure bin boundaries for MODIS CFAD.
          modis_tau_bins,     & ! Optical-depth bin boundaries for  MODIS CFAD.
-         misr_pres_bins,     & ! Pressure bin boundaries for MISR CFAD.
+         misr_hgt_bins,      & ! Pressure bin boundaries for MISR CFAD.
          misr_tau_bins         ! Optical-depth bin boundaries for MISR CFAD.
     real(kind_phys), dimension(:,:), intent(in) :: & 
          prsl,               & ! Pressure at model-layer centers (Pa)
@@ -156,9 +158,10 @@ contains
          phii,               & ! Geopotential at model-interface (m2/s2)
          phil,               & ! Geopotential at model-layer centers
          cld_frac,           & ! Total cloud fraction
-         ccld_frac,          & ! Convective cloud fraction
          cldtau_lw,          & ! In-cloud 10 micron optical depth
          cldtau_sw             ! In-cloud 0.67 micron optical depth
+    real(kind_phys), dimension(:,:), intent(in), optional :: &
+         ccld_frac             ! Convective cloud fraction
     real(kind_phys), dimension(:,:,:), intent(in) :: & 
          qgrs                  ! Tracer concentrations (kg/kg)
 
@@ -187,6 +190,7 @@ contains
     integer, dimension(nCol)  :: sunlit
     integer :: iCol, nerror, iErr, vs, iprs, itau, iSubCol
     character(len=256),dimension(100) :: cosp_status
+    real(kind_phys), dimension(nCol,nLay) :: ccld_frac_local
 
     if (.not. do_cosp) return
 
@@ -198,15 +202,15 @@ contains
     errflg = 0
 
     ! Initialize.
-    f1isccp_cosp     = 0._kind_phys
-    tau_isccp        = 0._kind_phys
-    cldptop_isccp    = 0._kind_phys
-    cldtot_isccp     = 0._kind_phys
-    meanptop_isccp   = 0._kind_phys
-    meantau_isccp    = 0._kind_phys
-    meancldalb_isccp = 0._kind_phys
-    meantb_isccp     = 0._kind_phys
-    meantbclr_isccp  = 0._kind_phys
+!    f1isccp_cosp     = 0._kind_phys
+!    tau_isccp        = 0._kind_phys
+!    cldptop_isccp    = 0._kind_phys
+!    cldtot_isccp     = 0._kind_phys
+!    meanptop_isccp   = 0._kind_phys
+!    meantau_isccp    = 0._kind_phys
+!    meancldalb_isccp = 0._kind_phys
+!    meantb_isccp     = 0._kind_phys
+!    meantbclr_isccp  = 0._kind_phys
 
     ! Vertical stride direction
     if (top_at_1)       vs = 1
@@ -234,24 +238,30 @@ contains
     cospstateIN%pfull           = prsl(:,iTOA:iSFC:vs)
     cospstateIN%phalf           = prsi(:,iTOA-vs:iSFC:vs)
     cospstateIN%qv              = qgrs(:,iTOA:iSFC:vs,1)
-    cospstateIN%hgt_matrix      = phil/con_g
-    cospstateIN%hgt_matrix_half = phii/con_g
+    cospstateIN%hgt_matrix      = phil(:,iTOA:iSFC:vs)/con_g
+    cospstateIN%hgt_matrix_half = phii(:,iTOA-vs:iSFC:vs)/con_g
     where(cospstateIN%qv .lt. 1.e-6) cospstateIN%qv = 1.e-6
 
     ! Derived (optical) inputs for COSP.
     call construct_cospIN(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay, cospIN)
+    cospIN%emsfc_lw = emsfc_lw
+
+    ! We may/maynot have convective cloud-condensate (depends on MP choice).
+    ccld_frac_local(:,:) = 0._kind_phys
+    if (present(ccld_frac)) ccld_frac_local = ccld_frac
 
     !
     ! Call subsample_and_optics
     !
     call subsample_and_optics(nCol, cosp_nsubcol, nLay, do_isccp, do_misr, do_modis,     &
-    	 prsi(:,iSFC), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
+    	 prsi(:,iSFC), cld_frac, ccld_frac_local, overlap, cldtau_lw, cldtau_sw, cospIN)
 
     !
-    ! Call COSP
+    ! Call COSP (ToDo. Make cosp_simulator CCPP entrypoint, everything before this point
+    ! is part of the _pre step, everything after the call to cosp_simulator will be part
+    ! of the _post step.)
     !
-    cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT, start_idx=1,              &
-         stop_idx=nCol, debug=.false.)
+    cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT)
 
     ! Error checking
     nerror = 0
@@ -262,6 +272,14 @@ contains
        end if
     end do
     if (nerror > 0) errflg = -1
+
+    ! Replace COSP masking.
+    where(cospOUT%isccp_totalcldarea  .eq. R_UNDEF) cospOUT%isccp_totalcldarea  = 0._kind_phys
+    where(cospOUT%isccp_meanptop      .eq. R_UNDEF) cospOUT%isccp_meanptop      = 0._kind_phys
+    where(cospOUT%isccp_meantaucld    .eq. R_UNDEF) cospOUT%isccp_meantaucld    = 0._kind_phys
+    where(cospOUT%isccp_meanalbedocld .eq. R_UNDEF) cospOUT%isccp_meanalbedocld = 0._kind_phys
+    where(cospOUT%isccp_meantb        .eq. R_UNDEF) cospOUT%isccp_meantb        = 0._kind_phys
+    where(cospOUT%isccp_meantbclr     .eq. R_UNDEF) cospOUT%isccp_meantbclr     = 0._kind_phys
 
     ! Set dark-scenes to fill value. Only done for passive simulators
     if (do_isccp) then
@@ -293,8 +311,8 @@ contains
     if (do_misr) then
        do iprs=1,n_misr_hgt_bins
           do itau=1,n_misr_tau_bins
-             where(cam_sunlit(1:ncol) .eq. 0)
-                cospOUT%misr_fq(1:ncol,itau,iprs) = R_UNDEF
+             where(sunlit(1:ncol) .eq. 0)
+                cospOUT%misr_fq(1:ncol,itau,iprs) = 0._kind_phys
              end where
           end do
        end do
@@ -314,13 +332,61 @@ contains
   end subroutine GFS_cosp_run
 !> @}
 
-  ! ######################################################################################
+! ###########################################################################################
+!! \section arg_table_GFS_cosp_timestep_finalize
+!! \htmlinclude GFS_cosp_timestep_finalize.html
+!!
+! ###########################################################################################
+  subroutine GFS_cosp_timestep_finalize(do_isccp, f1isccp_cosp, f1isccp_cosp_avg, n_isccp_pres_bins,  &
+       n_isccp_tau_bins, errmsg, errflg)
+    ! Inputs
+    logical, intent(in) :: &
+         do_isccp              ! Flag for COSP ISCCP diagnostics
+    integer, intent(in) :: &
+         n_isccp_pres_bins,  & ! Number of pressure      bins in ISCCP CFAD.
+         n_isccp_tau_bins      ! Number of optical-depth bins in ISCCP CFAD.
+    real(kind_phys), dimension(:,:,:), intent(in) :: &
+         f1isccp_cosp          ! ISCCP CFAD
+
+    ! Outputs
+    real(kind_phys), dimension(:,:), intent(out) :: &
+         f1isccp_cosp_avg      ! ISCCP CFAD (globally averaged)
+    character(len=*), intent(out) :: &
+         errmsg                ! CCPP error message
+    integer, intent(out) :: &
+         errflg                ! CCPP error flag
+
+    ! Locals
+    integer :: iprs, itau, iCol, count
+
+    ! Initialize CCPP error handling variables
+    errmsg = ''
+    errflg = 0
+
+    ! Compute spatially averaged diagnsotics for timestep.
+    if (do_isccp) then
+       do iprs=1,n_isccp_pres_bins
+          do itau=1,n_isccp_tau_bins
+             count = 0
+             do iCol=1,size(f1isccp_cosp,dim=3)
+                if (f1isccp_cosp(iCol,iprs,itau) .ne. R_UNDEF) then
+                   f1isccp_cosp_avg(iprs,itau) = f1isccp_cosp(iCol,iprs,itau)
+                   count = count + 1
+                endif
+             end do
+             f1isccp_cosp_avg(iprs,itau) = f1isccp_cosp_avg(iprs,itau)/count
+          end do
+       end do
+    endif
+
+  end subroutine GFS_cosp_timestep_finalize
+  ! #########################################################################################
   ! SUBROUTINE subsample_and_optics
   !
   ! This routine contains the radiaiton to cloud coupling needed by COSP. Changes to host
   ! cloud and radiative configurations need to also occur here.
   !
-  ! ######################################################################################
+  ! #########################################################################################
   subroutine subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,      &
        sfcP, cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
 
