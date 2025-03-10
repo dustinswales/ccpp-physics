@@ -3,7 +3,8 @@
   type = scheme
   dependencies = hooks/machine.F,tools/funcphys.f90,Radiation/radiation_gases.f,module_mlrad.F90
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f,Radiation/radiation_aerosols.f
-
+  dependencies = photochem/module_ozphys.F90
+  
 ########################################################################
 [ccpp-arg-table]
   name = mlrad_driver_init
@@ -129,13 +130,6 @@
   dimensions = ()
   type = logical
   intent = in
-[do_norm]
-  standard_name = flag_for_machine_learning_radiation_scheme_normalization
-  long_name = flag for normalization in machine learning radiation scheme
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
 [mlrad_data]
   standard_name = training_data_used_in_machine_learning_radiation
   long_name = training data used in machine learning radiation
@@ -234,22 +228,24 @@
   type = real
   kind = kind_phys
   intent = in
-[cld_reice]
-  standard_name = mean_effective_radius_for_ice_cloud
-  long_name = mean effective radius for ice cloud
-  units = m
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
 [cld_reliq]
-  standard_name = mean_effective_radius_for_liquid_cloud
-  long_name = mean effective radius for liquid cloud
-  units = m
+  standard_name = effective_radius_of_stratiform_cloud_liquid_water_particle
+  long_name = eff. radius of cloud liquid water particle in micrometer
+  units = um
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
+  optional = True
+[cld_reice]
+  standard_name = effective_radius_of_stratiform_cloud_ice_particle
+  long_name = eff. radius of cloud ice water particle in micrometer
+  units = um
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = True
 [i_cldliq]
   standard_name = index_of_cloud_liquid_water_mixing_ratio_in_tracer_concentration_array
   long_name = tracer index for cloud condensate (or liquid water)
@@ -292,6 +288,7 @@
   dimensions = (horizontal_loop_extent)
   type = integer
   intent = in
+  optional = True
 [lat]
   standard_name = latitude
   long_name = latitude
@@ -460,14 +457,6 @@
   dimensions = (horizontal_loop_extent)
   type = topfsw_type
   intent = inout
-[oro]
-  standard_name = unfiltered_height_above_mean_sea_level
-  long_name = height_above_mean_sea_level
-  units = m
-  dimensions = (horizontal_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
 [fhour]
   standard_name = forecast_time
   long_name = current forecast time
@@ -475,6 +464,13 @@
   dimensions = ()
   type = real
   kind = kind_phys
+  intent = in
+[ozphys]
+  standard_name = dataset_for_ozone_physics
+  long_name = dataset for NRL ozone physics
+  units = mixed
+  dimensions = ()
+  type = ty_ozphys
   intent = in
 [errmsg]
   standard_name = ccpp_error_message

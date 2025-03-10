@@ -6,30 +6,30 @@
 !!
 !! There are 24 predictors for the Longwave (LW) emulator:
 !!         Name                                Units
-!!    1  - 'zenith_angle_radians'              [1]
-!!    2  - 'surface_temperature_kelvins'       [K]
-!!    3  - 'surface_emissivity'                [1]  
-!!    4  - 'pressure_pascals'                  [Pa]
-!!    5  - 'temperature_kelvins'               [K]
-!!    6  - 'specific_humidity_kg_kg01'         [kg/kg]
-!!    7  - 'relative_humidity_unitless'        [1]
-!!    8  - 'liquid_water_content_kg_m03'       [kg/m3]
-!!    9  - 'ice_water_content_kg_m03'          [kg/m3]
-!!    10 - 'downward_liquid_water_path_kg_m02' [kg/m2]
-!!    11 - 'downward_ice_water_path_kg_m02'    [kg/m2]
-!!    12 - 'downward_vapour_path_kg_m02'       [kg/m2]
-!!    13 - 'upward_liquid_water_path_kg_m02'   [kg/m2]
-!!    14 - 'upward_liquid_ice_path_kg_m02'     [kg/m2]
-!!    15 - 'upward_vapour_path_kg_m02'         [kg/m2]
-!!    16 - 'liquid_effective_radius_metres'    [m]
-!!    17 - 'ice_effective_radius_metres'       [m]
-!!    18 - 'o3_mixing_ratio_kg_kg01'           [kg/kg]
-!!    19 - 'co2_concentration_ppmv'            [ppmv]
-!!    20 - 'ch4_concentration_ppmv'            [ppmv]
-!!    21 - 'n2o_concentration_ppmv'            [ppmv]
-!!    22 - 'height_m_agl'                      [m]
-!!    23 - 'height_thickness_metres'           [m]
-!!    24 - 'pressure_thickness_pascals'        [Pa]
+!!     1 - 'pressure_pascals'                  [Pa]
+!!     2 - 'temperature_kelvins'               [K]
+!!     3 - 'specific_humidity_kg_kg01'         [kg/kg]
+!!     4 - 'relative_humidity_unitless'        [1]
+!!     5 - 'liquid_water_content_kg_m03'       [kg/m3]
+!!     6 - 'ice_water_content_kg_m03'          [kg/m3]
+!!     7 - 'downward_liquid_water_path_kg_m02' [kg/m2]
+!!     8 - 'downward_ice_water_path_kg_m02'    [kg/m2]
+!!     9 - 'downward_vapour_path_kg_m02'       [kg/m2]
+!!    10 - 'upward_liquid_water_path_kg_m02'   [kg/m2]
+!!    11 - 'upward_liquid_ice_path_kg_m02'     [kg/m2]
+!!    12 - 'upward_vapour_path_kg_m02'         [kg/m2]
+!!    13 - 'liquid_effective_radius_metres'    [m]
+!!    14 - 'ice_effective_radius_metres'       [m]
+!!    15 - 'o3_mixing_ratio_kg_kg01'           [kg/kg]
+!!    16 - 'co2_concentration_ppmv'            [ppmv]
+!!    17 - 'ch4_concentration_ppmv'            [ppmv]
+!!    18 - 'n2o_concentration_ppmv'            [ppmv]
+!!    19 - 'height_m_agl'                      [m]
+!!    20 - 'height_thickness_metres'           [m]
+!!    21 - 'pressure_thickness_pascals'        [Pa]
+!!    22 - 'zenith_angle_radians'              [1]
+!!    23 - 'surface_temperature_kelvins'       [K]
+!!    24 - 'surface_emissivity'                [1]
 !!
 !! There are 26 predictors for the Shortwave (SW) emulator:
 !!         Name                                Units
@@ -66,6 +66,7 @@ module mlrad_driver
   use funcphys,                  only: fpvs
   use module_radiation_gases,    only: NF_VGAS, getgases
   use module_radiation_aerosols, only: setaer
+  use module_ozphys,             only: ty_ozphys
   use module_mlrad,              only: ty_mlrad_data, ip2io_lw, is2D_lw, pnames_lw,         &
                                        pnames_sw, ip2io_sw, is2D_sw,ty_rad_ml_ref_data,     &
                                        ilw_sza, ilw_sfct, ilw_emiss, ilw_p, ilw_t, ilw_q,   &
@@ -77,18 +78,15 @@ module mlrad_driver
                                        isw_iwc, isw_dlwp, isw_diwp, isw_dwvp, isw_ulwp,     &
                                        isw_uiwp, isw_uwvp, isw_reliq, isw_reice, isw_o3mr,  &
                                        isw_co2, isw_ch4, isw_n2o, isw_tauaer, isw_z, isw_dz,&
-                                       isw_dp
+                                       isw_dp, npred_lw, npred_sw, pnames_lw, pnames_sw,    &
+                                       check_netCDF
   use iso_c_binding,             only: c_float, c_null_char
   use inferof
   use netcdf
 
   implicit none
 
-  real(kind_phys),dimension(1,127,1,28) :: npmatrix_offline
-
   type(infero_model) :: model_lw, model_sw
-
-  logical :: do_debug_once
 
   ! Default effective radii, used when coupling radiation to single-moment cloud microphysics
   ! This is set by the host using, effr_in=F
@@ -98,12 +96,15 @@ module mlrad_driver
        epsm1      = 0.999999, eps=0.000001
 !       eps        = epsilon(1._kind_phys), &
 !       epsm1      = 1._kind_phys - epsilon(1._kind_phys)
-  integer :: cmode,ncid,status,varID0,varID1,varID2,varID3,varID4,varID5,varID6,varID7,     &
-       varID8,varID9,varID10,varID11,varID12,varID13,varID14,varID15,varID16,varID17,       &
-       varID18,varID19,varID20,varID21,dimID1,dimID2,record_counter(1),varID22,varID23,     &
-       varID24,varID25,varID26,varID27,varID28
 
+  ! Boolean masks
+  integer, allocatable :: maskHR_lw(:,:), maskFLX_lw(:,:), maskHGT_lw(:), maskHR_sw(:,:),   &
+       maskFLX_sw(:,:), maskHGT_sw(:)
+  real(kind_dbl_prec), allocatable :: maskWVL_lw(:), maskWVL_sw(:)
   
+  ! Module parameters (used for debug)
+  integer :: cmode,ncid,status,dimID1,dimID2,varIDs(5),varIDv(npred_lw),record_counter(1)
+
   public mlrad_driver_init, mlrad_driver_run
 
 contains
@@ -134,57 +135,74 @@ contains
          errflg          ! CCPP error flag
 
     ! Locals
+    character(len=128) :: infero_model_lw, infero_model_sw, infero_masks_lw, infero_masks_sw
+    character(len=128) :: err_message
     character(1024) :: yaml_config_lw, yaml_config_sw
-    integer :: iCol, iPred, iLay, iName, count
-
+    integer :: iCol, iPred, iLay, iName, count, iVar, ncidMask, dimid, varid
+    integer :: nheight_m_agl, nwavelength_metres, nscalar_target_name
+    
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
 
     if (.not. do_mlrad) return
 
-    status = nf90_create('debug.mlrad_driver.fluxes.nc',cmode=nf90_clobber,ncid=ncid)
-    status = nf90_def_dim(ncid,'lev',127,dimID1)
-    status = nf90_def_dim(ncid,'time',nf90_unlimited,dimID2)
-    status = nf90_def_var(ncid,'time_rad',     nf90_real, dimID2, varID0)
-    status = nf90_def_var(ncid,'lwdnsfc_rrtmg',nf90_real, dimID2, varID1)
-    status = nf90_def_var(ncid,'lwuptoa_rrtmg',nf90_real, dimID2, varID2)
-    status = nf90_def_var(ncid,'lwdnsfc_mlrad',nf90_real, dimID2, varID3)
-    status = nf90_def_var(ncid,'lwuptoa_mlrad',nf90_real, dimID2, varID4)
-    status = nf90_def_var(ncid,'lwc',          nf90_real, (/dimID1,dimID2/), varID5)
-    status = nf90_def_var(ncid,'iwc',          nf90_real, (/dimID1,dimID2/), varID6)
-    status = nf90_def_var(ncid,'z',            nf90_real, (/dimID1,dimID2/), varID7)
-    status = nf90_def_var(ncid,'dlwp',         nf90_real, (/dimID1,dimID2/), varID8)
-    status = nf90_def_var(ncid,'diwp',         nf90_real, (/dimID1,dimID2/), varID9)
-    status = nf90_def_var(ncid,'dwvp',         nf90_real, (/dimID1,dimID2/), varID10)
-    status = nf90_def_var(ncid,'qv',           nf90_real, (/dimID1,dimID2/), varID11)
-    status = nf90_def_var(ncid,'rho',          nf90_real, (/dimID1,dimID2/), varID12)
-    status = nf90_def_var(ncid,'ulwp',         nf90_real, (/dimID1,dimID2/), varID13)
-    status = nf90_def_var(ncid,'uiwp',         nf90_real, (/dimID1,dimID2/), varID14)
-    status = nf90_def_var(ncid,'uwvp',         nf90_real, (/dimID1,dimID2/), varID15)
-    status = nf90_def_var(ncid,'mr_liq',       nf90_real, (/dimID1,dimID2/), varID16)
-    status = nf90_def_var(ncid,'mr_ice',       nf90_real, (/dimID1,dimID2/), varID17)
-    status = nf90_def_var(ncid,'mr_rain',      nf90_real, (/dimID1,dimID2/), varID18)
-    status = nf90_def_var(ncid,'mr_snow',      nf90_real, (/dimID1,dimID2/), varID19)
-    status = nf90_def_var(ncid,'mr_grpl',      nf90_real, (/dimID1,dimID2/), varID20)
-    status = nf90_def_var(ncid,'mr_tcld',      nf90_real, (/dimID1,dimID2/), varID21)
-    status = nf90_def_var(ncid,'dp',           nf90_real, (/dimID1,dimID2/), varID22)
-    status = nf90_def_var(ncid,'dz',  	       nf90_real, (/dimID1,dimID2/), varID23)
-    status = nf90_def_var(ncid,'p',            nf90_real, (/dimID1,dimID2/), varID24)
-
-    status = nf90_enddef(ncid)
-    record_counter(1) = 1    
+    ! #######################################################################################
+    !
+    ! DEBUG mode only (remove/comment out when working as expecteed)
+    !
+    ! #######################################################################################
     if (debug) then
-       open(93, file='debug.mlrad_driver.heating_rates.txt',   status='unknown')
-       open(94, file='debug.mlrad_driver.fluxes.txt',          status='unknown')
-       write(94,'(4a18)'  ) 'ML(LW down @ SFC)','G(LW down @ SFC)','ML(LW up @ TOA)', 'G(LW up @ TOA)'
-       open(95, file='debug.mlrad_driver.upmatrix.example.txt',status='unknown')
-       open(96, file='debug.mlrad_driver.npmatrix.example.txt',status='unknown')
-       open(97, file='debug.mlrad_driver.upmatrix.inline.txt', status='unknown')
-       open(98, file='debug.mlrad_driver.npmatrix.inline.txt', status='unknown')
-       open(99, file='debug.mlrad_driver.breakpoints.txt',     status='unknown')
-       do_debug_once = .true.
+       status = nf90_create('debug.mlrad_driver.fluxes.nc',cmode=nf90_clobber,ncid=ncid)
+       status = nf90_def_dim(ncid,'lev',127,dimID1)
+       status = nf90_def_dim(ncid,'time',nf90_unlimited,dimID2)
+       status = nf90_def_var(ncid,'time_rad',     nf90_real, dimID2, varIDs( 1))
+       status = nf90_def_var(ncid,'lwdnsfc_rrtmg',nf90_real, dimID2, varIDs( 2))
+       status = nf90_def_var(ncid,'lwuptoa_rrtmg',nf90_real, dimID2, varIDs( 3))
+       status = nf90_def_var(ncid,'lwdnsfc_mlrad',nf90_real, dimID2, varIDs( 4))
+       status = nf90_def_var(ncid,'lwuptoa_mlrad',nf90_real, dimID2, varIDs( 5))
+       do iVar = 1, npred_lw
+          status = nf90_def_var(ncid,trim(pnames_lw(iVar)), nf90_real, (/dimID1,dimID2/), varIDv( iVar))
+       enddo
+       status = nf90_enddef(ncid)
+       record_counter(1) = 1
     endif
+
+    ! #######################################################################################
+    !
+    ! Read in boolean masks for longwave and shortwave models.
+    ! ToDo: Need to add MPI directives, or read in masks in GFS_control and store in typedefs?
+    !
+    ! #######################################################################################
+    infero_masks_lw = trim(infero_mpath_lw)//"spectral/boolean_masks_for_longwave.nc"
+    call check_netCDF(nf90_open(infero_masks_lw, NF90_NOWRITE, ncidMask),err_message)
+    
+    ! Dimensions
+    call check_netCDF(nf90_inq_dimid(        ncidMask, 'height_m_agl',      dimid),       err_message)
+    call check_netCDF(nf90_inquire_dimension(ncidMask, dimid, len = nheight_m_agl),       err_message)
+    call check_netCDF(nf90_inq_dimid(        ncidMask, 'wavelength_metres', dimid),       err_message)
+    call check_netCDF(nf90_inquire_dimension(ncidMask, dimid, len = nwavelength_metres),  err_message)    
+    call check_netCDF(nf90_inq_dimid(        ncidMask, 'scalar_target_name', dimid),      err_message)
+    call check_netCDF(nf90_inquire_dimension(ncidMask, dimid, len = nscalar_target_name), err_message)
+
+    ! Allocate space.
+    allocate(maskHR_lw(nwavelength_metres, nheight_m_agl))
+    allocate(maskFLX_lw(nscalar_target_name, nwavelength_metres))
+    allocate(maskHGT_lw(nheight_m_agl))
+    allocate(maskWVL_lw(nwavelength_metres))
+
+    ! Read in masks
+    call check_netCDF(nf90_inq_varid(ncidMask, "heating_rate_mask", varid), err_message)
+    call check_netCDF(nf90_get_var(  ncidMask, varid, maskHR_lw),           err_message)
+    call check_netCDF(nf90_inq_varid(ncidMask, "flux_mask", varid),         err_message)
+    call check_netCDF(nf90_get_var(  ncidMask, varid, maskFLX_lw),          err_message)
+    call check_netCDF(nf90_inq_varid(ncidMask, "height_m_agl", varid),      err_message)
+    call check_netCDF(nf90_get_var(  ncidMask, varid, maskHGT_lw),          err_message)
+    call check_netCDF(nf90_inq_varid(ncidMask, "wavelength_metres", varid), err_message)
+    call check_netCDF(nf90_get_var(  ncidMask, varid, maskWVL_lw),          err_message)
+    
+    ! Close file
+    call check_netCDF(nf90_close(ncidMask),err_message)
 
     ! #######################################################################################
     !
@@ -246,15 +264,17 @@ contains
     call infero_check(infero_initialise())
 
     ! Longwave
+    infero_model_lw = trim(infero_mpath_lw)//'/model.'//TRIM(infero_mtype_lw)
     yaml_config_lw = "---"//NEW_LINE('A') &
-         //"  path: "//TRIM(infero_mpath_lw)//NEW_LINE('A') &
+         //"  path: "//TRIM(infero_model_lw)//NEW_LINE('A') &
          //"  type: "//TRIM(infero_mtype_lw)//c_null_char
     !
     call infero_check(model_lw%initialise_from_yaml_string(yaml_config_lw))
 
     ! Shortwave
+    infero_model_sw = trim(infero_mpath_sw)//'/model.'//TRIM(infero_mtype_sw)
     yaml_config_sw = "---"//NEW_LINE('A') &
-         //"  path: "//TRIM(infero_mpath_sw)//NEW_LINE('A') &
+         //"  path: "//TRIM(infero_model_sw)//NEW_LINE('A') &
          //"  type: "//TRIM(infero_mtype_sw)//c_null_char
     !
     call infero_check(model_sw%initialise_from_yaml_string(yaml_config_sw))
@@ -265,11 +285,11 @@ contains
 !! \htmlinclude mlrad_driver_run.html
 !!
 ! ###########################################################################################
-  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, do_norm, nCol, nLev, nDay, ntrac, i_cldliq,&
+  subroutine mlrad_driver_run(do_mlrad, effr_in, debug, nCol, nLev, nDay, ntrac, i_cldliq,  &
        i_cldice, i_ozone, ico2, isubc, iaermdl, iaerflg, icseed, idx, lsmask, semis, sfcalb,&
        coszen, lon, lat, prsl, tgrs, prslk, prsi, cld_reliq, cld_reice, qgrs, aerfld,       &
        mlrad_data, con_epsqs, con_eps, con_epsm1, con_rd, con_fvirt, con_g, con_pi, htrlw,  &
-       htrsw, sfcflw, sfcfsw, topflw, topfsw, oro, fhour, errmsg, errflg, ref_data)
+       htrsw, sfcflw, sfcfsw, topflw, topfsw, fhour, errmsg, errflg, ref_data, ozphys)
     use module_radsw_parameters, only: topfsw_type, sfcfsw_type
     use module_radlw_parameters, only: topflw_type, sfcflw_type
 
@@ -280,8 +300,7 @@ contains
     logical, intent(in) :: &
          do_mlrad,    & ! Use ML emulator for LW radiation?
          effr_in,     & ! Provide hydrometeor radii from macrophysics? 
-         debug,       & ! Debug mode?
-         do_norm        ! Normalize (LW) predictor matrix?
+         debug          ! Debug mode?
     integer, intent(in) ::  &
          nCol,        & ! Number of horizontal grid points
          nLev,        & ! Number of vertical layers
@@ -294,7 +313,7 @@ contains
          isubc,       & ! Flag for cloud-seeding (rng) for cloud-sampling
          iaermdl,     & ! Aerosol model scheme flag
          iaerflg        ! Aerosol effects to include
-    integer,intent(in),dimension(:) :: &
+    integer,intent(in),dimension(:),optional :: &
          icseed,      & ! Seed for random number generation for longwave radiation
          idx            ! Index array for daytime points
     real(kind_phys), intent(in) :: &
@@ -304,16 +323,16 @@ contains
          lon,         & ! Longitude
          lat,         & ! Latitude
          semis,       & ! Longwave surface emissivity
-         coszen,      & ! Cosine(SZA)
-         oro
+         coszen         ! Cosine(SZA)
     real(kind_phys), dimension(:,:), intent(in) :: &
          prsl,        & ! Pressure at model-layer centers (Pa)
          tgrs,        & ! Temperature at model-layer centers (K)
          prslk,       & ! Exner function at model layer centers (1)
          prsi,        & ! Pressure at model-interfaces (Pa)
-         cld_reliq,   & ! Effective radius (m)
-         cld_reice,   & ! Effective radius (m)
          sfcalb         ! Surface albedo
+    real(kind_phys), dimension(:,:), intent(in), optional :: &
+         cld_reliq,   & ! Effective radius (m)
+         cld_reice    ! Effective radius (m)
     real(kind_phys), dimension(:,:,:), intent(in) :: &
          qgrs           ! Tracer concentrations (kg/kg)
     real(kind_phys), dimension(:, :,:),intent(in) :: &
@@ -326,7 +345,8 @@ contains
          con_fvirt,   & ! Physical constant: Inverse of epsilon minus one
          con_g,       & ! Physical constant: gravitational constant
          con_pi         ! Physical constant: Pi
-
+    type(ty_ozphys),intent(in) :: ozphys
+    
     ! Outputs (fluxes to ccpp and host)
     real(kind_phys), dimension(:,:), intent(inout) :: &
          htrlw,       & ! Longwave heating-rate       (K/s)
@@ -348,7 +368,7 @@ contains
 
     ! Locals
     logical :: top_at_1
-    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd, nbpts, ibpt, itrac
+    integer :: ipred, ilev, icase, iinf, iLay, iCol, iDay, ncol_pred, iBnd, nbpts, ibpt, itrac, iVar
     integer, dimension(nCol) :: ipseed
     real(kind_phys) :: es, qs, dp, tem1, tem2, pfac, ranku(nCol), rankn(nCol), rankk(1), &
          bin(1), edge(nLev+1), bot, top
@@ -361,13 +381,12 @@ contains
     real(kind_phys), dimension(nCol, 3) :: ext550
     real(c_float), allocatable :: it2f(:,:,:) ! data for inference in profile, height, value order
     real(c_float), allocatable :: ot2f(:,:)   ! data from inference in profile, height order
-    real(c_float), dimension(nCol, nLev, size(pnames_lw)) :: predictor_matrix_lw, upredictor_matrix_lw,predictor_matrix_lw2
+    real(c_float), dimension(nCol, nLev, size(pnames_lw)) :: predictor_matrix_lw, upredictor_matrix_lw
     real(c_float), dimension(nDay, nLev, size(pnames_sw)) :: predictor_matrix_sw, upredictor_matrix_sw
     real(c_float), dimension(nCol, nLev+2) :: target_matrix_lw
     real(c_float), dimension(nDay, nLev+2) :: target_matrix_sw
     real(kind_phys), dimension(nCol, nLev+1) :: plev, zlev
     real(kind_phys), dimension(nCol, nLev)   :: play, dprs, dz
-    real(kind=kind_phys), dimension(nCol,nLev,2:ntrac)  :: tracer1
 
     ! Initialize CCPP error handling variables
     errmsg = ''
@@ -395,19 +414,13 @@ contains
     ! #######################################################################################
 
     ! Do we need to get climatological ozone? (only if not using prognostic ozone)
-!    if (i_ozone .le. 0) then
-!       call getozn (prslk, lat, nCol, nLev, top_at_1, o3_lay)
-!    endif
+    if (i_ozone .le. 0) then
+       call ozphys%run_o3clim(lat, prslk, con_pi, o3_lay)
+    endif
 
     ! Get trace-gas concentrations.
     call getgases (prsi/100., lon, lat, nCol, nLev, ico2, top_at_1, con_pi, gas_vmr)
 
-    do itrac = 2, ntrac
-       do iLev = 1, nLev
-          tracer1(:,iLev,itrac) = max(0.0, qgrs(:,iLev,itrac))
-       enddo
-    enddo
-    
     ! #######################################################################################
     !
     ! Compute prediction matrices for longwave and shortwave
@@ -455,32 +468,28 @@ contains
           predictor_matrix_lw(iCol,iLay,ilw_rh)  = rh(iCol,iLay)
 
           ! Compute layer liquid/Ice water content (kg/kg)->(g/m3).
-          ! tracer1 in           (kg/kg)  *
+          ! qgrs in              (kg/kg)  *
           ! rho in               (kg/m3)  *
-          ! conversion-factor    (1e3g/kg)*
-          predictor_matrix_lw(iCol,iLay,ilw_lwc)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldliq)*rho(iLay)*1.e3)
-          predictor_matrix_lw(iCol,iLay,ilw_iwc)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldice)*rho(iLay)*1.e3)
+          predictor_matrix_lw(iCol,iLay,ilw_lwc)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq)*rho(iLay))
+          predictor_matrix_lw(iCol,iLay,ilw_iwc)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice)*rho(iLay))
 
-          ! Compute layer liquid/ice/vapor condensate path, from mixing ratios (kg/kg)->(g/m2).
-          ! tracer1 in           (kg/kg)  *
-          ! dp in                (kg/ms2) * - Pressure=Force/Area=mass*acceleration/Area=(kg*m*s-2)/(m2) => (kg/ms2)
-          ! tem1 in              (s2/m)   * 
-          ! conversion-factor in (1e3g/kg)*
+          ! Compute layer liquid/ice/vapor condensate path, from mixing ratios (kg/kg)->(kg/m2).
+          ! qgrs:    (kg/kg)  *
+          ! dp:      (kg/ms2) * - Pressure=Force/Area=mass*acceleration/Area=(kg*m*s-2)/(m2) => (kg/ms2)
+          ! tem1:    (s2/m)   * 
+          !           ----     (kg/kg)  * (kg/ms2) * (s2/m) = > (kg/m2)
           !
-          !                      (kg/kg)  * (kg/ms2) * (s2/m) * (1e3g/kg) = > (g/m2)
-          !
-          ! *NOTE* Multiplying by 1e3 makes to answers worse!!!!!! 
-          predictor_matrix_lw(iCol,iLay,ilw_dlwp)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldliq) * &
+          predictor_matrix_lw(iCol,iLay,ilw_dlwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldliq) * &
                tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
-          predictor_matrix_lw(iCol,iLay,ilw_diwp)  = max(0._kind_phys, tracer1(iCol,iLay,i_cldice) * &
+          predictor_matrix_lw(iCol,iLay,ilw_diwp)  = max(0._kind_phys, qgrs(iCol,iLay,i_cldice) * &
                tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
-          predictor_matrix_lw(iCol,iLay,ilw_dwvp)  = max(0._kind_phys, qgrs(iCol,iLay,1          ) * &
+          predictor_matrix_lw(iCol,iLay,ilw_dwvp)  = max(0._kind_phys, qgrs(iCol,iLay,       1) * &
                tem1 * predictor_matrix_lw(iCol,iLay,ilw_dp))
 
           ! Cloud effective radii (m).
           if (effr_in) then
-             predictor_matrix_lw(iCol,iLay,ilw_reliq) = cld_reliq(iCol,iLay)
-             predictor_matrix_lw(iCol,iLay,ilw_reice) = cld_reice(iCol,iLay)
+             predictor_matrix_lw(iCol,iLay,ilw_reliq) = cld_reliq(iCol,iLay)*1e-6 ! (microns)->(meters)
+             predictor_matrix_lw(iCol,iLay,ilw_reice) = cld_reice(iCol,iLay)*1e-6 ! (microns)->(meters)
           else
              predictor_matrix_lw(iCol,iLay,ilw_reliq) = reliq_def*1e-6 ! (microns)->(meters)
              predictor_matrix_lw(iCol,iLay,ilw_reice) = reice_def*1e-6 ! (microns)->(meters)
@@ -488,7 +497,7 @@ contains
 
           ! Ozone mixing-ratio (kg/kg).
           if (i_ozone .gt. 0) then
-             predictor_matrix_lw(iCol,iLay,ilw_o3mr) = tracer1(iCol,iLay,i_ozone)
+             predictor_matrix_lw(iCol,iLay,ilw_o3mr) = qgrs(iCol,iLay,i_ozone)
           else
              predictor_matrix_lw(iCol,iLay,ilw_o3mr) = o3_lay(iCol,iLay)
           endif
@@ -544,7 +553,7 @@ contains
 
        ! SW Aerosol optics
        ! aerosolssw contains the MERRA aerosol optics properties for the RRTMG SW bands (14).
-       call setaer(prsi*0.01, prsl*0.01, prslk, tv, rh, lsmask, tracer1, aerfld, lon, lat, &
+       call setaer(prsi*0.01, prsl*0.01, prslk, tv, rh, lsmask, qgrs, aerfld, lon, lat,    &
             nCol, nLev, nLev+1, .true., .true., iaermdl, iaerflg, top_at_1, con_pi, con_rd,&
             con_g, aerosolssw, aerosolslw, aerodp, ext550, errflg, errmsg)
 
@@ -611,7 +620,7 @@ contains
     !
     ! Longwave
     ! 
-    if (debug .and. do_debug_once) upredictor_matrix_lw = predictor_matrix_lw
+    if (debug) upredictor_matrix_lw = predictor_matrix_lw
     do iPred = 1,size(pnames_lw)
        do iLay=1,nLev
           !
@@ -655,16 +664,6 @@ contains
                    ranku(iCol) = mlrad_data%lw%vector_intercept(rankk(1), iLay, ip2io_lw(iPred)) + &
                         predictor_matrix_lw(iCol,iLay,iPred)*mlrad_data%lw%vector_slope(rankk(1), iLay, ip2io_lw(iPred))
                 endif
-                if (debug .and. do_debug_once) then
-                   write(99,'(a40)') '------------------------------------------------------------------------------------------------V'
-                   write(99,'(a20,i5)' ) trim(pnames_lw(iPred)),nbpts
-                   write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
-                   write(99,'(a14,f14.6)')     "      rankk = ",rankk
-                   write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
-                   write(99,'(a14,i14  )')     "       iLay = ",iLay
-                   write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%lw%vector_breakpoint(1, iLay,  ip2io_lw(iPred)),mlrad_data%lw%vector_breakpoint(nbpts, iLay,  ip2io_lw(iPred))
-                   write(99,*)mlrad_data%lw%vector_breakpoint(:, iLay,  ip2io_lw(iPred))
-                endif
              else
                 if     (predictor_matrix_lw(iCol,iLay,iPred) <= mlrad_data%lw%scalar_breakpoint(  1, ip2io_lw(iPred))) then
                    rankk(1) = 1
@@ -677,25 +676,11 @@ contains
                    ranku(iCol) = mlrad_data%lw%scalar_intercept(rankk(1), ip2io_lw(iPred)) + &
                         predictor_matrix_lw(iCol,iLay,iPred)*mlrad_data%lw%scalar_slope(rankk(1), ip2io_lw(iPred))
                 endif
-                if (debug .and. do_debug_once) then
-                   write(99,'(a40)') '------------------------------------------------------------------------------------------------S'
-                   write(99,'(a20)' ) trim(pnames_lw(iPred))
-                   write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_lw(iCol,iLay,iPred)
-                   write(99,'(a14,f14.6)')     "      rankk = ",rankk
-                   write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
-                   write(99,'(a14,i14  )')     "       iLay = ",iLay
-                   write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%lw%scalar_breakpoint(1, ip2io_lw(iPred)),mlrad_data%lw%scalar_breakpoint(nbpts,  ip2io_lw(iPred))
-                endif
              endif
              
              ! Normalize.
-             if (do_norm) then
-                predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1._kind_phys)
-             endif
+             predictor_matrix_lw(iCol,iLay,iPred) = sqrt(2._kind_phys)*erfinv(2.*ranku(iCol)-1._kind_phys)
 
-             if (debug .and. do_debug_once) then
-                write(99,'(a14,f14.6)')     "       nval = ",predictor_matrix_lw(iCol,iLay,iPred)
-             endif
           enddo
        enddo
     enddo
@@ -704,7 +689,7 @@ contains
     ! Shortwave
     !
     if (nDay > 0) then
-       if (debug .and. do_debug_once) upredictor_matrix_sw = predictor_matrix_sw
+       if (debug) upredictor_matrix_sw = predictor_matrix_sw
        do iPred = 1,size(pnames_sw)
           do iLay=1,nLev
              !
@@ -745,16 +730,6 @@ contains
                       ranku(iCol) = mlrad_data%sw%vector_intercept(rankk(1), iLay, ip2io_sw(iPred)) + &
                            predictor_matrix_sw(iCol,iLay,iPred)*mlrad_data%sw%vector_slope(rankk(1), iLay, ip2io_sw(iPred))
                    endif
-                   if (debug .and. do_debug_once) then
-                      write(99,'(a40)') '------------------------------------------------------------------------------------------------V'
-                      write(99,'(a20,i5)' ) trim(pnames_sw(iPred)),nbpts
-                      write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_sw(iCol,iLay,iPred)
-                      write(99,'(a14,f14.6)')     "      rankk = ",rankk
-                      write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
-                      write(99,'(a14,i14  )')     "       iLay = ",iLay
-                      write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%sw%vector_breakpoint(1, iLay,  ip2io_sw(iPred)),mlrad_data%sw%vector_breakpoint(nbpts, iLay,  ip2io_sw(iPred))
-                      write(99,*)mlrad_data%sw%vector_breakpoint(:, iLay,  ip2io_sw(iPred))
-                   endif
                 else
                    if     (predictor_matrix_sw(iCol,iLay,iPred) <= mlrad_data%sw%scalar_breakpoint(  1, ip2io_sw(iPred))) then
                       rankk(1) = 1
@@ -766,15 +741,6 @@ contains
                       rankk = max(minloc(abs(predictor_matrix_sw(iCol,iLay,iPred) - mlrad_data%sw%scalar_breakpoint(:, ip2io_sw(iPred)))) - 1, 1)
                       ranku(iCol) = mlrad_data%sw%scalar_intercept(rankk(1), ip2io_sw(iPred)) + &
                            predictor_matrix_sw(iCol,iLay,iPred)*mlrad_data%sw%scalar_slope(rankk(1), ip2io_sw(iPred))
-                   endif
-                   if (debug .and. do_debug_once) then
-                      write(99,'(a40)') '------------------------------------------------------------------------------------------------S'
-                      write(99,'(a20)' ) trim(pnames_sw(iPred))
-                      write(99,'(a14,e14.6)')     "        val = ",predictor_matrix_sw(iCol,iLay,iPred)
-                      write(99,'(a14,f14.6)')     "      rankk = ",rankk
-                      write(99,'(a14,f14.6)')     "      ranku = ",ranku(iCol)
-                      write(99,'(a14,i14  )')     "       iLay = ",iLay
-                      write(99,'(a14,2e14.6)')    "breakpoints = ",mlrad_data%sw%scalar_breakpoint(1, ip2io_sw(iPred)),mlrad_data%sw%scalar_breakpoint(nbpts,  ip2io_sw(iPred))
                    endif
                 endif
 
@@ -800,242 +766,19 @@ contains
 
     if (debug) then
        do iCol=1,nCol
-          status = nf90_put_var(ncid,varID0, fhour,                                start=record_counter)
-          status = nf90_put_var(ncid,varID1, sfcflw(iCol)%dnfxc,                   start=record_counter)
-          status = nf90_put_var(ncid,varID2, topflw(iCol)%upfxc,                   start=record_counter)
-          status = nf90_put_var(ncid,varID3, target_matrix_lw(iCol,nLev+1),        start=record_counter)
-          status = nf90_put_var(ncid,varID4, target_matrix_lw(iCol,nLev+2),        start=record_counter)
-          status = nf90_put_var(ncid,varID5, predictor_matrix_lw(iCol,:,ilw_lwc),  start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID6, predictor_matrix_lw(iCol,:,ilw_iwc),  start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID7, predictor_matrix_lw(iCol,:,ilw_z),    start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID8, predictor_matrix_lw(iCol,:,ilw_dlwp), start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID9, predictor_matrix_lw(iCol,:,ilw_diwp), start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID10,predictor_matrix_lw(iCol,:,ilw_dwvp), start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID12, rho,                                 start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID13, predictor_matrix_lw(iCol,:,ilw_ulwp),start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID14, predictor_matrix_lw(iCol,:,ilw_uiwp),start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID15, predictor_matrix_lw(iCol,:,ilw_uwvp),start=(/1,record_counter/),count=(/127,1/))
-
-          status = nf90_put_var(ncid,varID11, qgrs(iCol,:,       1),               start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID16, tracer1(iCol,:,i_cldliq),            start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID17, tracer1(iCol,:,i_cldice),            start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID18, tracer1(iCol,:,       3),            start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID19, tracer1(iCol,:,       5),            start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID20, tracer1(iCol,:,       6),            start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID21, tracer1(iCol,:,       9),            start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID22, predictor_matrix_lw(iCol,:,ilw_dp),  start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID23, predictor_matrix_lw(iCol,:,ilw_dz),  start=(/1,record_counter/),count=(/127,1/))
-          status = nf90_put_var(ncid,varID24, predictor_matrix_lw(iCol,:,ilw_p),   start=(/1,record_counter/),count=(/127,1/))
+          status = nf90_put_var(ncid,varIDs(1),  fhour,                                 start=record_counter)
+          status = nf90_put_var(ncid,varIDs(2),  sfcflw(iCol)%dnfxc,                    start=record_counter)
+          status = nf90_put_var(ncid,varIDs(3),  topflw(iCol)%upfxc,                    start=record_counter)
+          status = nf90_put_var(ncid,varIDs(4),  target_matrix_lw(iCol,nLev+1),         start=record_counter)
+          status = nf90_put_var(ncid,varIDs(5),  target_matrix_lw(iCol,nLev+2),         start=record_counter)
+          !
+          do iVar=1,npred_lw
+             status = nf90_put_var(ncid,varIDv(iVar),upredictor_matrix_lw(iCol,:,iVar),start=(/1,record_counter/),count=(/127,1/))
+          enddo
        enddo
        record_counter(1) = record_counter(1) + 1
-       do iCol=1,nCol
-          !write(94,'(a20,4a18)'  ) '                  ','ML(LW down @ SFC)','G(LW down @ SFC)','ML(LW up @ TOA)', 'G(LW up @ TOA)'
-          !write(94,'(a20,3f12.2)') 'LW surface(down): ',target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,sfcflw(iCol)%dnfx0
-          !write(94,'(a20,3f12.2)') 'LW toa(up):       ',target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc,topflw(iCol)%upfx0
-          write(94,'(4f18.2)') target_matrix_lw(iCol,nLev+1),sfcflw(iCol)%dnfxc,target_matrix_lw(iCol,nLev+2),topflw(iCol)%upfxc
-          !write(94,'(a20,3f12.2)') 'SW surface(down): ',target_matrix_sw(iCol,nLev+1),sfcfsw(iCol)%dnfxc,sfcfsw(iCol)%dnfx0
-          !write(94,'(a20,3f12.2)') 'SW toa(up):       ',target_matrix_sw(iCol,nLev+2),topfsw(iCol)%upfxc,topfsw(iCol)%upfx0
-       enddo
-
-       do iCol=1,nCol
-          !write(93,'(a30)') 'heating profile (K/day): '
-          !write(93,'(3a12)'  ) 'Layer','ML(all)','G(all)'
-          !write(93,'(3a12)'  ) '     ','(LW)',   '(LW)'
-          !do iLay=1,nLev
-          !   write(93,'(a9,i3,2f12.2)') '',iLay,target_matrix_lw(iCol,iLay),htrlw(iCol,iLay)*3600.*24.
-          !enddo
-          write(93,'(127f12.2)') target_matrix_lw(iCol,:)
-          write(93,'(127f12.2)') htrlw(iCol,:)*3600.*24.
-       enddo
     end if
     
-    ! #######################################################################################
-    ! #######################################################################################
-    ! #######################################################################################
-    ! REMOVE WHEN WORKING
-    ! #######################################################################################
-    ! #######################################################################################
-    ! #######################################################################################
-    if (debug .and. do_debug_once) then
-       ! ####################################################################################
-       ! Compute fluxes from reference data (sanity check for proper infero implementation)
-       ! ####################################################################################
-       do iCol=1,nCol
-          do iLay=1,nLev
-             predictor_matrix_lw2(iCol,iLay,:) = ref_data%predictor_matrix(:,iLay,iCol)
-          enddo
-       enddo
-       call infero_check(model_lw%infer(predictor_matrix_lw2, target_matrix_lw))
-
-       ! ####################################################################################
-       ! Raw predictor file (97)
-       ! ####################################################################################
-       write(97, '(a5, 24a10)')  'Layer', 'sza', 'sfcT', 'sfc_emiss', 'p', 'T', 'q', 'rh',  &
-            'LWC', 'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                      &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
-            'dp'
-       write(97, '(a5, 24a10)')  '', '(1)', '(K)', '(1)','(Pa)', '(k)', '(kg/kg)', '(1)',   &
-            '(kg/m3)', '(kg/m3)','(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)', '(kg/m2)',&
-            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',          &
-            '(Pa)'
-       do iCol=1,nCol
-          do iLay=1,nLev
-             write (97,'(i5,7f10.2,4e10.2,f10.2,2e10.2,10f10.4)')&
-                  iLay,                                       &
-                  upredictor_matrix_lw(iCol,iLay,ilw_sza),    &
-                  upredictor_matrix_lw(iCol,iLay,ilw_sfct),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_emiss),  &
-                  upredictor_matrix_lw(iCol,iLay,ilw_p),      &
-                  upredictor_matrix_lw(iCol,iLay,ilw_t),      &
-                  upredictor_matrix_lw(iCol,iLay,ilw_q),      &
-                  upredictor_matrix_lw(iCol,iLay,ilw_rh),     &
-                  upredictor_matrix_lw(iCol,iLay,ilw_lwc),    &
-                  upredictor_matrix_lw(iCol,iLay,ilw_iwc),    &
-                  upredictor_matrix_lw(iCol,iLay,ilw_dlwp),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_diwp),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_dwvp),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_ulwp),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_uiwp),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_uwvp),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_reliq),  &
-                  upredictor_matrix_lw(iCol,iLay,ilw_reice),  &
-                  1e9*upredictor_matrix_lw(iCol,iLay,ilw_o3mr),   &
-                  upredictor_matrix_lw(iCol,iLay,ilw_co2),    &
-                  upredictor_matrix_lw(iCol,iLay,ilw_ch4),    &
-                  upredictor_matrix_lw(iCol,iLay,ilw_n2o),    &
-                  upredictor_matrix_lw(iCol,iLay,ilw_z),      &
-                  upredictor_matrix_lw(iCol,iLay,ilw_dz),     &
-                  upredictor_matrix_lw(iCol,iLay,ilw_dp)
-          enddo
-       enddo
-
-       ! ####################################################################################
-       ! Normalizaed predictor file (98)
-       ! ####################################################################################
-       write(98, '(a5, 24a10)')  'Layer', 'sza', 'sfcT', 'sfc_emiss', 'p', 'T', 'q', 'rh', 'LWC',&
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                             &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
-            'dp'
-
-       do iCol=1,nCol
-          do iLay=1,nLev
-             write (98,'(i5,24f10.2)')                       &
-                  iLay,                                      &
-                  predictor_matrix_lw(iCol,iLay,ilw_sza),    &
-                  predictor_matrix_lw(iCol,iLay,ilw_sfct),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_emiss),  &
-                  predictor_matrix_lw(iCol,iLay,ilw_p),      &
-                  predictor_matrix_lw(iCol,iLay,ilw_t),      &
-                  predictor_matrix_lw(iCol,iLay,ilw_q),      &
-                  predictor_matrix_lw(iCol,iLay,ilw_rh),     &
-                  predictor_matrix_lw(iCol,iLay,ilw_lwc),    &
-                  predictor_matrix_lw(iCol,iLay,ilw_iwc),    &
-                  predictor_matrix_lw(iCol,iLay,ilw_dlwp),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_diwp),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_dwvp),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_ulwp),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_uiwp),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_uwvp),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_reliq),  &
-                  predictor_matrix_lw(iCol,iLay,ilw_reice),  &
-                  predictor_matrix_lw(iCol,iLay,ilw_o3mr),   &
-                  predictor_matrix_lw(iCol,iLay,ilw_co2),    &
-                  predictor_matrix_lw(iCol,iLay,ilw_ch4),    &
-                  predictor_matrix_lw(iCol,iLay,ilw_n2o),    &
-                  predictor_matrix_lw(iCol,iLay,ilw_z),      &
-                  predictor_matrix_lw(iCol,iLay,ilw_dz),     &
-                  predictor_matrix_lw(iCol,iLay,ilw_dp)
-          enddo
-       enddo
-
-       ! ####################################################################################
-       ! Raw predictor example (95)
-       ! ####################################################################################
-       write(95, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                       &
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                             &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
-            'dp', 'sza', 'Tsfc', 'sfc_emiss'
-       write(95, '(a5, 25a10)')  '', '(Pa)', '(k)', '(g/kg)', '(1)', '(g/m3)',              &
-            '(g/m3)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)', '(g/m2)',           &
-            '(liq)','(ice)', '(mg/kg)','(ppmv)', '(ppmv)', '(ppmv)', '(m)', '(m)',          &
-            '(Pa)', '(1)', '(K)', '(1)'
-       do iCol=1,nCol
-          do iLay=1,nLev
-             write (95,'(i5,4f10.2,4e10.2,f10.2,2e10.2,17f10.4)')      &
-                  iLay,                                                &
-                  ref_data%unnorm_predictor_matrix(1,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(2,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(3,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(4,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(5,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(6,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(7,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(8,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(9,iLay,iCol),       &
-                  ref_data%unnorm_predictor_matrix(10,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(11,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(12,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(13,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(14,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(15,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(16,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(17,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(18,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(19,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(20,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(21,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(22,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(23,iLay,iCol),      &
-                  ref_data%unnorm_predictor_matrix(24,iLay,iCol)
-          enddo
-       enddo
-
-       ! ####################################################################################
-       ! Normalized predictor examples (96)
-       ! ####################################################################################
-       write(96, '(a5, 25a10)')  'Layer', 'p', 'T', 'q', 'rh', 'LWC',                       &
-            'IWC', 'LWP', 'IWP', 'WVP', 'iLWP', 'iIWP', 'iWVP',                             &
-            'Reff','Reff', 'o3','co2', 'ch4', 'n2o', 'z', 'dz',                             &
-            'dp', 'sza', 'Tsfc', 'sfc_emiss'
-       do iCol=1,nCol
-          do iLay=1,nLev
-             write (96,'(i5,25f10.2)')                     &
-                  iLay,                                    &
-                  ref_data%predictor_matrix(1,iLay,iCol),  &
-                  ref_data%predictor_matrix(2,iLay,iCol),  &
-                  ref_data%predictor_matrix(3,iLay,iCol),  &
-                  ref_data%predictor_matrix(4,iLay,iCol),  &
-                  ref_data%predictor_matrix(5,iLay,iCol),  &
-                  ref_data%predictor_matrix(6,iLay,iCol),  &
-                  ref_data%predictor_matrix(7,iLay,iCol),  &
-                  ref_data%predictor_matrix(8,iLay,iCol),  &
-                  ref_data%predictor_matrix(9,iLay,iCol),  &
-                  ref_data%predictor_matrix(10,iLay,iCol), &
-                  ref_data%predictor_matrix(11,iLay,iCol), &
-                  ref_data%predictor_matrix(12,iLay,iCol), &
-                  ref_data%predictor_matrix(13,iLay,iCol), &
-                  ref_data%predictor_matrix(14,iLay,iCol), &
-                  ref_data%predictor_matrix(15,iLay,iCol), &
-                  ref_data%predictor_matrix(16,iLay,iCol), &
-                  ref_data%predictor_matrix(17,iLay,iCol), &
-                  ref_data%predictor_matrix(18,iLay,iCol), &
-                  ref_data%predictor_matrix(19,iLay,iCol), &
-                  ref_data%predictor_matrix(20,iLay,iCol), &
-                  ref_data%predictor_matrix(21,iLay,iCol), &
-                  ref_data%predictor_matrix(22,iLay,iCol), &
-                  ref_data%predictor_matrix(23,iLay,iCol), &
-                  ref_data%predictor_matrix(24,iLay,iCol)
-          enddo
-       enddo
-    endif
-    do_debug_once = .false.
-    ! #######################################################################################
-    ! #######################################################################################
-    ! #######################################################################################
-    ! END DEBUG BLOCK
-    ! #######################################################################################
-    ! #######################################################################################
-    ! #######################################################################################
  
     ! Copy from prediction-matrix to ccpp interstitials (for prognostic ML rad)
     do iCol=1,nCol
@@ -1081,13 +824,7 @@ contains
 
     status = nf90_close(ncid)
     if (debug) then
-       close(93)
-       close(94)
-       close(95)
-       close(96)
-       close(97)
-       close(98)
-       close(99)
+       status = nf90_close(ncid)
     endif
 
   end subroutine mlrad_driver_finalize

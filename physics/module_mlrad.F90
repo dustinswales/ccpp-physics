@@ -16,21 +16,33 @@ module module_mlrad
   integer,parameter :: npred_sw = 26
 
   ! Predictor varaible names, from training data, in order expected by emulator.
-  character(len=32),dimension(npred_sw) :: &
-       pnames_sw =  &
-       (/'zenith_angle_radians            ','albedo                          ',&
-         'aerosol_single_scattering_albed ','aerosol_asymmetry_param         ',&
-         'pressure_pascals                ','temperature_kelvins             ',&
-         'specific_humidity_kg_kg01       ','relative_humidity_unitless      ',&
-         'liquid_water_content_kg_m03     ','ice_water_content_kg_m03        ',&
-         'liquid_water_path_kg_m02        ','ice_water_path_kg_m02           ',&
-         'vapour_path_kg_m02              ','upward_liquid_water_path_kg_m02 ',&
-         'upward_ice_water_path_kg_m02    ','upward_vapour_path_kg_m02       ',&
-         'liquid_effective_radius_metres  ','ice_effective_radius_metres     ',&
-         'o3_mixing_ratio_kg_kg01         ','co2_concentration_ppmv          ',&
-         'ch4_concentration_ppmv          ','n2o_concentration_ppmv          ',&
-         'aerosol_extinction_metres01     ','height_m_agl                    ',&
-         'height_thickness_metres         ','pressure_thickness_pascals      '/)
+  character(len=32),dimension(npred_sw) :: pnames_sw =  &
+       (/'zenith_angle_radians            ', &
+         'albedo                          ', &
+         'aerosol_single_scattering_albed ', &
+         'aerosol_asymmetry_param         ', &
+         'pressure_pascals                ', &
+         'temperature_kelvins             ', &
+         'specific_humidity_kg_kg01       ', &
+         'relative_humidity_unitless      ', &
+         'liquid_water_content_kg_m03     ', &
+         'ice_water_content_kg_m03        ', &
+         'liquid_water_path_kg_m02        ', &
+         'ice_water_path_kg_m02           ', &
+         'vapour_path_kg_m02              ', &
+         'upward_liquid_water_path_kg_m02 ', &
+         'upward_ice_water_path_kg_m02    ', &
+         'upward_vapour_path_kg_m02       ', &
+         'liquid_effective_radius_metres  ', &
+         'ice_effective_radius_metres     ', &
+         'o3_mixing_ratio_kg_kg01         ', &
+         'co2_concentration_ppmv          ', &
+         'ch4_concentration_ppmv          ', &
+         'n2o_concentration_ppmv          ', &
+         'aerosol_extinction_metres01     ', &
+         'height_m_agl                    ', &
+         'height_thickness_metres         ', &
+         'pressure_thickness_pascals      '/)
 
   ! Indices into prediction matrix
   integer, parameter :: &
@@ -71,49 +83,33 @@ module module_mlrad
   integer,parameter :: npred_lw = 24
 
   ! Predictor varaible names, from training data, in order expected by emulator.
-!  character(len=32),dimension(npred_lw) :: &
-!       pnames_lw =  &
-!       (/'zenith_angle_radians            ','surface_temperature_kelvins     ',&
-!         'surface_emissivity              ',                                   &
-!         'pressure_pascals                ','temperature_kelvins             ',&
-!         'specific_humidity_kg_kg01       ','relative_humidity_unitless      ',&
-!         'liquid_water_content_kg_m03     ','ice_water_content_kg_m03        ',&
-!         'liquid_water_path_kg_m02        ','ice_water_path_kg_m02           ',&
-!         'vapour_path_kg_m02              ','upward_liquid_water_path_kg_m02 ',&
-!         'upward_ice_water_path_kg_m02    ','upward_vapour_path_kg_m02       ',&
-!         'liquid_effective_radius_metres  ','ice_effective_radius_metres     ',&
-!         'o3_mixing_ratio_kg_kg01         ','co2_concentration_ppmv          ',&
-!         'ch4_concentration_ppmv          ','n2o_concentration_ppmv          ',&
-!         'height_m_agl                    ','height_thickness_metres         ',&
-!         'pressure_thickness_pascals      '/)
+  character(len=32),dimension(npred_lw) :: pnames_lw =  &
+       (/'pressure_pascals                ', &
+         'temperature_kelvins             ', &
+         'specific_humidity_kg_kg01       ', &
+         'relative_humidity_unitless      ', &
+         'liquid_water_content_kg_m03     ', &
+         'ice_water_content_kg_m03        ', &
+         'liquid_water_path_kg_m02        ', &
+         'ice_water_path_kg_m02           ', &
+         'vapour_path_kg_m02              ', &
+         'upward_liquid_water_path_kg_m02 ', &
+         'upward_ice_water_path_kg_m02    ', &
+         'upward_vapour_path_kg_m02       ', &
+         'liquid_effective_radius_metres  ', &
+         'ice_effective_radius_metres     ', &
+         'o3_mixing_ratio_kg_kg01         ', &
+         'co2_concentration_ppmv          ', &
+         'ch4_concentration_ppmv          ', &
+         'n2o_concentration_ppmv          ', &
+         'height_m_agl                    ', &
+         'height_thickness_metres         ', &
+         'pressure_thickness_pascals      ', &
+         'zenith_angle_radians            ', &
+         'surface_temperature_kelvins     ', &
+         'surface_emissivity              '/)
 
   ! Indices into prediction matrix
-!  integer, parameter :: &
-!       ilw_sza    = 1,  &
-!       ilw_sfct   = 2,  &
-!       ilw_emiss  = 3,  &
-!       ilw_p      = 4,  &
-!       ilw_t      = 5,  &
-!       ilw_q      = 6,  &
-!       ilw_rh     = 7,  &
-!       ilw_lwc    = 8,  &
-!       ilw_iwc    = 9,  &
-!       ilw_dlwp   = 10, &
-!       ilw_diwp   = 11, &
-!       ilw_dwvp   = 12, &
-!       ilw_ulwp   = 13, &
-!       ilw_uiwp   = 14, &
-!       ilw_uwvp   = 15, &
-!       ilw_reliq  = 16, &
-!       ilw_reice  = 17, &
-!       ilw_o3mr   = 18, &
-!       ilw_co2    = 19, &
-!       ilw_ch4    = 20, &
-!       ilw_n2o    = 21, &
-!       ilw_z      = 22, &
-!       ilw_dz     = 23, &
-!       ilw_dp     = 24
-
   integer, parameter :: &
        ilw_p      = 1,  &
        ilw_t      = 2,  &
@@ -139,20 +135,6 @@ module module_mlrad
        ilw_sza    = 22,  &
        ilw_sfct   = 23,  &
        ilw_emiss  = 24
-  character(len=32),dimension(npred_lw) :: &
-       pnames_lw =  &
-       (/'pressure_pascals                ','temperature_kelvins             ',&
-         'specific_humidity_kg_kg01       ','relative_humidity_unitless      ',&
-         'liquid_water_content_kg_m03     ','ice_water_content_kg_m03        ',&
-         'liquid_water_path_kg_m02        ','ice_water_path_kg_m02           ',&
-         'vapour_path_kg_m02              ','upward_liquid_water_path_kg_m02 ',&
-         'upward_ice_water_path_kg_m02    ','upward_vapour_path_kg_m02       ',&
-         'liquid_effective_radius_metres  ','ice_effective_radius_metres     ',&
-         'o3_mixing_ratio_kg_kg01         ','co2_concentration_ppmv          ',&
-         'ch4_concentration_ppmv          ','n2o_concentration_ppmv          ',&
-         'height_m_agl                    ','height_thickness_metres         ',&
-         'pressure_thickness_pascals      ','zenith_angle_radians            ',&
-         'surface_temperature_kelvins     ','surface_emissivity              '/)
 
   ! #####################################################################################
   !
