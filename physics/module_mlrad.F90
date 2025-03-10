@@ -17,11 +17,7 @@ module module_mlrad
 
   ! Predictor varaible names, from training data, in order expected by emulator.
   character(len=32),dimension(npred_sw) :: pnames_sw =  &
-       (/'zenith_angle_radians            ', &
-         'albedo                          ', &
-         'aerosol_single_scattering_albed ', &
-         'aerosol_asymmetry_param         ', &
-         'pressure_pascals                ', &
+       (/'pressure_pascals                ', &
          'temperature_kelvins             ', &
          'specific_humidity_kg_kg01       ', &
          'relative_humidity_unitless      ', &
@@ -42,36 +38,40 @@ module module_mlrad
          'aerosol_extinction_metres01     ', &
          'height_m_agl                    ', &
          'height_thickness_metres         ', &
-         'pressure_thickness_pascals      '/)
+         'pressure_thickness_pascals      ', &
+         'zenith_angle_radians            ', &
+         'albedo                          ', &
+         'aerosol_single_scattering_albed ', &
+         'aerosol_asymmetry_param         '/)
 
   ! Indices into prediction matrix
   integer, parameter :: &
-       isw_sza    = 1,  &
-       isw_alb    = 2,  &
-       isw_aerssa = 3,  &
-       isw_aerasy = 4,  &
-       isw_p      = 5,  &
-       isw_t      = 6,  &
-       isw_q      = 7,  &
-       isw_rh     = 8,  &
-       isw_lwc    = 9,  &
-       isw_iwc    = 10, &
-       isw_dlwp   = 11, &
-       isw_diwp   = 12, &
-       isw_dwvp   = 13, &
-       isw_ulwp   = 14, &
-       isw_uiwp   = 15, &
-       isw_uwvp   = 16, &
-       isw_reliq  = 17, &
-       isw_reice  = 18, &
-       isw_o3mr   = 19, &
-       isw_co2    = 20, &
-       isw_ch4    = 21, &
-       isw_n2o    = 22, &
-       isw_tauaer = 23, &
-       isw_z      = 24, &
-       isw_dz     = 25, &
-       isw_dp     = 26
+       isw_p      = 1,  &
+       isw_t      = 2,  &
+       isw_q      = 3,  &
+       isw_rh     = 4,  &
+       isw_lwc    = 5,  &
+       isw_iwc    = 6,  &
+       isw_dlwp   = 7,  &
+       isw_diwp   = 8,  &
+       isw_dwvp   = 9,  &
+       isw_ulwp   = 10, &
+       isw_uiwp   = 11, &
+       isw_uwvp   = 12, &
+       isw_reliq  = 13, &
+       isw_reice  = 14, &
+       isw_o3mr   = 15, &
+       isw_co2    = 16, &
+       isw_ch4    = 17, &
+       isw_n2o    = 18, &
+       isw_tauaer = 19, &
+       isw_z      = 20, &
+       isw_dz     = 21, &
+       isw_dp     = 22, &
+       isw_sza    = 23,  &
+       isw_alb    = 24,  &
+       isw_aerssa = 25,  &
+       isw_aerasy = 26
 
   ! ##################################################################################### 
   !
@@ -117,9 +117,9 @@ module module_mlrad
        ilw_rh     = 4,  &
        ilw_lwc    = 5,  &
        ilw_iwc    = 6,  &
-       ilw_dlwp   = 7, &
-       ilw_diwp   = 8, &
-       ilw_dwvp   = 9, &
+       ilw_dlwp   = 7,  &
+       ilw_diwp   = 8,  &
+       ilw_dwvp   = 9,  &
        ilw_ulwp   = 10, &
        ilw_uiwp   = 11, &
        ilw_uwvp   = 12, &
@@ -132,8 +132,8 @@ module module_mlrad
        ilw_z      = 19, &
        ilw_dz     = 20, &
        ilw_dp     = 21, &
-       ilw_sza    = 22,  &
-       ilw_sfct   = 23,  &
+       ilw_sza    = 22, &
+       ilw_sfct   = 23, &
        ilw_emiss  = 24
 
   ! #####################################################################################
