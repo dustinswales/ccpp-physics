@@ -152,9 +152,10 @@ if(${LOCAL_CURRENT_SOURCE_DIR}/physics/mlrad_driver.F90 IN_LIST SCHEMES)
 endif()
 
 # Lower optimization for certain schemes when compiling with Intel in Release mode
-if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
+if(CMAKE_BUILD_TYPE STREQUAL "Release" AND (${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM"))
   # Define a list of schemes that need lower optimization with Intel in Release mode
   set(SCHEME_NAMES_LOWER_OPTIMIZATION module_sf_mynn.F90
+                                      module_mp_nssl_2mom.F90
                                       mynnedmf_wrapper.F90
                                       gcycle.F90)
   foreach(SCHEME_NAME IN LISTS SCHEME_NAMES_LOWER_OPTIMIZATION)
@@ -168,7 +169,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL
 endif()
 
 # No optimization for certain schemes when compiling with Intel in Release mode
-if(CMAKE_BUILD_TYPE STREQUAL "Release" AND ${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel")
+if(CMAKE_BUILD_TYPE STREQUAL "Release" AND (${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM"))
   # Define a list of schemes that can't be optimized with Intel in Release mode
   set(SCHEME_NAMES_NO_OPTIMIZATION GFS_typedefs.F90)
   foreach(SCHEME_NAME IN LISTS SCHEME_NAMES_NO_OPTIMIZATION)
