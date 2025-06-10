@@ -336,6 +336,36 @@
   dimensions = ()
   type = integer
   intent = in
+[n_modis_reffi_bins]
+  standard_name = number_of_modis_simulator_ice_radius_bins
+  long_name = number of ice radii bins in MODIS CFAD
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[modis_reffi_bins]
+  standard_name = modis_simulator_ice_radius_bins
+  long_name = ice radii bins used in MODIS CFAD
+  units = m
+  dimensions = (number_of_modis_simulator_ice_radius_bins)
+  type = real
+  kind = kind_phys
+  intent = in
+[n_modis_reffl_bins]
+  standard_name = number_of_modis_simulator_liquid_radius_bins
+  long_name = number of liquid radii bins in MODIS CFAD
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[modis_reffl_bins]
+  standard_name = modis_simulator_liquid_radius_bins
+  long_name = liquid radii bins used in MODIS CFAD
+  units = m
+  dimensions = (number_of_modis_simulator_ice_radius_bins)
+  type = real
+  kind = kind_phys
+  intent = in
 [n_misr_hgt_bins]
   standard_name = number_of_misr_simulator_height_bins
   long_name = number of height bins in MISR CFAD.
@@ -416,6 +446,91 @@
   type = real
   kind = kind_phys
   intent = in
+[cld_liq]
+  standard_name = cloud_liquid_water_mixing_ratio
+  long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[cld_ice]
+  standard_name = cloud_ice_mixing_ratio
+  long_name = ratio of mass of ice water to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[cld_rain]
+  standard_name = rain_mixing_ratio
+  long_name = ratio of mass of rain water to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[cld_snow]
+  standard_name = snow_mixing_ratio
+  long_name = ratio of mass of snow water to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[cld_graupel]
+  standard_name = graupel_mixing_ratio
+  long_name = ratio of mass of graupel to mass of dry air plus vapor (without condensates)
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+[ccld_Liq]
+  standard_name = convective_cloud_water_mixing_ratio
+  long_name = moist convective cloud water mixing ratio
+  units = kg kg-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = True
+[cld_reliq]
+  standard_name = effective_radius_of_stratiform_cloud_liquid_water_particle
+  long_name = eff. radius of cloud liquid water particle in micrometer
+  units = um
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = True
+[cld_reice]
+  standard_name = effective_radius_of_stratiform_cloud_ice_particle
+  long_name = eff. radius of cloud ice water particle in micrometer
+  units = um
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = True
+[cld_rerain]
+  standard_name = effective_radius_of_stratiform_cloud_rain_particle
+  long_name = effective radius of cloud rain particle in micrometers
+  units = um
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = True
+[cld_resnow]
+  standard_name = effective_radius_of_stratiform_cloud_snow_particle
+  long_name = effective radius of cloud snow particle in micrometers
+  units = um
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+  optional = True
 [f1isccp_cosp]
   standard_name = isccp_cloud_frequency_by_altitude_diagram
   long_name = ISCCP cloud frequency by altitude diagram

@@ -11,7 +11,7 @@ module GFS_cosp
   use machine,                  only: kind_phys
   use mod_cosp,                 only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs,&
                                       cosp_simulator
-  use mod_cosp_config,          only: R_UNDEF_COSP => R_UNDEF
+  use mod_cosp_config,          only: R_UNDEF_COSP => R_UNDEF, nHydro => N_HYDRO
   use mod_cosp_modis_interface, only: cosp_modis_init
   use mod_cosp_misr_interface,  only: cosp_misr_init
   use mod_cosp_isccp_interface, only: cosp_isccp_init
@@ -21,7 +21,25 @@ module GFS_cosp
   implicit none
 
   real(kind_phys), parameter :: R_UNDEF  = 0._kind_phys
-  real(kind_phys), parameter :: emsfc_lw = 0.99_kind_phys ! longwave emissivity of surface at 10.5 microns 
+  real(kind_phys), parameter :: emsfc_lw = 0.99_kind_phys ! longwave emissivity of surface at 10.5 microns
+
+  !
+  integer,parameter :: &
+       I_LSCLIQ = 1, & ! Large-scale (stratiform) liquid
+       I_LSCICE = 2, & ! Large-scale (stratiform) ice
+       I_LSRAIN = 3, & ! Large-scale (stratiform) rain
+       I_LSSNOW = 4, & ! Large-scale (stratiform) snow
+       I_CVCLIQ = 5, & ! Convective liquid
+       I_CVCICE = 6, & ! Convective ice
+       I_CVRAIN = 7, & ! Convective rain
+       I_CVSNOW = 8, & ! Convective snow
+       I_LSGRPL = 9    ! Large-scale (stratiform) groupel
+  
+  ! Stratiform and convective clouds in frac_out (scops output).
+  integer, parameter :: &
+       I_LSC = 1, & ! Large-scale clouds
+       I_CVC = 2    ! Convective clouds
+  
 contains
 
 ! ###########################################################################################
@@ -109,8 +127,11 @@ contains
 ! ###########################################################################################
   subroutine GFS_cosp_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,      &
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
-       top_at_1, con_g, iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
+       top_at_1, con_g, cld_liq, cld_ice, cld_rain, cld_snow, cld_graupel, ccld_liq, &
+       cld_reliq, cld_reice, cld_rerain, cld_resnow, &
+       iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
        isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
+       n_modis_reffi_bins, modis_reffi_bins, n_modis_reffl_bins, modis_reffl_bins,          &
        n_misr_hgt_bins, misr_hgt_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,    &
        do_cosp, do_isccp, do_misr, do_modis, overlap,                                       &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
@@ -134,6 +155,8 @@ contains
 	 n_isccp_tau_bins,   & ! Number of optical-depth bins in ISCCP CFAD.
          n_modis_pres_bins,  & ! Number of pressure      bins in MODIS CFAD.
          n_modis_tau_bins,   & ! Number of optical-depth bins in MODIS CFAD.
+         n_modis_reffi_bins, & ! Number of ice-radii     bins in MODIS CFAD.
+         n_modis_reffl_bins, & ! Number of liquid-radii  bins in MODIS CFAD.
          n_misr_hgt_bins,    & ! Number of height        bins in MISR CFAD.
          n_misr_tau_bins,    & ! Number of optical-depth bins in MISR CFAD.
          overlap,            & ! Cloud overlap assumption
@@ -149,6 +172,8 @@ contains
 	 isccp_tau_bins,     & ! Optical-depth bin boundaries for ISCCP CFAD.
          modis_pres_bins,    & ! Pressure bin boundaries for MODIS CFAD.
          modis_tau_bins,     & ! Optical-depth bin boundaries for  MODIS CFAD.
+         modis_reffi_bins,   & ! Ice-radii bin boundaries for  MODIS CFAD.
+         modis_reffl_bins,   & ! Liquid-radii bin boundaries for  MODIS CFAD.
          misr_hgt_bins,      & ! Pressure bin boundaries for MISR CFAD.
          misr_tau_bins         ! Optical-depth bin boundaries for MISR CFAD.
     real(kind_phys), dimension(:,:), intent(in) :: & 
@@ -158,10 +183,20 @@ contains
          phii,               & ! Geopotential at model-interface (m2/s2)
          phil,               & ! Geopotential at model-layer centers
          cld_frac,           & ! Total cloud fraction
+         cld_liq,            & ! Liquid cloud water mixing ratio (kg/kg)
+         cld_ice,            & ! Ice cloud water mixing ratio (kg/kg)
+         cld_rain,           & ! Rain cloud water mixing ratio (kg/kg)
+         cld_snow,           & ! Snow cloud water mixing ratio (kg/kg)
+         cld_graupel,        & ! Graupel cloud water mixing ratio (kg/kg)
          cldtau_lw,          & ! In-cloud 10 micron optical depth
          cldtau_sw             ! In-cloud 0.67 micron optical depth
     real(kind_phys), dimension(:,:), intent(in), optional :: &
-         ccld_frac             ! Convective cloud fraction
+         ccld_liq,           & ! Convective cloud water mixing ratio (kg/kg)
+         ccld_frac,          & ! Convective cloud fraction
+         cld_reliq,          &
+         cld_reice,          &
+         cld_rerain,         &
+         cld_resnow
     real(kind_phys), dimension(:,:,:), intent(in) :: & 
          qgrs                  ! Tracer concentrations (kg/kg)
 
@@ -190,7 +225,7 @@ contains
     integer, dimension(nCol)  :: sunlit
     integer :: iCol, nerror, iErr, vs, iprs, itau, iSubCol
     character(len=256),dimension(100) :: cosp_status
-    real(kind_phys), dimension(nCol,nLay) :: ccld_frac_local
+    real(kind_phys), dimension(nCol,nLay) :: ccld_frac_local, ccld_liq_local
 
     if (.not. do_cosp) return
 
@@ -227,7 +262,8 @@ contains
     ! Type containing COSP outputs.
     call construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay,      &
     	 cosp_nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins, n_modis_pres_bins,              &
-	 n_modis_tau_bins, n_misr_hgt_bins, n_misr_tau_bins, cospOUT)
+	 n_modis_tau_bins, n_modis_reffl_bins, n_modis_reffi_bins, n_misr_hgt_bins,         &
+         n_misr_tau_bins, cospOUT)
 
     ! Host-model state for COSP (toa-2-sfc vertical ordering).
     call construct_cospstateIN(nCol, nLay, cospstateIN)
@@ -249,17 +285,18 @@ contains
     ! We may/maynot have convective cloud-condensate (depends on MP choice).
     ccld_frac_local(:,:) = 0._kind_phys
     if (present(ccld_frac)) ccld_frac_local = ccld_frac
+    ccld_liq_local(:,:) = 0._kind_phys
+    if (present(ccld_liq)) ccld_liq_local = ccld_liq
 
     !
     ! Call subsample_and_optics
     !
     call subsample_and_optics(nCol, cosp_nsubcol, nLay, do_isccp, do_misr, do_modis,     &
-    	 prsi(:,iSFC), cld_frac, ccld_frac_local, overlap, cldtau_lw, cldtau_sw, cospIN)
+    	 prsi(:,iSFC), cld_frac, ccld_frac_local, overlap, cldtau_lw, cldtau_sw, cld_liq,&
+         ccld_liq_local, cld_ice, cld_rain, cld_snow, cld_graupel, cld_reliq, cld_reice, cld_rerain, cld_resnow, cospIN)
 
     !
-    ! Call COSP (ToDo. Make cosp_simulator CCPP entrypoint, everything before this point
-    ! is part of the _pre step, everything after the call to cosp_simulator will be part
-    ! of the _post step.)
+    ! Call COSP
     !
     cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT)
 
@@ -387,8 +424,9 @@ contains
   ! cloud and radiative configurations need to also occur here.
   !
   ! #########################################################################################
-  subroutine subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,      &
-       sfcP, cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cospIN)
+  subroutine subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,         &
+       sfcP, cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cld_liq, ccld_liq, cld_ice,&
+       cld_rain, cld_snow, cld_graupel, cld_reliq, cld_reice, cld_rerain, cld_resnow, cospIN)
 
     ! Inputs
     logical, intent(in) :: &
@@ -406,17 +444,42 @@ contains
          cld_frac,  & ! Cloud-fraction from cloud-mp
 	 ccld_frac, & ! Convective cloud fraction
 	 cldtau_lw, & ! In-cloud 10 micron optical depth
-         cldtau_sw    ! In-cloud 0.67 micron optical depth
+         cldtau_sw, & ! In-cloud 0.67 micron optical depth
+         cld_liq,   & ! Liquid cloud water mixing ratio (kg/kg)
+         ccld_liq,  & ! Convective cloud water mixing ratio (kg/kg)
+         cld_ice,   & ! Ice cloud water mixing ratio (kg/kg)
+         cld_rain,  & ! Rain cloud water mixing ratio (kg/kg)
+         cld_snow,  & ! Snow cloud water mixing ratio (kg/kg)
+         cld_graupel  ! Graupel cloud water mixing ratio (kg/kg)
+    real(kind_phys), dimension(nCol,nLay), intent(in), optional :: &
+         cld_reliq,  & !
+         cld_reice,  & !
+         cld_rerain, & !
+         cld_resnow    !
     type(cosp_optical_inputs), intent(inout) :: &
          cospIN       ! DDT containing optical inputs needed by COSP.
 
     ! Locals
     type(rng_state), dimension(nCol) :: rngs
     integer,         dimension(nCol) :: seed
-    integer :: iSub
+    integer :: i, j, k, iSub, istat
     real(kind_phys), dimension(nCol,nLay) :: cldemis_lw_strat, cldemis_lw_conv
     real(kind_phys), dimension(nCol,nLay) :: cldtau_sw_conv, cldtau_sw_strat
+    real(kind_phys), dimension(nCol,nLay) :: column_frac_out, column_prec_out
+    real(kind_phys), dimension(nCol,nLay) :: ls_p_rate, cv_p_rate
+    real(kind_phys),dimension(:,:),  allocatable  :: frac_ls, prec_ls, frac_cv, prec_cv
+    real(kind_phys),dimension(:,:,:),  allocatable  :: frac_prec, &
+         MODIS_cloudWater,MODIS_cloudIce, MODIS_watersize,MODIS_iceSize,          &
+         MODIS_snowSize,MODIS_cloudSnow,  MODIS_opticalThicknessLiq,              &
+         MODIS_opticalThicknessSnow,      MODIS_opticalThicknessIce
+    real(kind_phys),dimension(:,:,:,:),  allocatable  :: &
+         mr_hydro, Reff
 
+    ! #####################################################################################
+    !
+    ! Begin sub-sampling step using SCOPS
+    !
+    ! #####################################################################################
     if (nSubCol .gt. 1) then
     
        ! RNG used for subcolumn generation
@@ -427,39 +490,220 @@ contains
        ! Call scops
        call scops(nCol, nLay, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
 
-       ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
-       if (do_isccp) then
-          cldemis_lw_strat = 1._kind_phys - exp(-cldtau_lw)
-          cldemis_lw_conv  = cldemis_lw_strat
-          !
-          cospIN%emiss_11(:,:,:) = 0._kind_phys
-          do iSub=1,nSubCol
-             where(cospIN%frac_out(:,iSub,:) .eq. 1)
-                cospIN%emiss_11(:,iSub,:) = cldemis_lw_conv
-             endwhere
-             where(cospIN%frac_out(:,iSub,:) .eq. 2)
-                cospIN%emiss_11(:,iSub,:) = cldemis_lw_strat
-             endwhere
-          enddo
-       endif
+       ! Sum up precipitation rates
+       ls_p_rate(:,1:nLay) = cld_rain + cld_snow + cld_graupel
+       cv_p_rate(:,1:nLay) = 0 
+
+       ! Call Prec_scops
+       allocate(frac_prec(nCol, nLay, nSubCol))
+       call prec_scops(nCol, nLay, nSubCol, ls_p_rate, cv_p_rate, cospIN%frac_out, frac_prec)
        
-       ! 0.67 micron optical-depth (in-cloud), needed by ISCCP, MISR and MODIS simulators.
-       if (do_isccp .or. do_modis .or. do_misr) then
-          cldtau_sw_strat = cldtau_sw
-          cldtau_sw_conv  = cldtau_sw
-          !
-          cospIN%tau_067(:,:,:) = 0._kind_phys
-          do iSub=1,nSubCol
-             where(cospIN%frac_out(:,iSub,:) .eq. 1)
-                cospIN%tau_067(:,iSub,:) = cldtau_sw_conv
-             endwhere
-             where(cospIN%frac_out(:,iSub,:) .eq. 2)
-                cospIN%tau_067(:,iSub,:) = cldtau_sw_strat
-             endwhere
+       ! ##################################################################################
+       ! Compute precipitation fraction in each gridbox
+       ! ################################################################################## 
+       allocate(frac_ls(nCol, nLay),prec_ls(nCol, nLay), frac_cv(nCol, nLay), &
+            prec_cv(nCol, nLay), stat=istat)
+
+       ! Initialize
+       frac_ls(1:nCol,1:nLay) =	0._kind_phys
+       prec_ls(1:nCol,1:nLay) =	0._kind_phys
+       frac_cv(1:nCol,1:nLay) =	0._kind_phys
+       prec_cv(1:nCol,1:nLay) = 0._kind_phys
+       do j=1,nCol
+          do k=1,nLay
+             do i=1,nSubCol
+                if (cospIN%frac_out(j,i,k)  .eq. 1)  frac_ls(j,k) = frac_ls(j,k)+1._kind_phys
+                if (cospIN%frac_out(j,i,k)  .eq. 2)  frac_cv(j,k) = frac_cv(j,k)+1._kind_phys
+                if (frac_prec(j,i,k) .eq. 1)         prec_ls(j,k) = prec_ls(j,k)+1._kind_phys
+                if (frac_prec(j,i,k) .eq. 2)         prec_cv(j,k) = prec_cv(j,k)+1._kind_phys
+                if (frac_prec(j,i,k) .eq. 3)         prec_cv(j,k) = prec_cv(j,k)+1._kind_phys
+                if (frac_prec(j,i,k) .eq. 3)         prec_ls(j,k) = prec_ls(j,k)+1._kind_phys
+             enddo
+             frac_ls(j,k)=frac_ls(j,k)/nSubCol
+             frac_cv(j,k)=frac_cv(j,k)/nSubCol
+             prec_ls(j,k)=prec_ls(j,k)/nSubCol
+             prec_cv(j,k)=prec_cv(j,k)/nSubCol
           enddo
-       endif
+       enddo
+
+       ! ################################################################################## 
+       ! Compute mixing ratios, effective radii and precipitation fluxes for clouds
+       ! and precipitation
+       ! ################################################################################## 
+       allocate(mr_hydro(nCol, nSubCol, nLay, nHydro), Reff(nCol, nSubCol, nLay, nHydro))
+       mr_hydro(:,:,:,:) = 0._kind_phys
+       Reff(:,:,:,:)     = 0._kind_phys
+       do iSub=1,nSubCol
+          ! Subcolumn clouds
+          column_frac_out = cospIN%frac_out(:,iSub,:)
+
+          ! LS clouds
+          where (column_frac_out == I_LSC)
+             mr_hydro(:,iSub,:,I_LSCLIQ) = cld_liq
+             mr_hydro(:,iSub,:,I_LSCICE) = cld_ice
+             Reff(:,iSub,:,I_LSCLIQ)     = cld_reliq
+             Reff(:,iSub,:,I_LSCICE)     = cld_reice
+          ! CONV clouds
+          elsewhere (column_frac_out == I_CVC)
+             mr_hydro(:,iSub,:,I_CVCLIQ) = ccld_liq
+             mr_hydro(:,iSub,:,I_CVCICE) = cld_ice
+             Reff(:,iSub,:,I_CVCLIQ)     = cld_reliq
+             Reff(:,iSub,:,I_CVCICE)     = cld_reice
+          end where
+          ! Subcolumn precipitation
+          column_prec_out = frac_prec(:,iSub,:)
+
+          ! LS Precipitation
+          where ((column_prec_out == 1) .or. (column_prec_out == 3) )
+             Reff(:,iSub,:,I_LSRAIN) = cld_rerain
+             Reff(:,iSub,:,I_LSSNOW) = cld_resnow
+             Reff(:,iSub,:,I_LSGRPL) = cld_resnow
+          ! CONV precipitation
+          elsewhere ((column_prec_out == 2) .or. (column_prec_out == 3))
+             Reff(:,iSub,:,I_CVRAIN) = cld_rerain
+             Reff(:,iSub,:,I_CVSNOW) = cld_resnow
+          end where
+       enddo
+
+       ! ##################################################################################
+       ! Convert the mixing ratio and precipitation fluxes from gridbox mean to
+       ! the fraction-based values
+       ! ##################################################################################
+       do k=1,nLay
+          do j=1,nCol
+             ! In-cloud mixing ratios.
+             if (frac_ls(j,k) .ne. 0._kind_phys) then
+                mr_hydro(j,:,k,I_LSCLIQ) = mr_hydro(j,:,k,I_LSCLIQ)/frac_ls(j,k)
+                mr_hydro(j,:,k,I_LSCICE) = mr_hydro(j,:,k,I_LSCICE)/frac_ls(j,k)
+             endif
+             if (frac_cv(j,k) .ne. 0._kind_phys) then
+                mr_hydro(j,:,k,I_CVCLIQ) = mr_hydro(j,:,k,I_CVCLIQ)/frac_cv(j,k)
+                mr_hydro(j,:,k,I_CVCICE) = mr_hydro(j,:,k,I_CVCICE)/frac_cv(j,k)
+             endif
+             
+             ! Precipitation
+             if (prec_ls(j,k) .ne. 0.) then
+                mr_hydro(j,:,k,I_LSRAIN) = mr_hydro(j,:,k,I_LSRAIN)/prec_ls(j,k)
+                mr_hydro(j,:,k,I_LSSNOW) = mr_hydro(j,:,k,I_LSSNOW)/prec_ls(j,k)
+                mr_hydro(j,:,k,I_LSGRPL) = mr_hydro(j,:,k,I_LSGRPL)/prec_ls(j,k)
+             endif
+             if (prec_cv(j,k) .ne. 0.) then
+                mr_hydro(j,:,k,I_CVRAIN) = mr_hydro(j,:,k,I_CVRAIN)/prec_cv(j,k)
+                mr_hydro(j,:,k,I_CVSNOW) = mr_hydro(j,:,k,I_CVSNOW)/prec_cv(j,k)
+             endif
+          enddo
+       enddo
+       
     else
        cospIN%frac_out = 1
+       allocate(mr_hydro(nCol,1,nLay,nHydro),Reff(nCol,1,nLay,nHydro))
+       mr_hydro(:,1,:,I_LSCLIQ) = cld_liq
+       mr_hydro(:,1,:,I_LSCICE) = cld_ice
+       mr_hydro(:,1,:,I_CVCLIQ) = ccld_liq
+       mr_hydro(:,1,:,I_CVCICE) = cld_ice
+       Reff(:,1,:,I_LSRAIN)     = cld_reliq
+       Reff(:,1,:,I_LSSNOW)   	= cld_resnow
+       Reff(:,1,:,I_LSGRPL)   	= cld_resnow
+       Reff(:,1,:,I_CVRAIN)     = cld_rerain
+       Reff(:,1,:,I_CVSNOW)     = cld_resnow
+    endif
+    
+    ! ##################################################################################
+    ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
+    ! ##################################################################################
+    if (do_isccp) then
+       cldemis_lw_strat = 1._kind_phys - exp(-cldtau_lw)
+       cldemis_lw_conv  = cldemis_lw_strat
+       !
+       cospIN%emiss_11(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             cospIN%emiss_11(:,iSub,:) = cldemis_lw_conv
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             cospIN%emiss_11(:,iSub,:) = cldemis_lw_strat
+          endwhere
+       enddo
+    endif
+
+    ! ##################################################################################
+    ! 0.67 micron optical-depth (in-cloud), needed by ISCCP, MISR and MODIS simulators.
+    ! ##################################################################################
+    if (do_isccp .or. do_modis .or. do_misr) then
+       cldtau_sw_strat = cldtau_sw
+       cldtau_sw_conv  = cldtau_sw
+       !
+       cospIN%tau_067(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             cospIN%tau_067(:,iSub,:) = cldtau_sw_conv
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             cospIN%tau_067(:,iSub,:) = cldtau_sw_strat
+          endwhere
+       enddo
+    endif
+
+    ! ##################################################################################
+    ! MODIS optics
+    ! ##################################################################################
+    if (do_modis) then
+       allocate(MODIS_cloudWater(nCol,nSubCol,nLay),                                   &
+                MODIS_cloudIce(nCol,nSubCol,nLay),                                     &
+                MODIS_waterSize(nCol,nSubCol,nLay),                                    &
+                MODIS_iceSize(nCol,nSubCol,nLay),                                      &
+                MODIS_opticalThicknessLiq(nCol,nSubCol,nLay),                          &
+                MODIS_opticalThicknessIce(nCol,nSubCol,nLay), stat=istat)
+
+       ! Sample (stratiform/convective) cloud properties.
+       ! Liquid cloud-water
+       MODIS_cloudWater(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             MODIS_cloudWater(:,iSub,:) = mr_hydro(:,iSub,:,I_CVCLIQ)
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             MODIS_cloudWater(:,iSub,:) = mr_hydro(:,iSub,:,I_LSCLIQ)
+          endwhere
+       enddo
+       
+       ! Ice cloud-water
+       MODIS_cloudIce(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             MODIS_cloudIce(:,iSub,:) = mr_hydro(:,iSub,:,I_CVCICE)
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             MODIS_cloudIce(:,iSub,:) = mr_hydro(:,iSub,:,I_LSCICE)
+          endwhere
+       enddo
+       
+       ! Liquid cloud particle size
+       MODIS_waterSize(:,:,:) = 0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             MODIS_waterSize(:,iSub,:) = Reff(:,iSub,:,I_CVCLIQ)
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             MODIS_waterSize(:,iSub,:) = Reff(:,iSub,:,I_LSCLIQ)
+          endwhere
+       enddo
+       
+       ! Ice cloud particle size
+       MODIS_iceSize(:,:,:) =	0._kind_phys
+       do iSub=1,nSubCol
+          where(cospIN%frac_out(:,iSub,:) .eq. 1)
+             MODIS_iceSize(:,iSub,:) = Reff(:,iSub,:,I_CVCICE)
+          endwhere
+          where(cospIN%frac_out(:,iSub,:) .eq. 2)
+             MODIS_iceSize(:,iSub,:) = Reff(:,iSub,:,I_LSCICE)
+          endwhere
+       enddo
+       
+       deallocate (MODIS_cloudWater, MODIS_cloudIce, MODIS_waterSize)
+       deallocate (MODIS_iceSize,  MODIS_opticalThicknessLiq)
+       deallocate (MODIS_opticalThicknessIce)
+       deallocate (mr_hydro, Reff)
     endif
 
   end subroutine subsample_and_optics
@@ -469,24 +713,27 @@ contains
   ! ######################################################################################
   subroutine construct_cosp_outputs(do_isccp, do_modis, do_misr, nCol, nSubCol, nLay,    &
   	     Nlvgrid, n_isccp_pres_bins, n_isccp_tau_bins, n_modis_pres_bins,            &
-	     n_modis_tau_bins, n_misr_hgt_bins, n_misr_tau_bins, x)
+	     n_modis_tau_bins, n_modis_reffl_bins, n_modis_reffi_bins, n_misr_hgt_bins,  &
+             n_misr_tau_bins, x)
 
     ! Inputs
-    logical, intent(in) :: &
-         do_isccp,          & ! Flag for COSP ISCCP diagnostics
-         do_misr,           & ! Flag for COSP MISR diagnostics
-         do_modis             ! Flag for COSP MODIS diagnostics
-    integer, intent(in) :: &
-         nCol,              & ! Number of horizontal gridpoints.
-	 nSubCol,           & ! Number of COSP subcolumns.
-	 nLay,              & ! Number of vertical layers.
-	 Nlvgrid,           & ! Number of vertical layers in COSP statistical grid.
-         n_isccp_pres_bins, & ! Number of pressure      bins in ISCCP CFAD.
-         n_isccp_tau_bins,  & ! Number of optical-depth bins in ISCCP CFAD.
-         n_modis_pres_bins, & ! Number of pressure      bins in MODIS CFAD.
-         n_modis_tau_bins,  & ! Number of optical-depth bins in MODIS CFAD.
-         n_misr_hgt_bins,   & ! Number of height        bins in MISR CFAD.
-         n_misr_tau_bins      ! Number of optical-depth bins in MISR CFAD.
+    logical, intent(in) ::   &
+         do_isccp,           & ! Flag for COSP ISCCP diagnostics
+         do_misr,            & ! Flag for COSP MISR diagnostics
+         do_modis              ! Flag for COSP MODIS diagnostics
+    integer, intent(in) ::   &
+         nCol,               & ! Number of horizontal gridpoints.
+	 nSubCol,            & ! Number of COSP subcolumns.
+	 nLay,               & ! Number of vertical layers.
+	 Nlvgrid,            & ! Number of vertical layers in COSP statistical grid.
+         n_isccp_pres_bins,  & ! Number of pressure      bins in ISCCP CFAD.
+         n_isccp_tau_bins,   & ! Number of optical-depth bins in ISCCP CFAD.
+         n_modis_pres_bins,  & ! Number of pressure      bins in MODIS CFAD.
+         n_modis_tau_bins,   & ! Number of optical-depth bins in MODIS CFAD.
+         n_modis_reffi_bins, & ! Number of ice-radii     bins in MODIS CFAD.
+         n_modis_reffl_bins, & ! Number of liquid-radii  bins in MODIS CFAD
+         n_misr_hgt_bins,    & ! Number of height        bins in MISR CFAD.
+         n_misr_tau_bins       ! Number of optical-depth bins in MISR CFAD.
     
     ! Outputs
     type(cosp_outputs),intent(out) :: &
@@ -530,8 +777,8 @@ contains
        allocate(x%modis_Liquid_Water_Path_Mean(nCol))
        allocate(x%modis_Ice_Water_Path_Mean(nCol))
        allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nCol, n_modis_tau_bins, n_modis_pres_bins))
-       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nCol, n_modis_tau_bins, n_modis_pres_bins))
-       allocate(x%modis_Optical_Thickness_vs_ReffICE(nCol, n_modis_tau_bins, n_modis_pres_bins))
+       allocate(x%modis_Optical_thickness_vs_ReffLIQ(nCol, n_modis_tau_bins, n_modis_reffl_bins))
+       allocate(x%modis_Optical_Thickness_vs_ReffICE(nCol, n_modis_tau_bins, n_modis_reffi_bins))
     endif
 
   end subroutine construct_cosp_outputs
