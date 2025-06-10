@@ -630,6 +630,27 @@
   dimensions =  ()
   type = logical
   intent = in
+[doSWrad]
+  standard_name = flag_for_calling_shortwave_radiation
+  long_name = logical flags for sw radiation calls
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[doLWrad]
+  standard_name = flag_for_calling_longwave_radiation
+  long_name = logical flags for lw radiation calls
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[do_cosp]
+  standard_name = flag_for_cosp_diagnostics
+  long_name = flag for cosp diagnostics
+  units = flag
+  dimensions =  ()
+  type = logical
+  intent = in
 [n_isccp_pres_bins]
   standard_name = number_of_isccp_simulator_pressure_bins
   long_name = number of pressure bins in ISCCP CFAD.

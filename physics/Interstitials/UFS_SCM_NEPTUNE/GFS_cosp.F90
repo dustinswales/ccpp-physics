@@ -374,12 +374,15 @@ contains
 !! \htmlinclude GFS_cosp_timestep_finalize.html
 !!
 ! ###########################################################################################
-  subroutine GFS_cosp_timestep_finalize(do_isccp, f1isccp_cosp, f1isccp_cosp_avg, n_isccp_pres_bins,  &
-       n_isccp_tau_bins, errmsg, errflg)
+  subroutine GFS_cosp_timestep_finalize(do_cosp, doLWrad, doSWrad, do_isccp, f1isccp_cosp,  &
+       f1isccp_cosp_avg, n_isccp_pres_bins, n_isccp_tau_bins, errmsg, errflg)
     ! Inputs
-    logical, intent(in) :: &
-         do_isccp              ! Flag for COSP ISCCP diagnostics
-    integer, intent(in) :: &
+    logical, intent(in) ::   &
+         do_cosp,            & ! Flag for COSP
+         do_isccp,           & ! Flag for COSP ISCCP diagnostics
+         doLWrad,            & ! Flag for LW radiation
+         doSWrad               ! Flag for SW radiaiton
+    integer, intent(in) ::   &
          n_isccp_pres_bins,  & ! Number of pressure      bins in ISCCP CFAD.
          n_isccp_tau_bins      ! Number of optical-depth bins in ISCCP CFAD.
     real(kind_phys), dimension(:,:,:), intent(in) :: &
@@ -396,6 +399,11 @@ contains
     ! Locals
     integer :: iprs, itau, iCol, count
 
+    if (.not. do_cosp) return
+    
+    ! Only call COSP on radiation time-step.
+    if (.not. (doLWrad .or. doSWrad)) return
+    
     ! Initialize CCPP error handling variables
     errmsg = ''
     errflg = 0
