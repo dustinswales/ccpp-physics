@@ -72,7 +72,7 @@
               smcwtdxy, deeprechxy, rechxy, snowxy, snicexy, snliqxy, tsnoxy , smoiseq, zsnsoxy,   &
               slc, smc, stc, tsfcl, snowd, canopy, tg3, stype, con_t0c, lsm_cold_start, nthrds,    &
               lkm, use_lake_model, lakefrac, lakedepth, iopt_lake, iopt_lake_clm, iopt_lake_flake, &
-              lakefrac_threshold, lakedepth_threshold, ozphys, errmsg, errflg)
+              lakefrac_threshold, lakedepth_threshold, errmsg, errflg)
 
          implicit none
 
@@ -245,7 +245,7 @@
 
 !> - Call setindxh2o() to initialize stratospheric water vapor data
          if (h2o_phys) then
-            call h2ophys%setup_h2oprog(xlat_d, jindx1_h, jindx2_h, ddy_h)
+            call h2ophys%setup(xlat_d, jindx1_h, jindx2_h, ddy_h)
          endif
 
 !> - Call setindxaer() to initialize aerosols data
@@ -514,8 +514,10 @@
 
                  isnow = nint(snowxy(ix))+1 ! snowxy <=0.0, dzsno >= 0.0
 
+! using stc and tgxy to linearly interpolate the snow temp for each layer
+
                  do is = isnow,0
-                   tsnoxy(ix,is)  = tgxy(ix)
+                   tsnoxy(ix,is) = tgxy(ix) + (( sum(dzsno(isnow:is)) -0.5*dzsno(is) )/snd)*(stc(ix,1)-tgxy(ix))
                    snliqxy(ix,is) = zero
                    snicexy(ix,is) = one * dzsno(is) * weasd(ix)/snd
                  enddo
@@ -784,7 +786,7 @@
 
 !> - Update stratospheric h2o concentration.
          if (h2o_phys) then
-            call h2ophys%update_h2oprog(jindx1_h, jindx2_h, ddy_h, rjday, n1, n2, h2opl)
+            call h2ophys%update(jindx1_h, jindx2_h, ddy_h, rjday, n1, n2, h2opl)
          endif
 
 !> - Call ciinterpol() to make IN and CCN data interpolation
