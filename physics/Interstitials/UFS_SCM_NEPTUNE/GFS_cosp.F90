@@ -495,7 +495,7 @@ contains
        cv_p_rate(:,1:nLay) = 0 
 
        ! Call Prec_scops
-       allocate(frac_prec(nCol, nLay, nSubCol))
+       allocate(frac_prec(nCol, nSubCol, nLay))
        call prec_scops(nCol, nLay, nSubCol, ls_p_rate, cv_p_rate, cospIN%frac_out, frac_prec)
        
        ! ##################################################################################
