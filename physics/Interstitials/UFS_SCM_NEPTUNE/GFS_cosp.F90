@@ -225,7 +225,6 @@ contains
     integer, dimension(nCol)  :: sunlit
     integer :: iCol, nerror, iErr, vs, iprs, itau, iSubCol
     character(len=256),dimension(100) :: cosp_status
-    real(kind_phys), dimension(nCol,nLay) :: ccld_frac_local, ccld_liq_local
 
     if (.not. do_cosp) return
 
@@ -282,18 +281,12 @@ contains
     call construct_cospIN(do_isccp, do_modis, do_misr, nCol, cosp_nsubcol, nLay, cospIN)
     cospIN%emsfc_lw = emsfc_lw
 
-    ! We may/maynot have convective cloud-condensate (depends on MP choice).
-    ccld_frac_local(:,:) = 0._kind_phys
-    if (present(ccld_frac)) ccld_frac_local = ccld_frac
-    ccld_liq_local(:,:) = 0._kind_phys
-    if (present(ccld_liq)) ccld_liq_local = ccld_liq
-
     !
     ! Call subsample_and_optics
     !
     call subsample_and_optics(nCol, cosp_nsubcol, nLay, do_isccp, do_misr, do_modis,     &
-    	 prsi(:,iSFC), cld_frac, ccld_frac_local, overlap, cldtau_lw, cldtau_sw, cld_liq,&
-         ccld_liq_local, cld_ice, cld_rain, cld_snow, cld_graupel, cld_reliq, cld_reice, cld_rerain, cld_resnow, cospIN)
+    	 prsi(:,iSFC), cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cld_liq,&
+         ccld_liq, cld_ice, cld_rain, cld_snow, cld_graupel, cld_reliq, cld_reice, cld_rerain, cld_resnow, cospIN)
 
     !
     ! Call COSP
@@ -450,16 +443,16 @@ contains
          sfcP         ! Pressure @ surface (Pa)
     real(kind_phys), dimension(nCol,nLay), intent(in) :: &
          cld_frac,  & ! Cloud-fraction from cloud-mp
-	 ccld_frac, & ! Convective cloud fraction
 	 cldtau_lw, & ! In-cloud 10 micron optical depth
          cldtau_sw, & ! In-cloud 0.67 micron optical depth
          cld_liq,   & ! Liquid cloud water mixing ratio (kg/kg)
-         ccld_liq,  & ! Convective cloud water mixing ratio (kg/kg)
          cld_ice,   & ! Ice cloud water mixing ratio (kg/kg)
          cld_rain,  & ! Rain cloud water mixing ratio (kg/kg)
          cld_snow,  & ! Snow cloud water mixing ratio (kg/kg)
          cld_graupel  ! Graupel cloud water mixing ratio (kg/kg)
     real(kind_phys), dimension(nCol,nLay), intent(in), optional :: &
+         ccld_frac,  & ! Convective cloud fraction
+         ccld_liq,   & ! Convective cloud water mixing ratio (kg/kg)
          cld_reliq,  & !
          cld_reice,  & !
          cld_rerain, & !
@@ -475,6 +468,8 @@ contains
     real(kind_phys), dimension(nCol,nLay) :: cldtau_sw_conv, cldtau_sw_strat
     real(kind_phys), dimension(nCol,nLay) :: column_frac_out, column_prec_out
     real(kind_phys), dimension(nCol,nLay) :: ls_p_rate, cv_p_rate
+    real(kind_phys), dimension(nCol,nLay) :: cld_reliq_local, cld_reice_local, cld_rerain_local, cld_resnow_local
+    real(kind_phys), dimension(nCol,nLay) :: ccld_frac_local, ccld_liq_local
     real(kind_phys),dimension(:,:),  allocatable  :: frac_ls, prec_ls, frac_cv, prec_cv
     real(kind_phys),dimension(:,:,:),  allocatable  :: frac_prec, &
          MODIS_cloudWater,MODIS_cloudIce, MODIS_watersize,MODIS_iceSize,          &
@@ -483,6 +478,33 @@ contains
     real(kind_phys),dimension(:,:,:,:),  allocatable  :: &
          mr_hydro, Reff
 
+    ! #####################################################################################
+    !
+    ! Set default values for optional MP arguments
+    !
+    ! #####################################################################################
+    
+    ! We may/maynot have convective cloud-condensate (depends on MP choice).
+    ! SCOPS applies sub subsampling to the gridbox, assuming a convective fraction of 5%.
+    ! This is satisfactory(?) for the resolution and microphysics used by GCMs for CMIP
+    ! experiments, but this is Not scale aware and may cause problems at hi-res.
+    ! Need to explore more.
+    
+    ccld_frac_local(:,:) = 0._kind_phys
+    if (present(ccld_frac)) ccld_frac_local = ccld_frac
+    ccld_liq_local(:,:) = 0._kind_phys
+    if (present(ccld_liq)) ccld_liq_local = ccld_liq
+
+    ! Ditto for hydrometeors sizes.
+    cld_reliq_local  = 0._kind_phys
+    cld_reice_local  = 0._kind_phys
+    cld_rerain_local = 0._kind_phys
+    cld_resnow_local = 0._kind_phys
+    if (present(cld_reliq))  cld_reliq_local = cld_reliq
+    if (present(cld_reice))  cld_reice_local = cld_reice
+    if (present(cld_rerain)) cld_rerain_local = cld_rerain
+    if (present(cld_resnow)) cld_resnow_local = cld_resnow
+    
     ! #####################################################################################
     !
     ! Begin sub-sampling step using SCOPS
@@ -496,7 +518,7 @@ contains
        call init_rng(rngs, seed)
 
        ! Call scops
-       call scops(nCol, nLay, nSubCol, rngs, cld_frac, ccld_frac, overlap, cospIN%frac_out, 0)
+       call scops(nCol, nLay, nSubCol, rngs, cld_frac, ccld_frac_local, overlap, cospIN%frac_out, 0)
 
        ! Sum up precipitation rates
        ls_p_rate(:,1:nLay) = cld_rain + cld_snow + cld_graupel
@@ -549,27 +571,27 @@ contains
           where (column_frac_out == I_LSC)
              mr_hydro(:,iSub,:,I_LSCLIQ) = cld_liq
              mr_hydro(:,iSub,:,I_LSCICE) = cld_ice
-             Reff(:,iSub,:,I_LSCLIQ)     = cld_reliq
-             Reff(:,iSub,:,I_LSCICE)     = cld_reice
+             Reff(:,iSub,:,I_LSCLIQ)     = cld_reliq_local
+             Reff(:,iSub,:,I_LSCICE)     = cld_reice_local
           ! CONV clouds
           elsewhere (column_frac_out == I_CVC)
-             mr_hydro(:,iSub,:,I_CVCLIQ) = ccld_liq
+             mr_hydro(:,iSub,:,I_CVCLIQ) = ccld_liq_local
              mr_hydro(:,iSub,:,I_CVCICE) = cld_ice
-             Reff(:,iSub,:,I_CVCLIQ)     = cld_reliq
-             Reff(:,iSub,:,I_CVCICE)     = cld_reice
+             Reff(:,iSub,:,I_CVCLIQ)     = cld_reliq_local
+             Reff(:,iSub,:,I_CVCICE)     = cld_reice_local
           end where
           ! Subcolumn precipitation
           column_prec_out = frac_prec(:,iSub,:)
 
           ! LS Precipitation
           where ((column_prec_out == 1) .or. (column_prec_out == 3) )
-             Reff(:,iSub,:,I_LSRAIN) = cld_rerain
-             Reff(:,iSub,:,I_LSSNOW) = cld_resnow
-             Reff(:,iSub,:,I_LSGRPL) = cld_resnow
+             Reff(:,iSub,:,I_LSRAIN) = cld_rerain_local
+             Reff(:,iSub,:,I_LSSNOW) = cld_resnow_local
+             Reff(:,iSub,:,I_LSGRPL) = cld_resnow_local
           ! CONV precipitation
           elsewhere ((column_prec_out == 2) .or. (column_prec_out == 3))
-             Reff(:,iSub,:,I_CVRAIN) = cld_rerain
-             Reff(:,iSub,:,I_CVSNOW) = cld_resnow
+             Reff(:,iSub,:,I_CVRAIN) = cld_rerain_local
+             Reff(:,iSub,:,I_CVSNOW) = cld_resnow_local
           end where
        enddo
 
@@ -607,13 +629,13 @@ contains
        allocate(mr_hydro(nCol,1,nLay,nHydro),Reff(nCol,1,nLay,nHydro))
        mr_hydro(:,1,:,I_LSCLIQ) = cld_liq
        mr_hydro(:,1,:,I_LSCICE) = cld_ice
-       mr_hydro(:,1,:,I_CVCLIQ) = ccld_liq
+       mr_hydro(:,1,:,I_CVCLIQ) = ccld_liq_local
        mr_hydro(:,1,:,I_CVCICE) = cld_ice
-       Reff(:,1,:,I_LSRAIN)     = cld_reliq
-       Reff(:,1,:,I_LSSNOW)   	= cld_resnow
-       Reff(:,1,:,I_LSGRPL)   	= cld_resnow
-       Reff(:,1,:,I_CVRAIN)     = cld_rerain
-       Reff(:,1,:,I_CVSNOW)     = cld_resnow
+       Reff(:,1,:,I_LSRAIN)     = cld_reliq_local
+       Reff(:,1,:,I_LSSNOW)   	= cld_resnow_local
+       Reff(:,1,:,I_LSGRPL)   	= cld_resnow_local
+       Reff(:,1,:,I_CVRAIN)     = cld_rerain_local
+       Reff(:,1,:,I_CVSNOW)     = cld_resnow_local
     endif
     
     ! ##################################################################################
