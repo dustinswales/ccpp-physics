@@ -291,7 +291,7 @@ contains
     !
     ! Call COSP
     !
-    cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT)
+    cosp_status = cosp_simulator(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=nCol,debug=.false.)
 
     ! Error checking
     nerror = 0
@@ -358,6 +358,11 @@ contains
     meancldalb_isccp = cospOUT%isccp_meanalbedocld
     meantb_isccp     = cospOUT%isccp_meantb
     meantbclr_isccp  = cospOUT%isccp_meantbclr
+
+    ! Clean up
+    call destroy_cospIN(cospIN)
+    call destroy_cospstateIN(cospstateIN)
+    call destroy_cosp_outputs(cospOUT) 
 
   end subroutine GFS_cosp_run
 !> @}
@@ -831,9 +836,9 @@ contains
 
   end subroutine construct_cospstateIN
 
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  ! ###################################################################################### 
   ! SUBROUTINE construct_cospIN
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  ! ######################################################################################
   subroutine construct_cospIN(do_isccp, do_modis, do_misr, nCol, nSubCol, nLay, y)
 
     ! Inputs
@@ -869,5 +874,206 @@ contains
     endif
 
   end subroutine construct_cospIN
+  
+  ! ######################################################################################
+  ! SUBROUTINE destroy_cosp_outputs
+  ! ######################################################################################
+  subroutine destroy_cosp_outputs(y)
+    type(cosp_outputs),intent(inout) :: y
 
+    ! Deallocate and nullify
+    if (associated(y%isccp_totalcldarea))        then
+       deallocate(y%isccp_totalcldarea) 
+       nullify(y%isccp_totalcldarea)  
+    endif
+    if (associated(y%isccp_meantb))              then
+       deallocate(y%isccp_meantb) 
+       nullify(y%isccp_meantb)     
+    endif
+    if (associated(y%isccp_meantbclr))           then
+       deallocate(y%isccp_meantbclr)
+       nullify(y%isccp_meantbclr)  
+    endif
+    if (associated(y%isccp_meanptop))            then
+       deallocate(y%isccp_meanptop)
+       nullify(y%isccp_meanptop)     
+    endif
+    if (associated(y%isccp_meantaucld))          then
+       deallocate(y%isccp_meantaucld) 
+       nullify(y%isccp_meantaucld)       
+    endif
+    if (associated(y%isccp_meanalbedocld))       then
+       deallocate(y%isccp_meanalbedocld)
+       nullify(y%isccp_meanalbedocld)     
+    endif
+    if (associated(y%isccp_boxtau))              then
+       deallocate(y%isccp_boxtau)
+       nullify(y%isccp_boxtau)       
+    endif
+    if (associated(y%isccp_boxptop))             then
+       deallocate(y%isccp_boxptop)
+       nullify(y%isccp_boxptop)     
+    endif
+    if (associated(y%isccp_fq))                  then
+       deallocate(y%isccp_fq)
+       nullify(y%isccp_fq)       
+    endif
+    ! MISR
+    if (associated(y%misr_fq))                   then
+       deallocate(y%misr_fq) 
+       nullify(y%misr_fq)     
+    endif
+    if (associated(y%misr_dist_model_layertops)) then
+       deallocate(y%misr_dist_model_layertops)
+       nullify(y%misr_dist_model_layertops)       
+    endif
+    if (associated(y%misr_meanztop))             then
+       deallocate(y%misr_meanztop)
+       nullify(y%misr_meanztop)     
+    endif
+    if (associated(y%misr_cldarea))              then
+       deallocate(y%misr_cldarea)
+       nullify(y%misr_cldarea)      
+    endif
+
+    ! MODIS
+    if (associated(y%modis_Cloud_Fraction_Total_Mean))                      then
+       deallocate(y%modis_Cloud_Fraction_Total_Mean)       
+       nullify(y%modis_Cloud_Fraction_Total_Mean)       
+    endif
+    if (associated(y%modis_Cloud_Fraction_Ice_Mean))                        then
+       deallocate(y%modis_Cloud_Fraction_Ice_Mean)     
+       nullify(y%modis_Cloud_Fraction_Ice_Mean)     
+    endif
+    if (associated(y%modis_Cloud_Fraction_Water_Mean))                      then
+       deallocate(y%modis_Cloud_Fraction_Water_Mean)           
+       nullify(y%modis_Cloud_Fraction_Water_Mean)           
+    endif
+    if (associated(y%modis_Cloud_Fraction_High_Mean))                       then
+       deallocate(y%modis_Cloud_Fraction_High_Mean)     
+       nullify(y%modis_Cloud_Fraction_High_Mean)     
+    endif
+    if (associated(y%modis_Cloud_Fraction_Mid_Mean))                        then
+       deallocate(y%modis_Cloud_Fraction_Mid_Mean)       
+       nullify(y%modis_Cloud_Fraction_Mid_Mean)       
+    endif
+    if (associated(y%modis_Cloud_Fraction_Low_Mean))                        then
+       deallocate(y%modis_Cloud_Fraction_Low_Mean)     
+       nullify(y%modis_Cloud_Fraction_Low_Mean)     
+    endif
+    if (associated(y%modis_Optical_Thickness_Total_Mean))                   then
+       deallocate(y%modis_Optical_Thickness_Total_Mean)  
+       nullify(y%modis_Optical_Thickness_Total_Mean)  
+    endif
+    if (associated(y%modis_Optical_Thickness_Water_Mean))                   then
+       deallocate(y%modis_Optical_Thickness_Water_Mean)     
+       nullify(y%modis_Optical_Thickness_Water_Mean)     
+    endif
+    if (associated(y%modis_Optical_Thickness_Ice_Mean))                     then
+       deallocate(y%modis_Optical_Thickness_Ice_Mean)       
+       nullify(y%modis_Optical_Thickness_Ice_Mean)       
+    endif
+    if (associated(y%modis_Optical_Thickness_Total_LogMean))                then
+       deallocate(y%modis_Optical_Thickness_Total_LogMean)    
+       nullify(y%modis_Optical_Thickness_Total_LogMean)    
+    endif
+    if (associated(y%modis_Optical_Thickness_Water_LogMean))                then
+       deallocate(y%modis_Optical_Thickness_Water_LogMean)     
+       nullify(y%modis_Optical_Thickness_Water_LogMean)     
+    endif
+    if (associated(y%modis_Optical_Thickness_Ice_LogMean))                  then
+       deallocate(y%modis_Optical_Thickness_Ice_LogMean)     
+       nullify(y%modis_Optical_Thickness_Ice_LogMean)     
+    endif
+    if (associated(y%modis_Cloud_Particle_Size_Water_Mean))                 then
+       deallocate(y%modis_Cloud_Particle_Size_Water_Mean)       
+       nullify(y%modis_Cloud_Particle_Size_Water_Mean)       
+    endif
+    if (associated(y%modis_Cloud_Particle_Size_Ice_Mean))                   then
+       deallocate(y%modis_Cloud_Particle_Size_Ice_Mean)     
+       nullify(y%modis_Cloud_Particle_Size_Ice_Mean)     
+    endif
+    if (associated(y%modis_Cloud_Top_Pressure_Total_Mean))                  then
+       deallocate(y%modis_Cloud_Top_Pressure_Total_Mean)           
+       nullify(y%modis_Cloud_Top_Pressure_Total_Mean)           
+    endif
+    if (associated(y%modis_Liquid_Water_Path_Mean))                         then
+       deallocate(y%modis_Liquid_Water_Path_Mean)     
+       nullify(y%modis_Liquid_Water_Path_Mean)     
+    endif
+    if (associated(y%modis_Ice_Water_Path_Mean))                            then
+       deallocate(y%modis_Ice_Water_Path_Mean)       
+       nullify(y%modis_Ice_Water_Path_Mean)       
+    endif
+    if (associated(y%modis_Optical_Thickness_vs_Cloud_Top_Pressure))        then
+       deallocate(y%modis_Optical_Thickness_vs_Cloud_Top_Pressure)     
+       nullify(y%modis_Optical_Thickness_vs_Cloud_Top_Pressure)     
+    endif
+    if (associated(y%modis_Optical_thickness_vs_ReffLIQ))                   then
+       deallocate(y%modis_Optical_thickness_vs_ReffLIQ)
+       nullify(y%modis_Optical_thickness_vs_ReffLIQ)
+    endif
+    if (associated(y%modis_Optical_thickness_vs_ReffICE))                   then
+       deallocate(y%modis_Optical_thickness_vs_ReffICE)
+       nullify(y%modis_Optical_thickness_vs_ReffICE)
+    endif
+  end subroutine destroy_cosp_outputs
+  
+  ! ######################################################################################
+  ! SUBROUTINE destroy_cospIN
+  ! ######################################################################################
+  subroutine destroy_cospIN(y)
+    type(cosp_optical_inputs),intent(inout) :: y
+    
+    if (allocated(y%tau_067))             deallocate(y%tau_067)
+    if (allocated(y%emiss_11))            deallocate(y%emiss_11)
+    if (allocated(y%frac_out))            deallocate(y%frac_out)
+    if (allocated(y%beta_mol_calipso))    deallocate(y%beta_mol_calipso)
+    if (allocated(y%tau_mol_calipso))     deallocate(y%tau_mol_calipso)
+    if (allocated(y%betatot_calipso))     deallocate(y%betatot_calipso)
+    if (allocated(y%betatot_ice_calipso)) deallocate(y%betatot_ice_calipso)
+    if (allocated(y%betatot_liq_calipso)) deallocate(y%betatot_liq_calipso)
+    if (allocated(y%tautot_calipso))      deallocate(y%tautot_calipso)
+    if (allocated(y%tautot_ice_calipso))  deallocate(y%tautot_ice_calipso)
+    if (allocated(y%tautot_liq_calipso))  deallocate(y%tautot_liq_calipso)
+    if (allocated(y%tautot_S_liq))        deallocate(y%tautot_S_liq)
+    if (allocated(y%tautot_S_ice))        deallocate(y%tautot_S_ice)
+    if (allocated(y%z_vol_cloudsat))      deallocate(y%z_vol_cloudsat)
+    if (allocated(y%kr_vol_cloudsat))     deallocate(y%kr_vol_cloudsat)
+    if (allocated(y%g_vol_cloudsat))      deallocate(y%g_vol_cloudsat)
+    if (allocated(y%asym))                deallocate(y%asym)
+    if (allocated(y%ss_alb))              deallocate(y%ss_alb)
+    if (allocated(y%fracLiq))             deallocate(y%fracLiq)
+    if (allocated(y%fracPrecipIce))       deallocate(y%fracPrecipIce)
+  end subroutine destroy_cospIN
+
+  ! ######################################################################################
+  ! SUBROUTINE destroy_cospstateIN     
+  ! ###################################################################################### 
+  subroutine destroy_cospstateIN(y)
+    type(cosp_column_inputs),intent(inout) :: y
+
+    if (allocated(y%surfelev))        deallocate(y%surfelev)
+    if (allocated(y%sunlit))          deallocate(y%sunlit)
+    if (allocated(y%skt))             deallocate(y%skt)
+    if (allocated(y%land))            deallocate(y%land)
+    if (allocated(y%at))              deallocate(y%at)
+    if (allocated(y%pfull))           deallocate(y%pfull)
+    if (allocated(y%phalf))           deallocate(y%phalf)
+    if (allocated(y%qv))              deallocate(y%qv)
+    if (allocated(y%o3))              deallocate(y%o3)
+    if (allocated(y%hgt_matrix))      deallocate(y%hgt_matrix)
+    if (allocated(y%u_sfc))           deallocate(y%u_sfc)
+    if (allocated(y%v_sfc))           deallocate(y%v_sfc)
+    if (allocated(y%lat))             deallocate(y%lat)
+    if (allocated(y%lon))             deallocate(y%lon)
+    if (allocated(y%emis_sfc))        deallocate(y%emis_sfc)
+    if (allocated(y%cloudIce))        deallocate(y%cloudIce)
+    if (allocated(y%cloudLiq))        deallocate(y%cloudLiq)
+    if (allocated(y%seaice))          deallocate(y%seaice)
+    if (allocated(y%fl_rain))         deallocate(y%fl_rain)
+    if (allocated(y%fl_snow))         deallocate(y%fl_snow)
+    if (allocated(y%tca))             deallocate(y%tca)
+    if (allocated(y%hgt_matrix_half)) deallocate(y%hgt_matrix_half)    
+  end subroutine destroy_cospstateIN
 end module GFS_cosp
