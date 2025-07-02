@@ -8,38 +8,14 @@
 !!
 ! ###########################################################################################
 module GFS_cosp
-  use machine,                  only: kind_phys
-  use mod_cosp,                 only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs,&
-                                      cosp_simulator
-  use mod_cosp_config,          only: R_UNDEF_COSP => R_UNDEF, nHydro => N_HYDRO
-  use mod_cosp_modis_interface, only: cosp_modis_init
-  use mod_cosp_misr_interface,  only: cosp_misr_init
-  use mod_cosp_isccp_interface, only: cosp_isccp_init
-  use mod_rng,                  only: rng_state, init_rng
-  use mod_scops,                only: scops
-  use mod_prec_scops,           only: prec_scops
+  use machine,  only: kind_phys
+  use mod_cosp, only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs
+
   implicit none
 
   real(kind_phys), parameter :: R_UNDEF  = 0._kind_phys
   real(kind_phys), parameter :: emsfc_lw = 0.99_kind_phys ! longwave emissivity of surface at 10.5 microns
 
-  !
-  integer,parameter :: &
-       I_LSCLIQ = 1, & ! Large-scale (stratiform) liquid
-       I_LSCICE = 2, & ! Large-scale (stratiform) ice
-       I_LSRAIN = 3, & ! Large-scale (stratiform) rain
-       I_LSSNOW = 4, & ! Large-scale (stratiform) snow
-       I_CVCLIQ = 5, & ! Convective liquid
-       I_CVCICE = 6, & ! Convective ice
-       I_CVRAIN = 7, & ! Convective rain
-       I_CVSNOW = 8, & ! Convective snow
-       I_LSGRPL = 9    ! Large-scale (stratiform) groupel
-  
-  ! Stratiform and convective clouds in frac_out (scops output).
-  integer, parameter :: &
-       I_LSC = 1, & ! Large-scale clouds
-       I_CVC = 2    ! Convective clouds
-  
 contains
 
 ! ###########################################################################################
@@ -57,6 +33,12 @@ contains
   subroutine GFS_cosp_init(mpirank, mpiroot, do_cosp, do_isccp, do_misr, do_modis,          &
        cosp_nsubcol, imp_physics, imp_physics_thompson, imp_physics_gfdl, isccp_topht,      &
        isccp_topht_dir, errmsg, errflg)
+    use mod_cosp_config,          only: modis_histTau, modis_histTauEdges, modis_histTauCenters
+    use mod_cosp_config,          only: numMODISTauBins, ntau
+    use mod_cosp_config,          only: tau_binBounds, tau_binEdges, tau_binCenters
+    use mod_cosp_modis_interface, only: cosp_modis_init
+    use mod_cosp_misr_interface,  only: cosp_misr_init
+    use mod_cosp_isccp_interface, only: cosp_isccp_init
 
     ! Inputs
     logical, intent(in)    :: &
@@ -92,6 +74,14 @@ contains
        call cosp_isccp_init(isccp_topht, isccp_topht_dir)
     endif
     if (do_modis) then
+       ! Initialize MODIS optical-depth bin boundaries for joint-histogram. (defined in cosp_config.F90)
+       if (.not. allocated(modis_histTau)) then
+          allocate(modis_histTau(ntau+1),modis_histTauEdges(2,ntau),modis_histTauCenters(ntau))
+          numMODISTauBins      = ntau
+          modis_histTau        = tau_binBounds
+          modis_histTauEdges   = tau_binEdges
+          modis_histTauCenters = tau_binCenters
+    endif
        call cosp_modis_init()
     endif
     if (do_misr) then
@@ -135,7 +125,12 @@ contains
        n_misr_hgt_bins, misr_hgt_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,    &
        do_cosp, do_isccp, do_misr, do_modis, overlap,                                       &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
-       meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp, errmsg, errflg)
+       meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp,                             &
+       clt_modis, clw_modis, cli_modis, clh_modis, clm_modis, cll_modis, taut_modis,        &
+       tauw_modis, taui_modis, tautlog_modis, tauwlog_modis, tauilog_modis, reffclw_modis,  &
+       reffcli_modis, pct_modis, lwp_modis, iwp_modis, cl_modis, clri_modis, clrl_modis,    &
+       errmsg, errflg)
+    use mod_cosp, only: cosp_simulator
 
     ! Inputs
     logical, intent(in) :: &
@@ -206,7 +201,10 @@ contains
     integer, intent(out) :: &
          errflg                ! CCPP error flag
     real(kind_phys), dimension(:,:,:), intent(out) :: &
-         f1isccp_cosp          ! ISCCP CFAD
+         f1isccp_cosp,       & ! ISCCP CFAD
+         cl_modis,           & ! MODIS CFAD
+         clri_modis,         & ! MODIS CFAD
+         clrl_modis            ! MODIS CFAD
     real(kind_phys), dimension(:,:), intent(out) :: &
          tau_isccp,          & ! ISCCP subcolumn optical-depth
          cldptop_isccp         ! ISCCP subcolumn cloud-top pressure
@@ -216,7 +214,24 @@ contains
          meanptop_isccp,     & ! ISCCP mean cloud-top pressure
          meantau_isccp,      & ! ISCCP mean optical-depth
          meantb_isccp,       & ! ISCCP mean brightness temperature
-         meantbclr_isccp       ! ISCCP mean brightness temperature (clear-sky)
+         meantbclr_isccp,    & ! ISCCP mean brightness temperature (clear-sky)
+         clt_modis,          & ! MODIS
+         clw_modis,          & ! MODIS
+         cli_modis,          & ! MODIS
+         clh_modis,          & ! MODIS
+         clm_modis,          & ! MODIS
+         cll_modis,          & ! MODIS
+         taut_modis,  	     & ! MODIS
+         tauw_modis,         & ! MODIS
+         taui_modis,         & ! MODIS
+         tautlog_modis,      & ! MODIS
+         tauwlog_modis,      & ! MODIS
+         tauilog_modis,      & ! MODIS
+         reffclw_modis,      & ! MODIS
+         reffcli_modis,      & ! MODIS
+         pct_modis,          & ! MODIS
+         lwp_modis,          & ! MODIS
+         iwp_modis             ! MODIS
 
     ! Local
     type(cosp_outputs)        :: cospOUT
@@ -347,17 +362,81 @@ contains
           end do
        end do
     end if
+    if (do_modis) then
+       ! 1D
+       where(sunlit(1:nCol) .eq. 0)
+          cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol)       = 0._kind_phys
+          cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol)       = 0._kind_phys
+          cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol)         = 0._kind_phys
+          cospOUT%modis_Cloud_Fraction_High_Mean(1:ncol)        = 0._kind_phys
+          cospOUT%modis_Cloud_Fraction_Mid_Mean(1:ncol)         = 0._kind_phys
+          cospOUT%modis_Cloud_Fraction_Low_Mean(1:ncol)         = 0._kind_phys
+          cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol)    = 0._kind_phys
+          cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol)    = 0._kind_phys
+          cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol)      = 0._kind_phys
+          cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol) = 0._kind_phys
+          cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol) = 0._kind_phys
+          cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol)   = 0._kind_phys
+          cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol)  = 0._kind_phys
+          cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol)    = 0._kind_phys
+          cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol)   = 0._kind_phys
+          cospOUT%modis_Liquid_Water_Path_Mean(1:ncol)          = 0._kind_phys
+          cospOUT%modis_Ice_Water_Path_Mean(1:ncol)             = 0._kind_phys
+       end where
+       ! 3D
+       do iprs=1,n_modis_pres_bins
+          do itau=1,n_modis_tau_bins
+             where(sunlit(1:ncol) .eq. 0)
+                cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,itau,iprs) = 0._kind_phys
+             end where
+          enddo
+          do itau=1,n_modis_reffi_bins
+             where(sunlit(1:ncol) .eq. 0)
+                cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,itau,iprs) = 0._kind_phys
+             end where
+          end do
+          do itau=1,n_modis_reffl_bins
+             where(sunlit(1:ncol) .eq. 0)
+                cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,itau,iprs) = 0._kind_phys
+             end where
+          enddo
+       enddo
+    end if
     
     ! Copy COSP outputs to host interstitials.
-    f1isccp_cosp     = cospOUT%isccp_fq
-    tau_isccp        = cospOUT%isccp_boxtau
-    cldptop_isccp    = cospOUT%isccp_boxptop
-    cldtot_isccp     = cospOUT%isccp_totalcldarea
-    meanptop_isccp   = cospOUT%isccp_meanptop
-    meantau_isccp    = cospOUT%isccp_meantaucld
-    meancldalb_isccp = cospOUT%isccp_meanalbedocld
-    meantb_isccp     = cospOUT%isccp_meantb
-    meantbclr_isccp  = cospOUT%isccp_meantbclr
+    if (do_isccp) then
+       f1isccp_cosp     = cospOUT%isccp_fq
+       tau_isccp        = cospOUT%isccp_boxtau
+       cldptop_isccp    = cospOUT%isccp_boxptop
+       cldtot_isccp     = cospOUT%isccp_totalcldarea
+       meanptop_isccp   = cospOUT%isccp_meanptop
+       meantau_isccp    = cospOUT%isccp_meantaucld
+       meancldalb_isccp = cospOUT%isccp_meanalbedocld
+       meantb_isccp     = cospOUT%isccp_meantb
+       meantbclr_isccp  = cospOUT%isccp_meantbclr
+    endif
+    if (do_modis) then
+       clt_modis        = cospOUT%modis_Cloud_Fraction_Total_Mean
+       clw_modis        = cospOUT%modis_Cloud_Fraction_Water_Mean
+       cli_modis        = cospOUT%modis_Cloud_Fraction_Ice_Mean
+       clh_modis        = cospOUT%modis_Cloud_Fraction_High_Mean
+       clm_modis        = cospOUT%modis_Cloud_Fraction_Mid_Mean
+       cll_modis        = cospOUT%modis_Cloud_Fraction_Low_Mean
+       taut_modis       = cospOUT%modis_Optical_Thickness_Total_Mean
+       tauw_modis       = cospOUT%modis_Optical_Thickness_Water_Mean
+       taui_modis       = cospOUT%modis_Optical_Thickness_Ice_Mean
+       tautlog_modis    = cospOUT%modis_Optical_Thickness_Total_LogMean
+       tauwlog_modis    = cospOUT%modis_Optical_Thickness_Water_LogMean
+       tauilog_modis    = cospOUT%modis_Optical_Thickness_Ice_LogMean
+       reffclw_modis    = cospOUT%modis_Cloud_Particle_Size_Water_Mean
+       reffcli_modis    = cospOUT%modis_Cloud_Particle_Size_Ice_Mean
+       pct_modis        = cospOUT%modis_Cloud_Top_Pressure_Total_Mean
+       lwp_modis        = cospOUT%modis_Liquid_Water_Path_Mean
+       iwp_modis        = cospOUT%modis_Ice_Water_Path_Mean
+       cl_modis         = cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure
+       clri_modis       = cospOUT%modis_Optical_Thickness_vs_ReffICE
+       clrl_modis       = cospOUT%modis_Optical_Thickness_vs_ReffLIQ
+    endif
 
     ! Clean up
     call destroy_cospIN(cospIN)
@@ -367,62 +446,6 @@ contains
   end subroutine GFS_cosp_run
 !> @}
 
-! ###########################################################################################
-!! \section arg_table_GFS_cosp_timestep_finalize
-!! \htmlinclude GFS_cosp_timestep_finalize.html
-!!
-! ###########################################################################################
-  subroutine GFS_cosp_timestep_finalize(do_cosp, doLWrad, doSWrad, do_isccp, f1isccp_cosp,  &
-       f1isccp_cosp_avg, n_isccp_pres_bins, n_isccp_tau_bins, errmsg, errflg)
-    ! Inputs
-    logical, intent(in) ::   &
-         do_cosp,            & ! Flag for COSP
-         do_isccp,           & ! Flag for COSP ISCCP diagnostics
-         doLWrad,            & ! Flag for LW radiation
-         doSWrad               ! Flag for SW radiaiton
-    integer, intent(in) ::   &
-         n_isccp_pres_bins,  & ! Number of pressure      bins in ISCCP CFAD.
-         n_isccp_tau_bins      ! Number of optical-depth bins in ISCCP CFAD.
-    real(kind_phys), dimension(:,:,:), intent(in) :: &
-         f1isccp_cosp          ! ISCCP CFAD
-
-    ! Outputs
-    real(kind_phys), dimension(:,:), intent(out) :: &
-         f1isccp_cosp_avg      ! ISCCP CFAD (globally averaged)
-    character(len=*), intent(out) :: &
-         errmsg                ! CCPP error message
-    integer, intent(out) :: &
-         errflg                ! CCPP error flag
-
-    ! Locals
-    integer :: iprs, itau, iCol, count
-
-    if (.not. do_cosp) return
-    
-    ! Only call COSP on radiation time-step.
-    if (.not. (doLWrad .or. doSWrad)) return
-    
-    ! Initialize CCPP error handling variables
-    errmsg = ''
-    errflg = 0
-
-    ! Compute spatially averaged diagnsotics for timestep.
-    if (do_isccp) then
-       do iprs=1,n_isccp_pres_bins
-          do itau=1,n_isccp_tau_bins
-             count = 0
-             do iCol=1,size(f1isccp_cosp,dim=3)
-                if (f1isccp_cosp(iCol,iprs,itau) .ne. R_UNDEF) then
-                   f1isccp_cosp_avg(iprs,itau) = f1isccp_cosp(iCol,iprs,itau)
-                   count = count + 1
-                endif
-             end do
-             f1isccp_cosp_avg(iprs,itau) = f1isccp_cosp_avg(iprs,itau)/count
-          end do
-       end do
-    endif
-
-  end subroutine GFS_cosp_timestep_finalize
   ! #########################################################################################
   ! SUBROUTINE subsample_and_optics
   !
@@ -433,7 +456,11 @@ contains
   subroutine subsample_and_optics(nCol, nSubCol, nLay, do_isccp, do_misr, do_modis,         &
        sfcP, cld_frac, ccld_frac, overlap, cldtau_lw, cldtau_sw, cld_liq, ccld_liq, cld_ice,&
        cld_rain, cld_snow, cld_graupel, cld_reliq, cld_reice, cld_rerain, cld_resnow, cospIN)
-
+    use cosp_optics,     only: modis_optics, modis_optics_partition
+    use mod_scops,       only: scops
+    use mod_prec_scops,  only: prec_scops
+    use mod_rng,         only: rng_state, init_rng
+    use mod_cosp_config, only: nHydro => N_HYDRO
     ! Inputs
     logical, intent(in) :: &
     	 do_isccp,  & ! Flag for COSP ISCCP diagnostics
@@ -482,6 +509,23 @@ contains
          MODIS_opticalThicknessSnow,      MODIS_opticalThicknessIce
     real(kind_phys),dimension(:,:,:,:),  allocatable  :: &
          mr_hydro, Reff
+
+    !
+    integer,parameter :: &
+         I_LSCLIQ = 1, & ! Large-scale (stratiform) liquid
+         I_LSCICE = 2, & ! Large-scale (stratiform) ice
+         I_LSRAIN = 3, & ! Large-scale (stratiform) rain
+         I_LSSNOW = 4, & ! Large-scale (stratiform) snow
+         I_CVCLIQ = 5, & ! Convective liquid
+         I_CVCICE = 6, & ! Convective ice
+         I_CVRAIN = 7, & ! Convective rain
+         I_CVSNOW = 8, & ! Convective snow
+         I_LSGRPL = 9    ! Large-scale (stratiform) groupel
+
+    ! Stratiform and convective clouds in frac_out (scops output).
+    integer, parameter :: &
+         I_LSC = 1,    & ! Large-scale clouds
+         I_CVC = 2       ! Convective clouds
 
     ! #####################################################################################
     !
@@ -647,6 +691,8 @@ contains
     ! 11-micron emissivity (in-cloud), needed by ISCCP simulator.
     ! ##################################################################################
     if (do_isccp) then
+       ! Assume same radiative properties for stratiform and convective clouds
+       ! True in current RRTMG and RRTMGP implementations
        cldemis_lw_strat = 1._kind_phys - exp(-cldtau_lw)
        cldemis_lw_conv  = cldemis_lw_strat
        !
@@ -665,6 +711,8 @@ contains
     ! 0.67 micron optical-depth (in-cloud), needed by ISCCP, MISR and MODIS simulators.
     ! ##################################################################################
     if (do_isccp .or. do_modis .or. do_misr) then
+       ! Assume same radiative properties for stratiform and convective clouds
+       ! True in current RRTMG and RRTMGP implementations
        cldtau_sw_strat = cldtau_sw
        cldtau_sw_conv  = cldtau_sw
        !
@@ -734,6 +782,16 @@ contains
              MODIS_iceSize(:,iSub,:) = Reff(:,iSub,:,I_LSCICE)
           endwhere
        enddo
+
+       ! Partition optical thickness into liquid and ice parts
+       call modis_optics_partition(nCol, nLay, nSubCol, MODIS_cloudWater,                &
+            MODIS_cloudIce, MODIS_waterSize, MODIS_iceSize, cospIN%tau_067,              &
+            MODIS_opticalThicknessLiq, MODIS_opticalThicknessIce)
+       
+       ! Compute assymetry parameter and single scattering albedo 
+       call modis_optics(nCol, nLay, nSubCol, MODIS_opticalThicknessLiq,                 &
+            MODIS_waterSize*1.0e6_kind_phys, MODIS_opticalThicknessIce,                  &
+            MODIS_iceSize*1.0e6_kind_phys, cospIN%fracLiq, cospIN%asym, cospIN%ss_alb)
        
        deallocate (MODIS_cloudWater, MODIS_cloudIce, MODIS_waterSize)
        deallocate (MODIS_iceSize,  MODIS_opticalThicknessLiq)
