@@ -390,12 +390,16 @@ contains
                 cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,itau,iprs) = 0._kind_phys
              end where
           enddo
-          do itau=1,n_modis_reffi_bins
+       enddo
+       do iprs=1,n_modis_reffi_bins
+          do itau=1,n_modis_tau_bins
              where(sunlit(1:ncol) .eq. 0)
                 cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,itau,iprs) = 0._kind_phys
              end where
           end do
-          do itau=1,n_modis_reffl_bins
+       enddo
+       do iprs=1,n_modis_reffl_bins
+          do itau=1,n_modis_tau_bins
              where(sunlit(1:ncol) .eq. 0)
                 cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,itau,iprs) = 0._kind_phys
              end where
