@@ -12,8 +12,6 @@ module GFS_cosp
   use mod_cosp, only: cosp_outputs, cosp_optical_inputs, cosp_column_inputs
 
   implicit none
-
-  real(kind_phys), parameter :: R_UNDEF  = 0._kind_phys
   real(kind_phys), parameter :: emsfc_lw = 0.99_kind_phys ! longwave emissivity of surface at 10.5 microns
 
 contains
@@ -117,20 +115,22 @@ contains
 ! ###########################################################################################
   subroutine GFS_cosp_run(nCol, nLay, cosp_nlvgrid, cosp_nsubcol, tsfc, coszen, slmsk,      &
        prsl, prsi, phil, phii, tgrs, qgrs, cldtau_lw, cldtau_sw, cld_frac, ccld_frac,       &
-       top_at_1, con_g, cld_liq, cld_ice, cld_rain, cld_snow, cld_graupel, ccld_liq, &
-       cld_reliq, cld_reice, cld_rerain, cld_resnow, &
-       iSFC, iTOA, n_isccp_pres_bins, isccp_pres_bins, n_isccp_tau_bins,   &
-       isccp_tau_bins, n_modis_pres_bins, modis_pres_bins, n_modis_tau_bins, modis_tau_bins,&
+       top_at_1, con_g, cld_liq, cld_ice, cld_rain, cld_snow, cld_graupel, ccld_liq,        &
+       cld_reliq, cld_reice, cld_rerain, cld_resnow, iSFC, iTOA,                            &
+       n_isccp_pres_bins,  isccp_pres_bins,  n_isccp_tau_bins,   isccp_tau_bins,            &
+       n_modis_pres_bins,  modis_pres_bins,  n_modis_tau_bins,   modis_tau_bins,            &
        n_modis_reffi_bins, modis_reffi_bins, n_modis_reffl_bins, modis_reffl_bins,          &
-       n_misr_hgt_bins, misr_hgt_bins, n_misr_tau_bins, misr_tau_bins, doSWrad, doLWrad,    &
-       do_cosp, do_isccp, do_misr, do_modis, overlap,                                       &
+       n_misr_hgt_bins,    misr_hgt_bins,    n_misr_tau_bins,    misr_tau_bins,             &
+       doSWrad, doLWrad, do_cosp, do_isccp, do_misr, do_modis, overlap,                     &
        f1isccp_cosp, cldtot_isccp, meancldalb_isccp, meanptop_isccp, meantau_isccp,         &
        meantb_isccp, meantbclr_isccp, tau_isccp, cldptop_isccp,                             &
        clt_modis, clw_modis, cli_modis, clh_modis, clm_modis, cll_modis, taut_modis,        &
        tauw_modis, taui_modis, tautlog_modis, tauwlog_modis, tauilog_modis, reffclw_modis,  &
        reffcli_modis, pct_modis, lwp_modis, iwp_modis, cl_modis, clri_modis, clrl_modis,    &
        errmsg, errflg)
-    use mod_cosp, only: cosp_simulator
+    use mod_cosp,        only: cosp_simulator
+    use mod_cosp_config, only: R_UNDEF
+    real(kind_phys), parameter :: missing_value = 0._kind_phys!9.99e20_kind_phys
 
     ! Inputs
     logical, intent(in) :: &
@@ -318,37 +318,94 @@ contains
     end do
     if (nerror > 0) errflg = -1
 
+    !
     ! Replace COSP masking.
-    where(cospOUT%isccp_totalcldarea  .eq. R_UNDEF) cospOUT%isccp_totalcldarea  = 0._kind_phys
-    where(cospOUT%isccp_meanptop      .eq. R_UNDEF) cospOUT%isccp_meanptop      = 0._kind_phys
-    where(cospOUT%isccp_meantaucld    .eq. R_UNDEF) cospOUT%isccp_meantaucld    = 0._kind_phys
-    where(cospOUT%isccp_meanalbedocld .eq. R_UNDEF) cospOUT%isccp_meanalbedocld = 0._kind_phys
-    where(cospOUT%isccp_meantb        .eq. R_UNDEF) cospOUT%isccp_meantb        = 0._kind_phys
-    where(cospOUT%isccp_meantbclr     .eq. R_UNDEF) cospOUT%isccp_meantbclr     = 0._kind_phys
-
+    !
+    if (do_isccp) then
+       where(cospOUT%isccp_totalcldarea  .eq. R_UNDEF) cospOUT%isccp_totalcldarea  = missing_value
+       where(cospOUT%isccp_meanptop      .eq. R_UNDEF) cospOUT%isccp_meanptop      = missing_value
+       where(cospOUT%isccp_meantaucld    .eq. R_UNDEF) cospOUT%isccp_meantaucld    = missing_value
+       where(cospOUT%isccp_meanalbedocld .eq. R_UNDEF) cospOUT%isccp_meanalbedocld = missing_value
+       where(cospOUT%isccp_meantb        .eq. R_UNDEF) cospOUT%isccp_meantb        = missing_value
+       where(cospOUT%isccp_meantbclr     .eq. R_UNDEF) cospOUT%isccp_meantbclr     = missing_value
+    endif
+    if (do_modis) then
+       where(cospOUT%modis_Cloud_Fraction_Total_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Fraction_Total_Mean       = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Fraction_Water_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Fraction_Water_Mean       = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Fraction_Ice_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Fraction_Ice_Mean         = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Fraction_High_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Fraction_High_Mean        = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Fraction_Mid_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Fraction_Mid_Mean         = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Fraction_Low_Mean  .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Fraction_Low_Mean         = missing_value
+       endwhere
+       where(cospOUT%modis_Optical_Thickness_Total_Mean .eq. R_UNDEF)
+          cospOUT%modis_Optical_Thickness_Total_Mean    = missing_value
+       endwhere
+       where(cospOUT%modis_Optical_Thickness_Water_Mean .eq. R_UNDEF)
+          cospOUT%modis_Optical_Thickness_Water_Mean    = missing_value
+       endwhere
+       where(cospOUT%modis_Optical_Thickness_Ice_Mean .eq. R_UNDEF)
+          cospOUT%modis_Optical_Thickness_Ice_Mean      = missing_value
+       endwhere
+       where(cospOUT%modis_Optical_Thickness_Total_LogMean .eq. R_UNDEF)
+          cospOUT%modis_Optical_Thickness_Total_LogMean = missing_value
+       endwhere
+       where(cospOUT%modis_Optical_Thickness_Water_LogMean .eq. R_UNDEF)
+          cospOUT%modis_Optical_Thickness_Water_LogMean = missing_value
+       endwhere
+       where(cospOUT%modis_Optical_Thickness_Ice_LogMean .eq. R_UNDEF)
+          cospOUT%modis_Optical_Thickness_Ice_LogMean   = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Particle_Size_Water_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Particle_Size_Water_Mean  = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Particle_Size_Ice_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Particle_Size_Ice_Mean    = missing_value
+       endwhere
+       where(cospOUT%modis_Cloud_Top_Pressure_Total_Mean .eq. R_UNDEF)
+          cospOUT%modis_Cloud_Top_Pressure_Total_Mean   = missing_value
+       endwhere
+       where(cospOUT%modis_Liquid_Water_Path_Mean .eq. R_UNDEF)
+          cospOUT%modis_Liquid_Water_Path_Mean          = missing_value
+       endwhere
+       where(cospOUT%modis_Ice_Water_Path_Mean .eq. R_UNDEF)
+          cospOUT%modis_Ice_Water_Path_Mean             = missing_value
+       endwhere
+    endif
+    
     ! Set dark-scenes to fill value. Only done for passive simulators
     if (do_isccp) then
        ! 1D
        where(sunlit(1:nCol) .eq. 0)
-          cospOUT%isccp_totalcldarea(1:nCol)  = 0._kind_phys
-          cospOUT%isccp_meanptop(1:nCol)      = 0._kind_phys
-          cospOUT%isccp_meantaucld(1:nCol)    = 0._kind_phys
-          cospOUT%isccp_meanalbedocld(1:nCol) = 0._kind_phys
-          cospOUT%isccp_meantb(1:nCol)        = 0._kind_phys
-          cospOUT%isccp_meantbclr(1:nCol)     = 0._kind_phys
+          cospOUT%isccp_totalcldarea(1:nCol)  = missing_value
+          cospOUT%isccp_meanptop(1:nCol)      = missing_value
+          cospOUT%isccp_meantaucld(1:nCol)    = missing_value
+          cospOUT%isccp_meanalbedocld(1:nCol) = missing_value
+          cospOUT%isccp_meantb(1:nCol)        = missing_value
+          cospOUT%isccp_meantbclr(1:nCol)     = missing_value
        end where
        ! 2D
        do iSubCol=1,cosp_nsubcol
           where (sunlit(1:nCol) .eq. 0)
-             cospOUT%isccp_boxtau(1:nCol,iSubCol)  = 0._kind_phys
-             cospOUT%isccp_boxptop(1:nCol,iSubCol) = 0._kind_phys
+             cospOUT%isccp_boxtau(1:nCol,iSubCol)  = missing_value
+             cospOUT%isccp_boxptop(1:nCol,iSubCol) = missing_value
           end where
        enddo
        ! 3D
        do iprs=1,n_isccp_pres_bins
           do itau=1,n_isccp_tau_bins
              where(sunlit(1:nCol) .eq. 0)
-                cospOUT%isccp_fq(1:nCol,iprs,itau) = 0._kind_phys
+                cospOUT%isccp_fq(1:nCol,iprs,itau) = missing_value
              end where
           end do
        end do
@@ -357,7 +414,7 @@ contains
        do iprs=1,n_misr_hgt_bins
           do itau=1,n_misr_tau_bins
              where(sunlit(1:ncol) .eq. 0)
-                cospOUT%misr_fq(1:ncol,itau,iprs) = 0._kind_phys
+                cospOUT%misr_fq(1:ncol,itau,iprs) = missing_value
              end where
           end do
        end do
@@ -365,43 +422,43 @@ contains
     if (do_modis) then
        ! 1D
        where(sunlit(1:nCol) .eq. 0)
-          cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol)       = 0._kind_phys
-          cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol)       = 0._kind_phys
-          cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol)         = 0._kind_phys
-          cospOUT%modis_Cloud_Fraction_High_Mean(1:ncol)        = 0._kind_phys
-          cospOUT%modis_Cloud_Fraction_Mid_Mean(1:ncol)         = 0._kind_phys
-          cospOUT%modis_Cloud_Fraction_Low_Mean(1:ncol)         = 0._kind_phys
-          cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol)    = 0._kind_phys
-          cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol)    = 0._kind_phys
-          cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol)      = 0._kind_phys
-          cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol) = 0._kind_phys
-          cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol) = 0._kind_phys
-          cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol)   = 0._kind_phys
-          cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol)  = 0._kind_phys
-          cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol)    = 0._kind_phys
-          cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol)   = 0._kind_phys
-          cospOUT%modis_Liquid_Water_Path_Mean(1:ncol)          = 0._kind_phys
-          cospOUT%modis_Ice_Water_Path_Mean(1:ncol)             = 0._kind_phys
+          cospOUT%modis_Cloud_Fraction_Total_Mean(1:ncol)       = missing_value
+          cospOUT%modis_Cloud_Fraction_Water_Mean(1:ncol)       = missing_value
+          cospOUT%modis_Cloud_Fraction_Ice_Mean(1:ncol)         = missing_value
+          cospOUT%modis_Cloud_Fraction_High_Mean(1:ncol)        = missing_value
+          cospOUT%modis_Cloud_Fraction_Mid_Mean(1:ncol)         = missing_value
+          cospOUT%modis_Cloud_Fraction_Low_Mean(1:ncol)         = missing_value
+          cospOUT%modis_Optical_Thickness_Total_Mean(1:ncol)    = missing_value
+          cospOUT%modis_Optical_Thickness_Water_Mean(1:ncol)    = missing_value
+          cospOUT%modis_Optical_Thickness_Ice_Mean(1:ncol)      = missing_value
+          cospOUT%modis_Optical_Thickness_Total_LogMean(1:ncol) = missing_value
+          cospOUT%modis_Optical_Thickness_Water_LogMean(1:ncol) = missing_value
+          cospOUT%modis_Optical_Thickness_Ice_LogMean(1:ncol)   = missing_value
+          cospOUT%modis_Cloud_Particle_Size_Water_Mean(1:ncol)  = missing_value
+          cospOUT%modis_Cloud_Particle_Size_Ice_Mean(1:ncol)    = missing_value
+          cospOUT%modis_Cloud_Top_Pressure_Total_Mean(1:ncol)   = missing_value
+          cospOUT%modis_Liquid_Water_Path_Mean(1:ncol)          = missing_value
+          cospOUT%modis_Ice_Water_Path_Mean(1:ncol)             = missing_value
        end where
        ! 3D
        do iprs=1,n_modis_pres_bins
           do itau=1,n_modis_tau_bins
              where(sunlit(1:ncol) .eq. 0)
-                cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,itau,iprs) = 0._kind_phys
+                cospOUT%modis_Optical_Thickness_vs_Cloud_Top_Pressure(1:ncol,itau,iprs) = missing_value
              end where
           enddo
        enddo
        do iprs=1,n_modis_reffi_bins
           do itau=1,n_modis_tau_bins
              where(sunlit(1:ncol) .eq. 0)
-                cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,itau,iprs) = 0._kind_phys
+                cospOUT%modis_Optical_Thickness_vs_ReffICE(1:ncol,itau,iprs) = missing_value
              end where
           end do
        enddo
        do iprs=1,n_modis_reffl_bins
           do itau=1,n_modis_tau_bins
              where(sunlit(1:ncol) .eq. 0)
-                cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,itau,iprs) = 0._kind_phys
+                cospOUT%modis_Optical_Thickness_vs_ReffLIQ(1:ncol,itau,iprs) = missing_value
              end where
           enddo
        enddo
@@ -418,6 +475,9 @@ contains
        meancldalb_isccp = cospOUT%isccp_meanalbedocld
        meantb_isccp     = cospOUT%isccp_meantb
        meantbclr_isccp  = cospOUT%isccp_meantbclr
+    endif
+    if (do_misr) then
+
     endif
     if (do_modis) then
        clt_modis        = cospOUT%modis_Cloud_Fraction_Total_Mean
