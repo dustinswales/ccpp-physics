@@ -60,20 +60,6 @@
   dimensions = ()
   type = logical
   intent = in
-[doGP_sgs_pbl]
-  standard_name = flag_to_include_sgs_MYNN_EDMF_cloud_in_RRTMGP
-  long_name = logical flag to control MYNN-EDMF PBL cloud in RRTMGP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[doGP_sgs_cnv]
-  standard_name = flag_to_include_sgs_convective_cloud_in_RRTMGP
-  long_name = logical flag to control sgs convective cloud in RRTMGP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
 [nrghice]
   standard_name = number_of_ice_roughness_categories
   long_name = number of ice-roughness categories in RRTMGP calculation
@@ -116,6 +102,21 @@
   dimensions =  ()
   type = integer
   intent = in
+[nLay]
+  standard_name = vertical_layer_dimension
+  long_name = number of vertical levels
+  units = count
+  dimensions = ()
+  type = integer
+  intent = in
+[active_gases_array]
+  standard_name = list_of_active_gases_used_by_RRTMGP
+  long_name = list of active gases used by RRTMGP
+  units = none
+  dimensions =  (number_of_active_gases_used_by_RRTMGP)
+  type = character
+  kind = len=*
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -157,30 +158,9 @@
   dimensions = ()
   type = logical
   intent = in
-[doGP_lwscat]
+[doGP_lwscat] 
   standard_name = flag_to_include_longwave_scattering_in_cloud_optics
-  long_name = logical flag to control the addition of LW scattering in RRTMGP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[use_LW_jacobian]
-  standard_name = flag_to_calc_RRTMGP_LW_jacobian
-  long_name = logical flag to control RRTMGP LW calculation
-  units = flag
-  dimensions = ()
-  type = logical 
-  intent = in
-[doGP_sgs_cnv]
-  standard_name = flag_to_include_sgs_convective_cloud_in_RRTMGP
-  long_name = logical flag to control sgs convective cloud in RRTMGP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[doGP_sgs_pbl]
-  standard_name = flag_to_include_sgs_MYNN_EDMF_cloud_in_RRTMGP
-  long_name = logical flag to control MYNN-EDMF PBL cloud in RRTMGP
+  long_name = logical flag to control the addition of LW scattering in RRTMGP 
   units = flag
   dimensions = ()
   type = logical
@@ -291,6 +271,27 @@
   dimensions = ()
   type = integer
   intent = in
+[iovr_max]
+  standard_name = flag_for_maximum_cloud_overlap_method
+  long_name = choice of maximum cloud overlap method
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[iovr_convcld]
+  standard_name = flag_for_convective_cloud_overlap_method_for_radiation
+  long_name = flag for convective cloud overlap method
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[icseed_lw]
+  standard_name = random_number_seed_for_mcica_longwave
+  long_name = seed for random number generation for longwave radiation
+  units = none
+  dimensions = (horizontal_loop_extent)
+  type = integer
+  intent = in
 [semis]
   standard_name = surface_longwave_emissivity
   long_name = surface lw emissivity in fraction
@@ -315,7 +316,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [p_lev]
   standard_name = air_pressure_at_interface_for_RRTMGP
   long_name = air pressure at vertical interface for radiation calculation
@@ -324,7 +324,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [t_lay]
   standard_name = air_temperature_at_layer_for_RRTMGP
   long_name = air temperature at vertical layer for radiation calculation
@@ -333,7 +332,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [t_lev]
   standard_name = air_temperature_at_interface_for_RRTMGP
   long_name = air temperature  at vertical interface for radiation calculation
@@ -342,7 +340,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [vmr_o2]
   standard_name = volume_mixing_ratio_for_o2
   long_name = molar mixing ratio of o2 in with respect to dry air
@@ -351,7 +348,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [vmr_h2o]
   standard_name = volume_mixing_ratio_for_h2o
   long_name = molar mixing ratio of h2o in with respect to dry air
@@ -360,7 +356,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [vmr_o3]
   standard_name = volume_mixing_ratio_for_o3
   long_name = molar mixing ratio of o3 in with respect to dry air
@@ -369,7 +364,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [vmr_ch4]
   standard_name = volume_mixing_ratio_for_ch4
   long_name = molar mixing ratio of ch4 in with respect to dry air
@@ -378,7 +372,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [vmr_n2o]
   standard_name = volume_mixing_ratio_for_n2o
   long_name = molar mixing ratio of n2o in with respect to dry air
@@ -387,7 +380,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [vmr_co2]
   standard_name = volume_mixing_ratio_for_co2
   long_name = molar mixing ratio of co2 in with respect to dry air
@@ -396,7 +388,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [cld_frac]
   standard_name = total_cloud_fraction
   long_name = layer total cloud fraction
@@ -477,7 +468,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [cld_cnv_lwp]
   standard_name = convective_cloud_liquid_water_path
   long_name = layer convective cloud liquid water path
@@ -558,7 +548,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [active_gases_array]
   standard_name = list_of_active_gases_used_by_RRTMGP
   long_name = list of active gases used by RRTMGP
@@ -567,7 +556,6 @@
   type = character
   kind = len=*
   intent = in
-  optional = True
 [aerlw_tau]
   standard_name = aerosol_optical_depth_for_longwave_bands_01_16
   long_name = aerosol optical depth for longwave bands 01-16
@@ -592,6 +580,22 @@
   type = real
   kind = kind_phys
   intent = in
+[fluxlwUP_radtime]
+  standard_name = RRTMGP_lw_flux_profile_upward_allsky_on_radiation_timestep
+  long_name = RRTMGP upward longwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
+[fluxlwDOWN_radtime]
+  standard_name = RRTMGP_lw_flux_profile_downward_allsky_on_radiation_timestep
+  long_name = RRTMGP downward longwave all-sky flux profile
+  units = W m-2
+  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  type = real
+  kind = kind_phys
+  intent = inout
 [fluxlwUP_allsky]
   standard_name = RRTMGP_lw_flux_profile_upward_allsky
   long_name = RRTMGP upward longwave all-sky flux profile
@@ -600,7 +604,6 @@
   type = real
   kind = kind_phys
   intent = inout
-  optional = True
 [fluxlwDOWN_allsky]
   standard_name = RRTMGP_lw_flux_profile_downward_allsky
   long_name = RRTMGP downward longwave all-sky flux profile
@@ -609,7 +612,6 @@
   type = real
   kind = kind_phys
   intent = inout
-  optional = True
 [fluxlwUP_clrsky]
   standard_name = RRTMGP_lw_flux_profile_upward_clrsky
   long_name = RRTMGP upward longwave clr-sky flux profile
@@ -618,7 +620,6 @@
   type = real
   kind = kind_phys
   intent = inout
-  optional = True
 [fluxlwDOWN_clrsky]
   standard_name = RRTMGP_lw_flux_profile_downward_clrsky
   long_name = RRTMGP downward longwave clr-sky flux profile
@@ -627,7 +628,6 @@
   type = real
   kind = kind_phys
   intent = inout
-  optional = True
 [fluxlwUP_jac]
   standard_name = RRTMGP_jacobian_of_lw_flux_upward
   long_name = RRTMGP Jacobian upward longwave flux profile

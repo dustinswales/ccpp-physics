@@ -43,6 +43,9 @@ module ugwpv1_gsldrag
     use cires_ugwpv1_module,   only:  cires_ugwpv1_init, ngwflux_update, calendar_ugwp
     use cires_ugwpv1_module,   only:  knob_ugwp_version, cires_ugwp_dealloc, tamp_mpa
     use cires_ugwpv1_solv2,    only:  cires_ugwpv1_ngw_solv2
+!    use cires_ugwpv1_solv2,     only:  cires_ugwpv1_ngw_solv2, ecmwf_ngw
+     use ecmwf_ngw,             only:  ecmwf_ngw_emc
+
     use cires_ugwpv1_oro,      only:  orogw_v1
 
     use drag_suite,            only:  drag_suite_run, drag_suite_psl
@@ -70,7 +73,8 @@ contains
                 con_pi, con_rerth, con_p0,                                     &
                 con_g, con_omega,  con_cp, con_rd, con_rv,con_fvirt,           &
                 do_ugwp,do_ugwp_v0, do_ugwp_v0_orog_only, do_gsl_drag_ls_bl,   &
-                do_gsl_drag_ss, do_gsl_drag_tofd, do_ugwp_v1,                  &
+                  do_gsl_drag_ss, do_gsl_drag_tofd, do_ngw_ec, do_ugwp_v1,     &
+!!                do_gsl_drag_ss, do_gsl_drag_tofd, do_ugwp_v1,                  &
                 do_ugwp_v1_orog_only, do_ugwp_v1_w_gsldrag, errmsg, errflg)
 
     use ugwp_common
@@ -94,9 +98,10 @@ contains
     real(kind=kind_phys), intent (in) :: con_g, con_cp, con_rd, con_rv, con_omega, con_fvirt
     logical,              intent (in) :: do_ugwp
 
-    logical,              intent (in) :: do_ugwp_v0, do_ugwp_v0_orog_only,  &
-                                         do_gsl_drag_ls_bl, do_gsl_drag_ss, &
-                                         do_gsl_drag_tofd, do_ugwp_v1,      &
+    logical,              intent (in) :: do_ugwp_v0, do_ugwp_v0_orog_only,         &
+                                         do_gsl_drag_ls_bl, do_gsl_drag_ss,        &
+!!                                       do_gsl_drag_tofd, do_ugwp_v1,             &
+                                         do_gsl_drag_tofd, do_ugwp_v1, do_ngw_ec,  &
                                          do_ugwp_v1_orog_only,do_ugwp_v1_w_gsldrag
 
     character(len=*), intent (in)  :: fn_nml2
@@ -302,7 +307,7 @@ contains
           fhzero, kdt, ldiag3d, lssav, flag_for_gwd_generic_tend, do_gsl_drag_ls_bl,    &
           do_gsl_drag_ss, do_gsl_drag_tofd,                                             &
           do_gwd_opt_psl, psl_gwd_dx_factor,                                            &
-          do_ugwp_v1, do_ugwp_v1_orog_only,                                             &
+          do_ngw_ec, do_ugwp_v1,  do_ugwp_v1_orog_only,                                 &
           do_ugwp_v1_w_gsldrag, gwd_opt, do_tofd, ldiag_ugwp, ugwp_seq_update,          &
           cdmbgwd, alpha_fd, jdat, nmtvr, hprime, oc, theta, sigma, gamma,              &
           elvmax, clx, oa4, varss,oc1ss,oa4ss,ol4ss, dx,  xlat, xlat_d, sinlat, coslat, &
@@ -356,7 +361,7 @@ contains
 ! flags for choosing combination of GW drag schemes to run
 
     logical,  intent (in) :: do_gsl_drag_ls_bl, do_gsl_drag_ss, do_gsl_drag_tofd
-    logical,  intent (in) :: do_ugwp_v1, do_ugwp_v1_orog_only, do_tofd
+    logical,  intent (in) :: do_ugwp_v1, do_ngw_ec, do_ugwp_v1_orog_only, do_tofd
     logical,  intent (in) :: ldiag_ugwp, ugwp_seq_update
     logical,  intent (in) :: do_ugwp_v1_w_gsldrag                              ! combination of ORO and NGW schemes
 
@@ -378,8 +383,8 @@ contains
     real(kind=kind_phys),    intent(in), dimension(:,:)     :: clx, oa4
 
     real(kind=kind_phys),    intent(in), dimension(:)       :: dx
-    real(kind=kind_phys),    intent(in), dimension(:), optional       :: varss,oc1ss
-    real(kind=kind_phys),    intent(in), dimension(:,:), optional     :: oa4ss,ol4ss
+    real(kind=kind_phys),    intent(in), dimension(:)       :: varss,oc1ss
+    real(kind=kind_phys),    intent(in), dimension(:,:)     :: oa4ss,ol4ss
 
 !=====
 !ccpp-style passing constants, I prefer to take them out from the "call-subr" list
@@ -408,7 +413,7 @@ contains
 
 !Output (optional):
 
-    real(kind=kind_phys), intent(out), dimension(:), optional  ::         &
+    real(kind=kind_phys), intent(out), dimension(:)  ::         &
                             du_ogwcol,  dv_ogwcol,  du_oblcol, dv_oblcol, &
                             du_osscol,  dv_osscol,  du_ofdcol, dv_ofdcol
 !
@@ -417,13 +422,12 @@ contains
 
     real(kind=kind_phys), intent(out), dimension(:)  :: dusfcg, dvsfcg
     real(kind=kind_phys), intent(out), dimension(:)  :: tau_ogw, tau_ngw, tau_oss
-
-    real(kind=kind_phys), intent(out) , dimension(:,:), optional ::         &
-                          dvdt_ogw, dudt_obl, dvdt_obl, &
+    real(kind=kind_phys), intent(out) , dimension(:,:) ::         &
+                          dudt_ogw, dvdt_ogw, dudt_obl, dvdt_obl, &
                           dudt_oss, dvdt_oss, dudt_ofd, dvdt_ofd
 
-    real(kind=kind_phys), intent(out) , dimension(:,:), optional :: dudt_ngw, dvdt_ngw, kdis_ngw, dtdt_ngw
-    real(kind=kind_phys), intent(out) , dimension(:,:) :: dudt_gw,  dvdt_gw, dtdt_gw, kdis_gw, dudt_ogw
+    real(kind=kind_phys), intent(out) , dimension(:,:) :: dudt_ngw, dvdt_ngw, kdis_ngw, dtdt_ngw
+    real(kind=kind_phys), intent(out) , dimension(:,:) :: dudt_gw,  dvdt_gw, dtdt_gw, kdis_gw
 
     real(kind=kind_phys), intent(out) , dimension(:)   :: zogw, zlwb, zobl, zngw
 !
@@ -698,10 +702,21 @@ contains
        call ngwflux_update(me, master, im, levs, kdt, ddd_ugwp,curdate, &
          tau_amf, xlat_d, sinlat,coslat, rain, tau_ngw)
 
-       call cires_ugwpv1_ngw_solv2(me, master, im,   levs,  kdt, dtp,   &
+       if (do_ngw_ec) then
+
+       call ecmwf_ngw_emc(me, master, im,   levs,  kdt, dtp, dx,        &
                       tau_ngw, tgrs, ugrs,  vgrs,   q1, prsl, prsi,     &
                       zmet, zmeti,prslk,   xlat_d, sinlat, coslat,      &
                       dudt_ngw, dvdt_ngw, dtdt_ngw, kdis_ngw, zngw)
+       else
+
+       call cires_ugwpv1_ngw_solv2(me, master, im, levs, kdt, dtp,      &
+                      tau_ngw, tgrs, ugrs,  vgrs,   q1, prsl, prsi,     &
+                      zmet, zmeti,prslk,   xlat_d, sinlat, coslat,      &
+                      dudt_ngw, dvdt_ngw, dtdt_ngw, kdis_ngw, zngw)
+
+      endif
+
 !
 ! =>  con_g, con_cp, con_rd, con_rv, con_omega,  con_pi, con_fvirt
 !

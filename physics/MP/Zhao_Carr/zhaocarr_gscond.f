@@ -103,8 +103,8 @@
       real(kind=kind_phys), intent(inout) :: q(:,:), t(:,:)
       real(kind=kind_phys), intent(in)    :: clw1(:,:), clw2(:,:)
       real(kind=kind_phys), intent(out)   :: cwm(:,:)
-      real(kind=kind_phys), intent(inout), optional ::                  &
-     &                      tp(:,:),   qp(:,:),   psp(:)                &
+      real(kind=kind_phys), intent(inout) ::                            &
+     &,                     tp(:,:),   qp(:,:),   psp(:)                &
      &,                     tp1(:,:),  qp1(:,:),  psp1(:)
       real(kind=kind_phys), intent(in)    :: u(:,:)
       logical,              intent(in)    :: lprnt

@@ -2,7 +2,7 @@
   name = ugwpv1_gsldrag
   type = scheme
   dependencies = ../hooks/machine.F,drag_suite.F90
-  dependencies = cires_ugwpv1_module.F90,cires_ugwpv1_triggers.F90,cires_ugwpv1_initialize.F90,cires_ugwpv1_solv2.F90
+  dependencies = cires_ugwpv1_module.F90,cires_ugwpv1_triggers.F90,cires_ugwpv1_initialize.F90,cires_ugwpv1_solv2.F90,ecmwf_ngw.F90
   dependencies = cires_ugwpv1_sporo.F90,cires_ugwpv1_oro.F90 
 ########################################################################
 [ccpp-arg-table]
@@ -218,6 +218,13 @@
   dimensions = ()
   type = logical
   intent = in
+[do_ngw_ec]
+  standard_name = flag_for_ngw_ec
+  long_name = flag to activate ecmwf ngwd
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
 [do_ugwp_v1]
   standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
@@ -417,6 +424,13 @@
   type = real
   kind = kind_phys
   intent = in
+[do_ngw_ec]
+  standard_name = flag_for_ngw_ec
+  long_name = flag to activate ecmwf ngwd
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
 [do_ugwp_v1]
   standard_name = flag_for_ugwp_version_1
   long_name = flag to activate ver 1 CIRES UGWP
@@ -568,7 +582,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [oc1ss]
   standard_name = convexity_of_subgrid_orography_small_scale
   long_name = convexity of subgrid height_above_mean_sea_level small scale
@@ -577,7 +590,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [oa4ss]
   standard_name = asymmetry_of_subgrid_orography_small_scale
   long_name = asymmetry of subgrid height_above_mean_sea_level small scale
@@ -586,7 +598,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [ol4ss]
   standard_name = fraction_of_grid_box_with_subgrid_orography_higher_than_critical_height_small_scale
   long_name = horizontal fraction of grid box covered by sso higher than critical height small scale
@@ -595,7 +606,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [dx]
   standard_name = characteristic_grid_lengthscale
   long_name = size of the grid cell
@@ -794,7 +804,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [du_ogwcol]
   standard_name = vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = integrated x momentum flux from meso scale ogw
@@ -803,7 +812,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dv_ogwcol]
   standard_name = vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
   long_name = integrated y momentum flux from meso scale ogw
@@ -812,7 +820,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dudt_obl]
   standard_name = tendency_of_x_wind_due_to_blocking_drag
   long_name = x wind tendency from blocking drag
@@ -821,7 +828,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dvdt_obl]
   standard_name = tendency_of_y_wind_due_to_blocking_drag
   long_name = y wind tendency from blocking drag
@@ -830,7 +836,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [du_oblcol]
   standard_name = vertically_integrated_x_momentum_flux_due_to_blocking_drag
   long_name = integrated x momentum flux from blocking drag
@@ -839,7 +844,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dv_oblcol]
   standard_name = vertically_integrated_y_momentum_flux_due_to_blocking_drag
   long_name = integrated y momentum flux from blocking drag
@@ -848,7 +852,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dudt_oss]
   standard_name = tendency_of_x_wind_due_to_small_scale_gravity_wave_drag
   long_name = x wind tendency from small scale gwd
@@ -857,7 +860,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dvdt_oss]
   standard_name = tendency_of_y_wind_due_to_small_scale_gravity_wave_drag
   long_name = y wind tendency from small scale gwd
@@ -866,7 +868,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [du_osscol]
   standard_name = vertically_integrated_x_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = integrated x momentum flux from small scale gwd
@@ -875,7 +876,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dv_osscol]
   standard_name = vertically_integrated_y_momentum_flux_due_to_small_scale_gravity_wave_drag
   long_name = integrated y momentum flux from small scale gwd
@@ -884,7 +884,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dudt_ofd]
   standard_name = tendency_of_x_wind_due_to_form_drag
   long_name = x wind tendency from form drag
@@ -893,7 +892,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dvdt_ofd]
   standard_name = tendency_of_y_wind_due_to_form_drag
   long_name = y wind tendency from form drag
@@ -902,7 +900,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [du_ofdcol]
   standard_name = vertically_integrated_x_momentum_flux_due_to_form_drag
   long_name = integrated x momentum flux from form drag
@@ -911,7 +908,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dv_ofdcol]
   standard_name = vertically_integrated_y_momentum_flux_due_to_form_drag
   long_name = integrated y momentum flux from form drag
@@ -920,7 +916,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dudt_ngw]
   standard_name = tendency_of_x_wind_due_to_nonorographic_gravity_wave_drag
   long_name = zonal wind tendency due to non-stationary GWs
@@ -929,7 +924,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dvdt_ngw]
   standard_name = tendency_of_y_wind_due_to_nonorographic_gravity_wave_drag
   long_name = meridional wind tendency due to non-stationary GWs
@@ -938,7 +932,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dtdt_ngw]
   standard_name = tendency_of_air_temperature_due_to_nonorographic_gravity_wave_drag
   long_name = air temperature tendency due to non-stationary GWs
@@ -947,7 +940,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [kdis_ngw]
   standard_name = atmosphere_momentum_diffusivity_due_to_nonorographic_gravity_wave_drag
   long_name = eddy mixing due to non-stationary GWs
@@ -956,7 +948,6 @@
   type = real
   kind = kind_phys
   intent = out
-  optional = True
 [dudt_gw]
   standard_name = tendency_of_x_wind_due_to_gravity_wave_drag
   long_name = zonal wind tendency due to all GWs
