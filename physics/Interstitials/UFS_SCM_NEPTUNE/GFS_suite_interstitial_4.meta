@@ -4,6 +4,7 @@
   type = scheme
   relative_path = ../../
   dependencies = hooks/machine.F
+  dependencies = MP/TEMPO/TEMPO/module_mp_tempo_utils.F90
   dependencies = MP/Thompson/module_mp_thompson_make_number_concentrations.F90
 
 ########################################################################
@@ -160,6 +161,13 @@
 [imp_physics_nssl]
   standard_name = identifier_for_nssl_microphysics_scheme
   long_name = choice of NSSL 2-moment microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
+[imp_physics_tempo]
+  standard_name = identifier_for_tempo_microphysics_scheme
+  long_name = choice of TEMPO microphysics scheme
   units = flag
   dimensions = ()
   type = integer
