@@ -256,22 +256,6 @@
   dimensions = ()
   type = integer
   intent = in
-[t1]
-  standard_name = air_temperature
-  long_name = layer mean air temperature
-  units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
-[q1]
-  standard_name = vertically_diffused_tracer_concentration
-  long_name = tracer concentration diffused by PBL scheme
-  units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_vertical_diffusion_tracers)
-  type = real
-  kind = kind_phys
-  intent = in
 [def_1]
   standard_name = square_of_vertical_shear_due_to_dynamics
   long_name = square of vertical shear calculated from dynamics

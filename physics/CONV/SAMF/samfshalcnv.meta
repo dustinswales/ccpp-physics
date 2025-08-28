@@ -476,13 +476,6 @@
   dimensions = ()
   type = logical
   intent = in
-[progsigma]
-  standard_name = do_prognostic_updraft_area_fraction
-  long_name = flag for prognostic sigma in cumulus scheme
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
 [progomega]
   standard_name = do_prognostic_updraft_velocity
   long_name = flag for prognostic omega in cumuls scheme

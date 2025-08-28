@@ -102,13 +102,6 @@
   dimensions = ()
   type = integer
   intent = in
-[rrtmgp_phys_blksz]
-  standard_name = number_of_columns_per_RRTMGP_SW_block
-  long_name = number of columns to process at a time by RRTMGP SW scheme
-  units = count
-  dimensions =  ()
-  type = integer
-  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -149,13 +142,6 @@
   units = flag
   dimensions = ()
   type = logical
-  intent = in
-[iSFC]
-  standard_name = vertical_index_for_surface_in_RRTMGP
-  long_name = index for surface layer in RRTMGP
-  units = flag
-  dimensions = ()
-  type = integer
   intent = in
 [ncol]
   standard_name = horizontal_loop_extent
@@ -554,38 +540,6 @@
   long_name = cloud overlap parameter
   units = km
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
-[sfc_alb_nir_dir]
-  standard_name = surface_albedo_due_to_near_IR_direct
-  long_name = surface albedo due to near IR direct beam
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[sfc_alb_nir_dif]
-  standard_name = surface_albedo_due_to_near_IR_diffused
-  long_name = surface albedo due to near IR diffused beam
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[sfc_alb_uvvis_dir]
-  standard_name = surface_albedo_due_to_UV_and_VIS_direct
-  long_name = surface albedo due to UV+VIS direct beam
-  units = frac
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[sfc_alb_uvvis_dif]
-  standard_name = surface_albedo_due_to_UV_and_VIS_diffused
-  long_name = surface albedo due to UV+VIS diffused beam
-  units = frac
-  dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
   intent = in

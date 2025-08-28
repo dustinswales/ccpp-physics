@@ -102,21 +102,6 @@
   dimensions =  ()
   type = integer
   intent = in
-[nLay]
-  standard_name = vertical_layer_dimension
-  long_name = number of vertical levels
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
-[active_gases_array]
-  standard_name = list_of_active_gases_used_by_RRTMGP
-  long_name = list of active gases used by RRTMGP
-  units = none
-  dimensions =  (number_of_active_gases_used_by_RRTMGP)
-  type = character
-  kind = len=*
-  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
@@ -269,27 +254,6 @@
   long_name = flag for lw clouds sub-grid approximation
   units = flag
   dimensions = ()
-  type = integer
-  intent = in
-[iovr_max]
-  standard_name = flag_for_maximum_cloud_overlap_method
-  long_name = choice of maximum cloud overlap method
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[iovr_convcld]
-  standard_name = flag_for_convective_cloud_overlap_method_for_radiation
-  long_name = flag for convective cloud overlap method
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[icseed_lw]
-  standard_name = random_number_seed_for_mcica_longwave
-  long_name = seed for random number generation for longwave radiation
-  units = none
-  dimensions = (horizontal_loop_extent)
   type = integer
   intent = in
 [semis]
@@ -632,24 +596,6 @@
   standard_name = RRTMGP_jacobian_of_lw_flux_upward
   long_name = RRTMGP Jacobian upward longwave flux profile
   units = W m-2 K-1
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
-  type = real
-  kind = kind_phys
-  intent = inout
-  optional = True
-[fluxlwUP_radtime]
-  standard_name = RRTMGP_lw_flux_profile_upward_allsky_on_radiation_timestep
-  long_name = RRTMGP upward longwave all-sky flux profile
-  units = W m-2
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
-  type = real
-  kind = kind_phys
-  intent = inout
-  optional = True
-[fluxlwDOWN_radtime]
-  standard_name = RRTMGP_lw_flux_profile_downward_allsky_on_radiation_timestep
-  long_name = RRTMGP downward longwave all-sky flux profile
-  units = W m-2
   dimensions = (horizontal_loop_extent,vertical_interface_dimension)
   type = real
   kind = kind_phys
