@@ -110,7 +110,7 @@ contains
     real(kind_phys), dimension(:,:), intent(inout) :: &
          htrlw,             & !< LW all-sky heating rate (K/s)
          htrsw                !< SW all-sky heating rate (K/s)
-    real(kind_phys), dimension(:,:), intent(inout), optional :: &
+    real(kind_phys), dimension(:,:), intent(inout) :: &
          htrlwu               !< LW all-sky heating-rate updated in-between radiation calls.
     type(sfcflw_type), dimension(:), intent(inout) :: &
          sfcflw               !< LW radiation fluxes at sfc
