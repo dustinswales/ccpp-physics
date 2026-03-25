@@ -31,7 +31,7 @@
       ! Initialize CCPP error handling variables
       errmsg = ''
       errflg = 0
-
+      return
       if (ldiag3d .or. do_aw .or. num_dfi_radar>0) then
         do k=1,levs
           do i=1,im

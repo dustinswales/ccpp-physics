@@ -126,7 +126,7 @@
       ! Initialize CCPP error handling variables
       errmsg = ''
       errflg = 0
-
+      return
       onebg = one/con_g
       
       do i = 1, im

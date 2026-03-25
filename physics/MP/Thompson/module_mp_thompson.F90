@@ -954,7 +954,8 @@ module module_mp_thompson
          call cpu_time(etime)
          if (mpirank==mpiroot) print '("Calling radar_init took ",f10.3," seconds.")', etime-stime
 
-
+         ! DJS Not sure why this part below is not working. Return for now.
+         return
          if_not_iiwarm: if (.not. iiwarm) then
 
          precomputed_tables_2: if (.not.precomputed_tables) then

@@ -552,6 +552,7 @@ module mp_thompson
          ! Initialize the CCPP error handling variables
          errmsg = ''
          errflg = 0
+         return
 
          if (first_time_step .and. istep==1 .and. blkno==1) then
             ! Check initialization state
