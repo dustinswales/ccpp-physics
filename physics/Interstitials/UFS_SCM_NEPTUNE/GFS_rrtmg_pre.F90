@@ -17,8 +17,8 @@
 !! \htmlinclude GFS_rrtmg_pre_run.html
 !!    
 !>\section rrtmg_pre_gen General Algorithm
-      subroutine GFS_rrtmg_pre_run (im, levs, lm, lmk, lmp, n_var_lndp, lextop,&
-        ltp, imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_c3, me, ncnd, ntrac,        &
+      subroutine GFS_rrtmg_pre_run (im, levs, levi, n_var_lndp,                &
+        imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_c3, me, ncnd, ntrac,             &
         num_p3d, npdf3d, xr_cnvcld,                                            &
         ncnvcld3d,ntqv, ntcw,ntiw, ntlnc, ntinc, ntrnc, ntsnc, ntccn, top_at_1,&
         ntrw, ntsw, ntgl, nthl, ntwa, ntoz, ntsmoke, ntdust, ntcoarsepm,       &
@@ -41,7 +41,7 @@
         icloud, iaermdl, iaerflg, con_pi, con_g, con_ttp, con_thgni, si,       & !inputs from here and above
         coszen, coszdg, effrl_inout, effri_inout, effrs_inout,                 &
         clouds1, clouds2, clouds3, clouds4, clouds5, qci_conv,                 & !in/out from here and above
-        kd, kt, kb, mtopa, mbota, raddt, tsfg, tsfa, de_lgth, alb1d, delp, dz, & !output from here and below
+        mtopa, mbota, raddt, tsfg, tsfa, de_lgth, alb1d, delp, dz,     & !output from here and below
         plvl, plyr, tlvl, tlyr, qlyr, olyr, gasvmr_co2, gasvmr_n2o, gasvmr_ch4,&
         gasvmr_o2, gasvmr_co, gasvmr_cfc11, gasvmr_cfc12, gasvmr_cfc22,        &
         gasvmr_ccl4,  gasvmr_cfc113, aerodp,ext550, clouds6, clouds7, clouds8, &
@@ -109,7 +109,7 @@
       use module_ozphys, only: ty_ozphys
       implicit none
 
-      integer,              intent(in)  :: im, levs, lm, lmk, lmp, ltp,        &
+      integer,              intent(in)  :: im, levs, levi,        &
                                            n_var_lndp, imfdeepcnv,             &
                                            imfdeepcnv_gf, imfdeepcnv_c3,       &
                                            me, ncnd, ntrac,                    &
@@ -153,7 +153,7 @@
       logical,              intent(in) :: lsswr, lslwr, ltaerosol, lgfdlmprad, &
                                           uni_cld, effr_in, do_mynnedmf,       &
                                           lmfshal, lmfdeep2, pert_clds, lcrick,&
-                                          lcnorm, top_at_1, lextop, mraerosol
+                                          lcnorm, top_at_1, mraerosol
       logical,              intent(in) :: rrfs_sd, aero_dir_fdb, xr_cnvcld
 
       logical,              intent(in) :: nssl_ccn_on, nssl_invertccn
@@ -189,8 +189,6 @@
       real(kind=kind_phys), dimension(:),   intent(in)  :: fdb_coef
       real(kind=kind_phys), dimension(:),   intent(out) :: lwp_ex,iwp_ex, &
                                                            lwp_fc,iwp_fc
-
-      integer,                              intent(out) :: kd, kt, kb
 
       integer, dimension(:,:),              intent(out) :: mbota, mtopa
 
@@ -240,40 +238,39 @@
       ! Local variables
       integer :: ncndl
 
-      integer :: i, j, k, k1, k2, lsk, lv, n, itop, ibtc, LP1, lla, llb, lya,lyb
+      integer :: i, j, k, lv, n, itop, ibtc, LP1, lla, llb, lya,lyb
 
       real(kind=kind_phys) :: es, qs, delt, tem0d, pfac
       real(kind=kind_phys), dimension(im) :: gridkm
 
       real(kind=kind_phys), dimension(im) :: cvt1, cvb1, tem1d, tskn, xland
 
-      real(kind=kind_phys), dimension(im,lm+LTP) ::         &
-                          htswc, htlwc, gcice, grain, grime, htsw0, htlw0, &
+      real(kind=kind_phys), dimension(im,levs) ::         &
                           rhly, tvly,qstl, vvel, clw, ciw, prslk1, tem2da, &
                           dzb, hzb, cldcov, deltaq, cnvc, cnvw,            &
                           effrl, effri, effrr, effrs, rho, orho, plyrpa
 
       ! for Thompson MP
-      real(kind=kind_phys), dimension(im,lm+LTP) ::           &
+      real(kind=kind_phys), dimension(im,levs) ::           &
                                   qv_mp, qc_mp, qi_mp, qs_mp, &
                                   nc_mp, ni_mp, nwfa
-      real (kind=kind_phys), dimension(lm) :: cldfra1d, qv1d,           &
+      real (kind=kind_phys), dimension(levs) :: cldfra1d, qv1d,           &
      &                                 qc1d, qi1d, qs1d, dz1d, p1d, t1d
 
       ! For TEMPO MP
       type(ty_tempo_cfg), intent(in) :: tempo_cfg
 
       ! for F-A MP
-      real(kind=kind_phys), dimension(im,lm+LTP+1) :: tem2db, hz
+      real(kind=kind_phys), dimension(im,levs+1) :: tem2db, hz
 
-      real(kind=kind_phys), dimension(im,lm+LTP,min(4,ncnd))   :: ccnd
-      real(kind=kind_phys), dimension(im,lm+LTP,2:ntrac)       :: tracer1
-      real(kind=kind_phys), dimension(im,lm+LTP)               ::        &
+      real(kind=kind_phys), dimension(im,levs,min(4,ncnd))   :: ccnd
+      real(kind=kind_phys), dimension(im,levs,2:ntrac)       :: tracer1
+      real(kind=kind_phys), dimension(im,levs)               ::        &
      &   cld_frac, cld_lwp, cld_reliq, cld_iwp, cld_reice,               &
      &   cld_rwp, cld_rerain, cld_swp, cld_resnow
-      real(kind=kind_phys), dimension(im,lm+LTP,NF_VGAS)       :: gasvmr
-      real(kind=kind_phys), dimension(im,lm+LTP,NBDSW,NF_AESW) :: faersw
-      real(kind=kind_phys), dimension(im,lm+LTP,NBDLW,NF_AELW) :: faerlw
+      real(kind=kind_phys), dimension(im,levs,NF_VGAS)       :: gasvmr
+      real(kind=kind_phys), dimension(im,levs,NBDSW,NF_AESW) :: faersw
+      real(kind=kind_phys), dimension(im,levs,NBDLW,NF_AELW) :: faerlw
 
       ! for stochastic cloud perturbations
       real(kind=kind_phys), dimension(im) :: cldp1d
@@ -302,7 +299,7 @@
       !--- set commonly used integers
       ncndl = min(ncnd,4)
 
-      LP1 = LM + 1               ! num of in/out levels
+      LP1 = levs + 1               ! num of in/out levels
 
       if (imp_physics == imp_physics_thompson .or. imp_physics == imp_physics_tempo) then
          max_relh = 1.5
@@ -317,38 +314,6 @@
          lwp_fc(i) = 0.0
          iwp_fc(i) = 0.0
       enddo
-
-!  --- ...  set local /level/layer indexes corresponding to in/out
-!  variables
-
-      if ( lextop ) then
-        if (.not. top_at_1) then   ! vertical from sfc upward
-          kd = 0                   ! index diff between in/out and local
-          kt = 1                   ! index diff between lyr and upper bound
-          kb = 0                   ! index diff between lyr and lower bound
-          lla = LMK                ! local index at the 2nd level from top
-          llb = LMP                ! local index at toa level
-          lya = LM                 ! local index for the 2nd layer from top
-          lyb = LP1                ! local index for the top layer
-        else                       ! vertical from toa downward
-          kd = 1                   ! index diff between in/out and local
-          kt = 0                   ! index diff between lyr and upper bound
-          kb = 1                   ! index diff between lyr and lower bound
-          lla = 2                  ! local index at the 2nd level from top
-          llb = 1                  ! local index at toa level
-          lya = 2                  ! local index for the 2nd layer from top
-          lyb = 1                  ! local index for the top layer
-        endif                      ! end if_top_at_1_block
-      else
-        kd = 0
-        if (.not. top_at_1) then   ! vertical from sfc upward
-          kt = 1                   ! index diff between lyr and upper bound
-          kb = 0                   ! index diff between lyr and lower bound
-        else                       ! vertical from toa downward
-          kt = 0                   ! index diff between lyr and upper bound
-          kb = 1                   ! index diff between lyr and lower bound
-        endif                      ! end if_top_at_1_block
-      endif   ! end if_lextop_block
 
       raddt = min(fhswr, fhlwr)
 !     print *,' in grrad : raddt=',raddt
@@ -369,95 +334,39 @@
         enddo
       endif
 
-
-!> - Prepare atmospheric profiles for radiation input.
-!
-
-      lsk = 0
-      if (top_at_1 .and. lm < levs) lsk = levs - lm
-
 !     convert pressure unit from pa to mb
-      do k = 1, LM
-        k1 = k + kd
-        k2 = k + lsk
+      do k = 1, levs
         do i = 1, IM
-          plvl(i,k1+kb) = prsi(i,k2+kb) * 0.01   ! pa to mb (hpa)
-          plyr(i,k1)    = prsl(i,k2)    * 0.01   ! pa to mb (hpa)
-          tlyr(i,k1)    = tgrs(i,k2)
-          prslk1(i,k1)  = prslk(i,k2)
-          rho(i,k1)     = prsl(i,k2)/(con_rd*tlyr(i,k1))
-          orho(i,k1)    = 1.0/rho(i,k1)
+          plvl(i,k) = prsi(i,k) * 0.01   ! pa to mb (hpa)
+          plyr(i,k)    = prsl(i,k)    * 0.01   ! pa to mb (hpa)
+          tlyr(i,k)    = tgrs(i,k)
+          prslk1(i,k)  = prslk(i,k)
+          rho(i,k)     = prsl(i,k)/(con_rd*tlyr(i,k))
+          orho(i,k)    = 1.0/rho(i,k)
           
 !> - Compute relative humidity.
-          es  = min( prsl(i,k2),  fpvs( tgrs(i,k2) ) )  ! fpvs and prsl in pa
-          qs  = max( QMIN, con_eps * es / (prsl(i,k2) + epsm1*es) )
-          rhly(i,k1) = max( 0.0, min( 1.0, max(QMIN, qgrs(i,k2,ntqv))/qs ) )
-          qstl(i,k1) = qs
+          es  = min( prsl(i,k),  fpvs( tgrs(i,k) ) )  ! fpvs and prsl in pa
+          qs  = max( QMIN, con_eps * es / (prsl(i,k) + epsm1*es) )
+          rhly(i,k) = max( 0.0, min( 1.0, max(QMIN, qgrs(i,k,ntqv))/qs ) )
+          qstl(i,k) = qs
         enddo
       enddo
 
 !> - Recast remaining all tracers (except sphum) forcing them all to be positive.
       do j = 2, ntrac
-        do k = 1, LM
-          k1 = k + kd
-          k2 = k + lsk
-          tracer1(:,k1,j) = max(0.0, qgrs(:,k2,j))
+        do k = 1, levs
+          tracer1(:,k,j) = max(0.0, qgrs(:,k,j))
         enddo
       enddo
 !
-      if (top_at_1) then                                ! input data from toa to sfc
-        if (lsk > 0) then
-          k1 = 1 + kd
-          k2 = k1 + kb
-          do i = 1, IM
-            plvl(i,k2)   = 0.01 * prsi(i,1+kb)          ! pa to mb (hpa)
-            plyr(i,k1)   = 0.5 * (plvl(i,k2+1) + plvl(i,k2))
-            prslk1(i,k1) = (plyr(i,k1)*0.001) ** rocp
-          enddo
-        else
-          k1 = 1 + kd
-          do i = 1, IM
-            plvl(i,k1) = prsi(i,1) * 0.01   ! pa to mb (hpa)
-          enddo
-        endif
-      else                                                 ! input data from sfc to top
-        if (levs > lm) then
-          k1 = lm + kd
-          do i = 1, IM
-            plvl(i,k1+1) = 0.01 * prsi(i,levs+1)  ! pa to mb (hpa)
-            plyr(i,k1)   = 0.5 * (plvl(i,k1+1) + plvl(i,k1))
-            prslk1(i,k1) = (plyr(i,k1)*0.001) ** rocp
-          enddo
-        else
-          k1 = lp1 + kd
-          do i = 1, IM
-            plvl(i,k1) = prsi(i,lp1) * 0.01   ! pa to mb (hpa)
-          enddo
-        endif
-      endif
-!
-      if ( lextop ) then                 ! values for extra top layer
-        do i = 1, IM
-          plvl(i,llb) = prsmin
-          if ( plvl(i,lla) <= prsmin ) plvl(i,lla) = 2.0*prsmin
-          plyr(i,lyb)   = 0.5 * plvl(i,lla)
-          tlyr(i,lyb)   = tlyr(i,lya)
-          prslk1(i,lyb) = (plyr(i,lyb)*0.001) ** rocp ! plyr in hPa
-          rho(i,lyb)    = plyr(i,lyb) *100.0/(con_rd*tlyr(i,lyb))
-          orho(i,lyb)   = 1.0/rho(i,lyb)
-          rhly(i,lyb)   = rhly(i,lya)
-          qstl(i,lyb)   = qstl(i,lya)
-        enddo
-
-!  ---  note: may need to take care the top layer amount
-        tracer1(:,lyb,:) = tracer1(:,lya,:)
-      endif
-
+      do i = 1, IM
+         plvl(i,k) = prsi(i,k) * 0.01   ! pa to mb (hpa)
+      enddo
 
 !> - Get layer ozone mass mixing ratio (if use ozone climatology data,
 
       if (ntoz > 0) then            ! interactive ozone generation
-        do k=1,lmk
+        do k=1,levs
           do i=1,im
             olyr(i,k) = max( QMIN, tracer1(i,k,ntoz) )
           enddo
@@ -487,11 +396,11 @@
 
 !  --- ...  set up non-prognostic gas volume mixing ratioes
 
-      call getgases (plvl, xlon, xlat, IM, LMK, ico2, top_at_1,& !  --- inputs
+      call getgases (plvl, xlon, xlat, IM, levs, ico2, top_at_1,& !  --- inputs
                      con_pi, gasvmr)                             !  --- outputs
 
 !CCPP: re-assign gasvmr(:,:,NF_VGAS) to gasvmr_X(:,:)
-      do k = 1, LMK
+      do k = 1, levs
         do i = 1, IM
            gasvmr_co2    (i,k)  = gasvmr(i,k,1)
            gasvmr_n2o    (i,k)  = gasvmr(i,k,2)
@@ -507,7 +416,7 @@
       enddo
 
 !> - Get temperature at layer interface, and layer moisture.
-      do k = 2, LMK
+      do k = 2, levs
         do i = 1, IM
           tem2da(i,k) = log( plyr(i,k) )
           tem2db(i,k) = log( plvl(i,k) )
@@ -519,31 +428,22 @@
           tem1d (i)   = QME6
           tem2da(i,1) = log( plyr(i,1) )
           tem2db(i,1) = log( max(prsmin, plvl(i,1)) )
-          tem2db(i,LMP) = log( plvl(i,LMP) )
-          tsfa  (i)   = tlyr(i,LMK)                  ! sfc layer air temp
+          tem2db(i,levi) = log( plvl(i,levi) )
+          tsfa  (i)   = tlyr(i,levs)                  ! sfc layer air temp
           tlvl(i,1)   = tlyr(i,1)
-          tlvl(i,LMP) = tskn(i)
+          tlvl(i,levi) = tskn(i)
         enddo
 
-        do k = 1, LM
-          k1 = k + kd
+        do k = 1, levs
           do i = 1, IM
-            qlyr(i,k1) = max( tem1d(i), qgrs(i,k,ntqv) )
-            tem1d(i)   = min( QME5, qlyr(i,k1) )
-            tvly(i,k1) = tgrs(i,k) * (1.0 + fvirt*qlyr(i,k1)) ! virtual T (K)
-            delp(i,k1) = plvl(i,k1+1) - plvl(i,k1)
+            qlyr(i,k) = max( tem1d(i), qgrs(i,k,ntqv) )
+            tem1d(i)   = min( QME5, qlyr(i,k) )
+            tvly(i,k) = tgrs(i,k) * (1.0 + fvirt*qlyr(i,k)) ! virtual T (K)
+            delp(i,k) = plvl(i,k+1) - plvl(i,k)
           enddo
         enddo
 
-        if ( lextop ) then
-          do i = 1, IM
-            qlyr(i,lyb) = qlyr(i,lya)
-            tvly(i,lyb) = tvly(i,lya)
-            delp(i,lyb) = plvl(i,lla) - plvl(i,llb)
-          enddo
-        endif
-
-        do k = 2, LMK
+        do k = 2, levs
           do i = 1, IM
             tlvl(i,k) = tlyr(i,k) + (tlyr(i,k-1) - tlyr(i,k))           &
      &                * (tem2db(i,k)   - tem2da(i,k))                   &
@@ -559,24 +459,24 @@
 
         tem0d = 0.001 * rog
         do i = 1, IM
-          do k = 1, LMK
+          do k = 1, levs
             dz(i,k) = tem0d * (tem2db(i,k+1) - tem2db(i,k)) * tvly(i,k)
           enddo
 
-          hz(i,LMP) = 0.0
-          do k = LMK, 1, -1
+          hz(i,levi) = 0.0
+          do k = levs, 1, -1
             hz(i,k) = hz(i,k+1) + dz(i,k)
           enddo
 
-          do k = LMK, 1, -1
+          do k = levs, 1, -1
             pfac = (tem2db(i,k+1) - tem2da(i,k)) / (tem2db(i,k+1) - tem2db(i,k))
             hzb(i,k) = hz(i,k+1) + pfac * (hz(i,k) - hz(i,k+1))
           enddo
 
-          do k = LMK-1, 1, -1
+          do k = levs-1, 1, -1
             dzb(i,k) = hzb(i,k) - hzb(i,k+1)
           enddo
-          dzb(i,LMK) = hzb(i,LMK) - hz(i,LMP)
+          dzb(i,levs) = hzb(i,levs) - hz(i,levi)
         enddo
 
       else                               ! input data from sfc to toa
@@ -585,13 +485,13 @@
           tem1d (i)   = QME6
           tem2da(i,1) = log( plyr(i,1) )
           tem2db(i,1) = log( plvl(i,1) )
-          tem2db(i,LMP) = log( max(prsmin, plvl(i,LMP)) )
+          tem2db(i,levi) = log( max(prsmin, plvl(i,levi)) )
           tsfa  (i)   = tlyr(i,1)                    ! sfc layer air temp
           tlvl(i,1)   = tskn(i)
-          tlvl(i,LMP) = tlyr(i,LMK)
+          tlvl(i,levi) = tlyr(i,levs)
         enddo
 
-        do k = LM, 1, -1
+        do k = levs, 1, -1
           do i = 1, IM
             qlyr(i,k) = max( tem1d(i), qgrs(i,k,ntqv) )
             tem1d(i)  = min( QME5, qlyr(i,k) )
@@ -600,15 +500,7 @@
           enddo
         enddo
 
-        if ( lextop ) then
-          do i = 1, IM
-            qlyr(i,lyb) = qlyr(i,lya)
-            tvly(i,lyb) = tvly(i,lya)
-            delp(i,lyb) = plvl(i,lla) - plvl(i,llb)
-          enddo
-        endif
-
-        do k = 1, LMK-1
+        do k = 1, levs-1
           do i = 1, IM
             tlvl(i,k+1) = tlyr(i,k) + (tlyr(i,k+1) - tlyr(i,k))         &
      &                  * (tem2db(i,k+1) - tem2da(i,k))                 &
@@ -624,21 +516,21 @@
 
         tem0d = 0.001 * rog
         do i = 1, IM
-          do k = LMK, 1, -1
+          do k = levs, 1, -1
             dz(i,k) = tem0d * (tem2db(i,k) - tem2db(i,k+1)) * tvly(i,k)
           enddo
 
           hz(i,1) = 0.0
-          do k = 1, LMK
+          do k = 1, levs
             hz(i,k+1) = hz(i,k) + dz(i,k)
           enddo
 
-          do k = 1, LMK
+          do k = 1, levs
             pfac = (tem2db(i,k) - tem2da(i,k)) / (tem2db(i,k) - tem2db(i,k+1))
             hzb(i,k) = hz(i,k) + pfac * (hz(i,k+1) - hz(i,k))
           enddo
 
-          do k = 2, LMK
+          do k = 2, levs
             dzb(i,k) = hzb(i,k) - hzb(i,k-1)
           enddo
           dzb(i,1) = hzb(i,1) - hz(i,1)
@@ -674,7 +566,7 @@
 
 !>---   add smoke and dust ---
        if (rrfs_sd .and. aero_dir_fdb) then
-         do k=1,lmk
+         do k=1,levs
            do i=1,im
              aer_nm(i,k,1 )=aer_nm(i,k,1 )+ qgrs(i,k,ntdust)*fdb_coef(1)*1.e-9    ! dust bin1
              aer_nm(i,k,2 )=aer_nm(i,k,2 )+(qgrs(i,k,ntdust)*fdb_coef(2)          &
@@ -691,13 +583,13 @@
 !> - Call module_radiation_aerosols::setaer() to setup aerosols
 !! property profile for radiation.
       call setaer (plvl, plyr, prslk1, tvly, rhly, slmsk,    & !  ---  inputs
-                   tracer1, aer_nm, xlon, xlat, IM, LMK, LMP,&
+                   tracer1, aer_nm, xlon, xlat, IM, levs, levi,&
                    lsswr, lslwr, iaermdl, iaerflg, top_at_1, con_pi,  &
                    con_rd, con_g, faersw, faerlw, aerodp, ext550, errflg, errmsg)         !  ---  outputs
 
 ! CCPP
       do j = 1,NBDSW
-        do k = 1, LMK
+        do k = 1, levs
           do i = 1, IM
             ! NF_AESW = 3
             faersw1(i,k,j) = faersw(i,k,j,1)
@@ -708,7 +600,7 @@
        enddo
 
       do j = 1,NBDLW
-        do k = 1, LMK
+        do k = 1, levs
           do i = 1, IM
             ! NF_AELW = 3
             faerlw1(i,k,j) = faerlw(i,k,j,1)
@@ -726,20 +618,20 @@
 !      if (ntcw > 0) then                            ! prognostic cloud schemes
         ccnd = 0.0_kind_phys
         if (ncnd == 1) then                          ! Zhao_Carr_Sundqvist
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)        ! liquid water/ice
             enddo
           enddo
         elseif (ncnd == 2) then                      ! MG
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)        ! liquid water
               ccnd(i,k,2) = tracer1(i,k,ntiw)        ! ice water
             enddo
           enddo
         elseif (ncnd == 4) then                      ! MG2
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)                     ! liquid water
               ccnd(i,k,2) = tracer1(i,k,ntiw)                     ! ice water
@@ -748,7 +640,7 @@
             enddo
           enddo
         elseif (ncnd == 5 .or. ncnd == 6) then       ! GFDL MP, Thompson, MG3, NSSL
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)                     ! liquid water
               ccnd(i,k,2) = tracer1(i,k,ntiw)                     ! ice water
@@ -767,7 +659,7 @@
           ! for Thompson MP - prepare variables for calc_effr
           if_thompson: if ((imp_physics == imp_physics_thompson .or. &
                imp_physics == imp_physics_tempo) .and. (ltaerosol .or. mraerosol)) then
-            do k=1,LMK
+            do k=1,levs
               do i=1,IM
                 qvs = qlyr(i,k)
                 qv_mp (i,k) = qvs/(1.-qvs)
@@ -782,7 +674,7 @@
               enddo
             enddo
           elseif (imp_physics == imp_physics_thompson .or. imp_physics == imp_physics_tempo) then
-            do k=1,LMK
+            do k=1,levs
               do i=1,IM
                 qvs = qlyr(i,k)
                 qv_mp (i,k) = qvs/(1.-qvs)
@@ -810,7 +702,7 @@
           endif if_thompson
         endif
         do n=1,ncndl
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = 0.0
             enddo
@@ -822,18 +714,18 @@
 
 ! rsun the  summation methods and order make the difference in calculation
 
-!            clw(:,:) = clw(:,:) + tracer1(:,1:LMK,ntcw)   &
-!                                + tracer1(:,1:LMK,ntiw)   &
-!                                + tracer1(:,1:LMK,ntrw)   &
-!                                + tracer1(:,1:LMK,ntsw)   &
-!                                + tracer1(:,1:LMK,ntgl)
-            ccnd(:,:,1) =               tracer1(:,1:LMK,ntcw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntrw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntiw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntsw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntgl)
+!            clw(:,:) = clw(:,:) + tracer1(:,1:levs,ntcw)   &
+!                                + tracer1(:,1:levs,ntiw)   &
+!                                + tracer1(:,1:levs,ntrw)   &
+!                                + tracer1(:,1:levs,ntsw)   &
+!                                + tracer1(:,1:lesv,ntgl)
+            ccnd(:,:,1) =               tracer1(:,1:levs,ntcw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntrw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntiw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntsw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntgl)
           endif
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               if (ccnd(i,k,1) < EPSQ ) ccnd(i,k,1) = 0.0
             enddo
@@ -842,59 +734,45 @@
 !
         if (uni_cld) then
           if (effr_in) then
-            do k=1,lm
-              k1 = k + kd
+            do k=1,levs
               do i=1,im
-                cldcov(i,k1) = mg_cld(i,k)
-                effrl(i,k1)  = effrl_inout(i,k)
-                effri(i,k1)  = effri_inout(i,k)
-                effrr(i,k1)  = effrr_in(i,k)
-                effrs(i,k1)  = effrs_inout(i,k)
+                cldcov(i,k) = mg_cld(i,k)
+                effrl(i,k)  = effrl_inout(i,k)
+                effri(i,k)  = effri_inout(i,k)
+                effrr(i,k)  = effrr_in(i,k)
+                effrs(i,k)  = effrs_inout(i,k)
               enddo
             enddo
           else
-            do k=1,lm
-              k1 = k + kd
+            do k=1,levs
               do i=1,im
-                cldcov(i,k1) = mg_cld(i,k)
+                cldcov(i,k) = mg_cld(i,k)
               enddo
             enddo
           endif
         elseif (imp_physics == imp_physics_gfdl) then            ! GFDL MP
           if ((imfdeepcnv==imfdeepcnv_gf .or. imfdeepcnv==imfdeepcnv_c3) .and. kdt>1) then
-              do k=1,lm
-                k1 = k + kd
+              do k=1,levs
                 do i=1,im
                 if (qci_conv(i,k)>0.) then
                   ! GF sub-grid cloud fraction
-                  cldcov(i,k1) = clouds1(i,k1)
+                  cldcov(i,k) = clouds1(i,k)
                 else
-                  cldcov(i,k1) = tracer1(i,k1,ntclamt)
+                  cldcov(i,k) = tracer1(i,k,ntclamt)
                 endif
                 enddo
               enddo
           else
             ! GFDL cloud fraction
-            cldcov(1:IM,1+kd:LM+kd) = tracer1(1:IM,1:LM,ntclamt)
+            cldcov(1:IM,1:levs) = tracer1(1:IM,1:levs,ntclamt)
           endif
           if(effr_in) then
-            do k=1,lm
-              k1 = k + kd
+            do k=1,levs
               do i=1,im
-                effrl(i,k1) = effrl_inout(i,k)
-                effri(i,k1) = effri_inout(i,k)
-                effrr(i,k1) = effrr_in(i,k)
-                effrs(i,k1) = effrs_inout(i,k)
-!                if(me==0) then
-!                  if(effrl(i,k1)> 5.0) then
-!                    write(6,*) 'rad driver:cloud radii:',kdt, i,k1,       &
-!                    effrl(i,k1)
-!                  endif
-!                  if(effrs(i,k1)==0.0) then
-!                    write(6,*) 'rad driver:snow mixing ratio:',kdt, i,k1, &
-!                    tracer1(i,k,ntsw)
-!                  endif
-!                endif
+                effrl(i,k) = effrl_inout(i,k)
+                effri(i,k) = effri_inout(i,k)
+                effrr(i,k) = effrr_in(i,k)
+                effrs(i,k) = effrs_inout(i,k)
               enddo
             enddo
           endif
@@ -902,13 +780,12 @@
         elseif (imp_physics == imp_physics_nssl ) then                          ! NSSL MP
           cldcov = 0.0
           if(effr_in) then
-           do k=1,lm
-             k1 = k + kd
+           do k=1,levs
              do i=1,im
-               effrl(i,k1) = effrl_inout(i,k)! re_cloud (i,k)
-               effri(i,k1) = effri_inout(i,k)! re_ice (i,k)
-               effrr(i,k1) = effrr_in(i,k)
-               effrs(i,k1) = effrs_inout(i,k) ! re_snow(i,k)
+               effrl(i,k) = effrl_inout(i,k)! re_cloud (i,k)
+               effri(i,k) = effri_inout(i,k)! re_ice (i,k)
+               effrr(i,k) = effrr_in(i,k)
+               effrs(i,k) = effrs_inout(i,k) ! re_snow(i,k)
              enddo
            enddo
           else
@@ -920,7 +797,7 @@
           ! Compute effective radii for QC, QI, QS with (GF, MYNN) or without (all others) sub-grid clouds
           !
           ! Update number concentration, consistent with sub-grid clouds (GF, MYNN) or without (all others)
-          do k=1,lm
+          do k=1,levs
             do i=1,im
                if ((ltaerosol .or. mraerosol) .and. qc_mp(i,k)>1.e-12 .and. nc_mp(i,k)<100.) then
                   if (imp_physics == imp_physics_thompson) then
@@ -949,41 +826,40 @@
             if (imp_physics == imp_physics_thompson) then
                call calc_effectRad_thompson(tlyr(i,:), plyr(i,:)*100., qv_mp(i,:), qc_mp(i,:),   &
                     nc_mp(i,:), qi_mp(i,:), ni_mp(i,:), qs_mp(i,:), &
-                    effrl(i,:), effri(i,:), effrs(i,:), islmsk, 1, lm )
+                    effrl(i,:), effri(i,:), effrs(i,:), islmsk, 1, levs )
                ! Scale Thompson's effective radii from meter to micron
-               do k=1,lm
+               do k=1,levs
                   effrl(i,k) = MAX(re_qc_min_thompson, MIN(effrl(i,k), re_qc_max_thompson))*1.e6
                   effri(i,k) = MAX(re_qi_min_thompson, MIN(effri(i,k), re_qi_max_thompson))*1.e6
                   effrs(i,k) = MAX(re_qs_min_thompson, MIN(effrs(i,k), re_qs_max_thompson))*1.e6
                end do
-               effrl(i,lmk) = re_qc_min_thompson*1.e6
-               effri(i,lmk) = re_qi_min_thompson*1.e6
-               effrs(i,lmk) = re_qs_min_thompson*1.e6
+               effrl(i,levs) = re_qc_min_thompson*1.e6
+               effri(i,levs) = re_qi_min_thompson*1.e6
+               effrs(i,levs) = re_qs_min_thompson*1.e6
             else
                call calc_effectRad_tempo(t1d=tlyr(i,:), p1d=plyr(i,:)*100., qv1d=qv_mp(i,:), qc1d=qc_mp(i,:),   &
                     nc1d=nc_mp(i,:), qi1d=qi_mp(i,:), ni1d=ni_mp(i,:), qs1d=qs_mp(i,:), &
-                    re_qc1d=effrl(i,:), re_qi1d=effri(i,:), re_qs1d=effrs(i,:), kts=1, kte=lm, &
+                    re_qc1d=effrl(i,:), re_qi1d=effri(i,:), re_qs1d=effrs(i,:), kts=1, kte=levs, &
                     lsml=islmsk, configs=tempo_cfg)
                ! Scale Thompson's effective radii from meter to micron
-               do k=1,lm
+               do k=1,levs
                   effrl(i,k) = MAX(re_qc_min_tempo, MIN(effrl(i,k), re_qc_max_tempo))*1.e6
                   effri(i,k) = MAX(re_qi_min_tempo, MIN(effri(i,k), re_qi_max_tempo))*1.e6
                   effrs(i,k) = MAX(re_qs_min_tempo, MIN(effrs(i,k), re_qs_max_tempo))*1.e6
                end do
-               effrl(i,lmk) = re_qc_min_tempo*1.e6
-               effri(i,lmk) = re_qi_min_tempo*1.e6
-               effrs(i,lmk) = re_qs_min_tempo*1.e6
+               effrl(i,levs) = re_qc_min_tempo*1.e6
+               effri(i,levs) = re_qi_min_tempo*1.e6
+               effrs(i,levs) = re_qs_min_tempo*1.e6
             endif
 
           end do
           effrr(:,:) = 1000. ! rrain_def=1000.
           ! Update global arrays
-          do k=1,lm
-            k1 = k + kd
+          do k=1,levs
             do i=1,im
-              effrl_inout(i,k) = effrl(i,k1)
-              effri_inout(i,k) = effri(i,k1)
-              effrs_inout(i,k) = effrs(i,k1)
+              effrl_inout(i,k) = effrl(i,k)
+              effri_inout(i,k) = effri(i,k)
+              effrs_inout(i,k) = effrs(i,k)
             enddo
           enddo
         else                                                           ! all other cases
@@ -998,27 +874,25 @@
 !          ferrier's (imp_phys=5) microphysics schemes
 
         if ((num_p3d == 4) .and. (npdf3d == 3)) then       ! same as imp_physics = imp_physics_zhao_carr_pdf
-          do k=1,lm
-            k1 = k + kd
+          do k=1,levs
             do i=1,im
               !GJF: this is not consistent with GFS_typedefs,
               !     but it looks like the Zhao-Carr-PDF scheme is not in the CCPP
-              deltaq(i,k1) = 0.0!Tbd%phy_f3d(i,k,5)      !GJF: this variable is not in phy_f3d anymore
-              cnvw  (i,k1) = cnvw_in(i,k)
-              cnvc  (i,k1) = cnvc_in(i,k)
+              deltaq(i,k) = 0.0!Tbd%phy_f3d(i,k,5)      !GJF: this variable is not in phy_f3d anymore
+              cnvw  (i,k) = cnvw_in(i,k)
+              cnvc  (i,k) = cnvc_in(i,k)
             enddo
           enddo
         elseif ((npdf3d == 0) .and. (ncnvcld3d == 1)) then ! all other microphysics with pdfcld = .false. and cnvcld = .true.
-          do k=1,lm
-            k1 = k + kd
+          do k=1,levs
             do i=1,im
-              deltaq(i,k1) = 0.0
-              cnvw  (i,k1) = cnvw_in(i,k)
-              cnvc  (i,k1) = 0.0
+              deltaq(i,k) = 0.0
+              cnvw  (i,k) = cnvw_in(i,k)
+              cnvc  (i,k) = 0.0
             enddo
           enddo
         else                                                      ! all the rest
-          do k=1,lmk
+          do k=1,levs
             do i=1,im
               deltaq(i,k) = 0.0
               cnvw  (i,k) = 0.0
@@ -1028,14 +902,14 @@
         endif
 
         if (imp_physics == imp_physics_zhao_carr) then
-          ccnd(1:IM,1:LMK,1) = ccnd(1:IM,1:LMK,1) + cnvw(1:IM,1:LMK)
+          ccnd(1:IM,1:levs,1) = ccnd(1:IM,1:levs,1) + cnvw(1:IM,1:levs)
         endif
 
 !> - Call radiation_clouds_prop() to calculate cloud properties.
         call radiation_clouds_prop                                      &
      &     ( plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,                  &    !  ---  inputs:
      &       ccnd, ncndl, cnvw, cnvc, tracer1,                          &
-     &       xlat, xlon, slmsk, dz, delp, IM, LM, LMK, LMP,             &
+     &       xlat, xlon, slmsk, dz, delp, IM, levs, levs, levi,           &
      &       deltaq, sup, dcorr_con, me, icloud, kdt,                   &
      &       ntrac, ntcw, ntiw, ntrw, ntsw, ntgl, ntclamt,              &
      &       imp_physics, imp_physics_nssl, imp_physics_fer_hires,      &
@@ -1067,7 +941,7 @@
               call cdfnor(tmp_wt,cdfz)
               cldp1d(i) = cdfz
           enddo
-          do k = 1, LMK
+          do k = 1, levs
              do i = 1, IM
                 ! compute beta distribution parameters
                 m = cld_frac(i,k)
@@ -1085,7 +959,7 @@
              enddo     ! end_do_i_loop
           enddo     ! end_do_k_loop
        endif
-       do k = 1, LM
+       do k = 1, levs
          do i = 1, IM
             clouds1(i,k)  = cld_frac(i,k)
             clouds2(i,k)  = cld_lwp(i,k)
@@ -1101,26 +975,18 @@
        enddo
        do i = 1, IM
          cldfra2d(i) = 0.0
-         do k = 1, LM-1
+         do k = 1, levs-1
            cldfra2d(i) = max(cldfra2d(i), cldfra(i,k))
          enddo
        enddo
 
       if ( spp_rad == 1 ) then
-        do k=1,lm
-          if (k < levs) then
-            do i=1,im
+        do k=1,levs
+           do i=1,im
               clouds3(i,k) = clouds3(i,k) - spp_wts_rad(i,k) * clouds3(i,k)
               clouds5(i,k) = clouds5(i,k) - spp_wts_rad(i,k) * clouds5(i,k)
               clouds9(i,k) = clouds9(i,k) - spp_wts_rad(i,k) * clouds9(i,k)
             enddo
-          else
-            do i=1,im
-              clouds3(i,k) = clouds3(i,k) - spp_wts_rad(i,levs) * clouds3(i,k)
-              clouds5(i,k) = clouds5(i,k) - spp_wts_rad(i,levs) * clouds5(i,k)
-              clouds9(i,k) = clouds9(i,k) - spp_wts_rad(i,levs) * clouds9(i,k)
-            enddo
-          endif
         enddo
       endif
 

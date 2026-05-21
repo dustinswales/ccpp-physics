@@ -46,7 +46,7 @@ module GFS_rrtmg_setup
         iaermdl, iaerflg, aeros_file, con_pi, con_t0c, con_c, con_boltz,     &
         con_plnk, con_solr_2008, con_solr_2002, con_g, con_rd, co2usr_file,  &
         co2cyc_file, rad_hr_units, inc_minor_gas, icliq_lw, isubcsw, isubclw,&
-        iswmode, ipsd0, ltp, lextop, errmsg, errflg)
+        iswmode, ipsd0, errmsg, errflg)
 ! =================   subprogram documentation block   ================ !
 !                                                                       !
 ! subprogram:   GFS_rrtmg_setup_init - a subprogram to initialize radiation !
@@ -137,8 +137,6 @@ module GFS_rrtmg_setup
 !                     =0: index from toa to surface                     !
 !                     =1: index from surface to toa                     !
 !   me               : print control flag                               !
-!   ltp              : number of radiation extra top layers             !
-!   lextop           : control flag to denote extra top layers are used !
 !                                                                       !
 !  subroutines called: radinit                                          !
 !                                                                       !
@@ -155,12 +153,12 @@ module GFS_rrtmg_setup
       ! interface variables
       real (kind=kind_phys), intent(in) :: si(:)
       integer, intent(in) :: levr, ictm, isol, ico2, iaer, ntcw, num_p3d, &
-           ltp, npdf3d, ntoz, iovr, iovr_rand, iovr_maxrand, iovr_max,    &
+           npdf3d, ntoz, iovr, iovr_rand, iovr_maxrand, iovr_max,         &
            iovr_dcorr, iovr_exp, iovr_exprand, icliq_sw, imp_physics,     &
            iflip, rad_hr_units, icliq_lw, isubcsw, isubclw, iswmode
       integer, intent(in) :: idate(:)
       logical, intent(in) :: lcrick, lcnorm, lnoprec, do_RRTMGP, lalw1bd, &
-           inc_minor_gas, lextop
+           inc_minor_gas
       type(MPI_Comm), intent(in) :: mpicomm
       integer, intent(in) :: mpirank
       integer, intent(in) :: mpiroot
@@ -207,7 +205,6 @@ module GFS_rrtmg_setup
                  ' iflip=',iflip,'  mpirank=',mpirank
          print *,' lcrick=',lcrick,                                      &
                  ' lcnorm=',lcnorm,' lnoprec=',lnoprec
-         print *, 'lextop=',lextop, ' ltp=',ltp
       endif
 
       if (is_initialized) return

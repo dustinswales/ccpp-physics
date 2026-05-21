@@ -337,7 +337,7 @@
   standard_name = layer_pressure_thickness_for_radiation
   long_name = layer pressure thickness on radiation levels
   units = hPa
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -385,7 +385,7 @@
   standard_name = cloud_snow_water_path
   long_name = cloud snow water path
   units = g m-2
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -393,7 +393,7 @@
   standard_name = mean_effective_radius_for_snow_flake
   long_name = mean effective radius for snow flake
   units = um
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -405,18 +405,11 @@
   type = real
   kind = kind_phys
   intent = in
-[nlay]
-  standard_name = adjusted_vertical_layer_dimension_for_radiation
-  long_name = number of vertical layers for radiation
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
 [plyr]
   standard_name = air_pressure_at_layer_for_radiation_in_hPa
   long_name = air pressure at vertical layer for radiation calculation
   units = hPa
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in 
@@ -432,7 +425,7 @@
   standard_name = layer_thickness_for_radiation
   long_name = layer thickness on radiation levels
   units = km
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in

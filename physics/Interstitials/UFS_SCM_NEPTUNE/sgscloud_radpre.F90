@@ -52,7 +52,7 @@
            delp,clouds1,clouds2,clouds3, &
            clouds4,clouds5,              &
            clouds8,clouds9,slmsk,        &
-           nlay, plyr, xlat, dz,de_lgth, &
+           plyr, xlat, dz,de_lgth,       &
            cldsa,mtopa,mbota,            &
            imp_physics, imp_physics_gfdl,&
            imp_physics_fa, conv_cf_opt,  &
@@ -74,7 +74,7 @@
       real :: xls, xlvcp, xlscp !derived below
       real(kind=kind_phys)             :: gfac
       integer,             intent(in)  :: im, levs, imfdeepcnv, imfdeepcnv_gf, &
-           &  nlay, imfdeepcnv_sas, imfdeepcnv_c3, imp_physics, & 
+           &  imfdeepcnv_sas, imfdeepcnv_c3, imp_physics, & 
            &  imp_physics_gfdl, imp_physics_fa, conv_cf_opt
       logical,             intent(in)  :: flag_init, flag_restart, do_mynnedmf
 
@@ -104,12 +104,12 @@
       real(kind=kind_phys) :: ptopc(3+1,2 )  !< pressure limits of cloud domain interfaces
                                              !! (low, mid, high) in mb (0.1kPa)
       data ptopc / 1050., 650., 400., 0.0,  1050., 750., 500., 0.0 /
-      real(kind=kind_phys), dimension(im,nlay) :: cldcnv
+      real(kind=kind_phys), dimension(im,levs) :: cldcnv
       real(kind=kind_phys), dimension(im)      :: rxlat
       real(kind=kind_phys) :: Tc, Tk, liqfrac, iwc, ice_frac, snow_frac
       integer              :: i, k, id
       ! DH* 20200723 - see comment at the end of this routine around 'gethml'
-      real(kind=kind_phys), dimension(im,nlay) :: alpha_dummy
+      real(kind=kind_phys), dimension(im,levs) :: alpha_dummy
       ! *DH
 
       ! PARAMETERS FOR RANDALL AND XU (1996) CLOUD FRACTION

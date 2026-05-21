@@ -11,7 +11,7 @@
 !> \section arg_table_rrtmg_sw_post_run Argument Table
 !! \htmlinclude rrtmg_sw_post_run.html
 !!
-      subroutine rrtmg_sw_post_run (im, levr, levs, ltp, nday, lm, kd, lsswr,  &
+      subroutine rrtmg_sw_post_run (im, levs, nday, lsswr,                     &
                  swhtr, sfcalb1, sfcalb2, sfcalb3, sfcalb4, htswc, htsw0,      &
                  nirbmdi, nirdfdi, visbmdi, visdfdi, nirbmui, nirdfui, visbmui,&
                  visdfui, sfcdsw, sfcnsw, htrsw, swhc, scmpsw, sfcfsw, topfsw, &
@@ -23,8 +23,7 @@
 
       implicit none
 
-      integer,                              intent(in)    :: im, levr, levs,   &
-                                                             ltp, nday, lm, kd
+      integer,                              intent(in)    :: im, levs, nday
       logical,                              intent(in)    :: lsswr, swhtr
       real(kind=kind_phys), dimension(:),   intent(in)    :: sfcalb1, sfcalb2, &
                                                              sfcalb3, sfcalb4
@@ -45,7 +44,7 @@
       character(len=*), intent(out) :: errmsg
       integer,          intent(out) :: errflg
       ! Local variables
-      integer :: i, k1, k
+      integer :: i, k
 
       ! Initialize CCPP error handling variables
       errmsg = ''
@@ -53,29 +52,14 @@
 
       if (lsswr) then
         if (nday > 0) then
-          do k = 1, LM
-            k1 = k + kd
-            htrsw(1:im,k) = htswc(1:im,k1)
+          do k = 1, levs
+            htrsw(1:im,k) = htswc(1:im,k)
           enddo
-          ! We are assuming that radiative tendencies are from bottom to top 
-          ! --- repopulate the points above levr i.e. LM
-          if (lm < levs) then
-            do k = lm+1, levs
-              htrsw (1:im,k) = htrsw (1:im,LM)
-            enddo
-          endif
 
           if (swhtr) then
-            do k = 1, lm
-               k1 = k + kd
-               swhc(1:im,k) = htsw0(1:im,k1)
+            do k = 1, levs
+               swhc(1:im,k) = htsw0(1:im,k)
              enddo
-             ! --- repopulate the points above levr i.e. LM
-             if (lm < levs) then
-               do k = lm+1, levs
-                 swhc(1:im,k) = swhc(1:im,LM)
-               enddo
-             endif
           endif
 
 !  --- surface down and up spectral component fluxes

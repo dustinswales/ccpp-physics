@@ -11,7 +11,7 @@
 !> \section arg_table_rrtmg_lw_post_run Argument Table
 !! \htmlinclude rrtmg_lw_post_run.html
 !!
-      subroutine rrtmg_lw_post_run (im, levs, ltp, lm, kd, lslwr, lwhtr,       &
+      subroutine rrtmg_lw_post_run (im, levs, lslwr, lwhtr,            &
                  tsfa, htlwc, htlw0, sfcflw, tsflw, sfcdlw, htrlw, lwhc,       &
                  errmsg, errflg)
     
@@ -20,11 +20,11 @@
       
       implicit none
       
-      integer,                                     intent(in) :: im, levs, ltp, lm, kd
+      integer,                                     intent(in) :: im, levs
       logical,                                     intent(in) :: lslwr, lwhtr
       real(kind=kind_phys), dimension(im),         intent(in) ::  tsfa
-      real(kind=kind_phys), dimension(im, LM+LTP), intent(in) ::  htlwc
-      real(kind=kind_phys), dimension(im, LM+LTP), intent(in) ::  htlw0
+      real(kind=kind_phys), dimension(im, levs  ), intent(in) ::  htlwc
+      real(kind=kind_phys), dimension(im, levs  ), intent(in) ::  htlw0
       
       type(sfcflw_type), dimension(im),            intent(in) :: sfcflw
       
@@ -34,7 +34,7 @@
       integer,                                     intent(out) :: errflg
       
       ! local variables
-      integer :: k1, k
+      integer :: k
 
       ! Initialize CCPP error handling variables
       errmsg = ''
@@ -46,28 +46,14 @@
 
         tsflw (:) = tsfa(:)
 
-        do k = 1, LM
-          k1 = k + kd
-            htrlw(1:im,k) = htlwc(1:im,k1)
+        do k = 1, levs
+            htrlw(1:im,k) = htlwc(1:im,k)
         enddo
-        ! --- repopulate the points above levr
-        if (lm < levs) then
-          do k = lm+1, levs
-            htrlw (1:im,k) = htrlw (1:im,LM)
-          enddo
-        endif
 
         if (lwhtr) then
-          do k = 1, lm
-            k1 = k + kd
-            lwhc(1:im,k) = htlw0(1:im,k1)
+          do k = 1, levs
+            lwhc(1:im,k) = htlw0(1:im,k)
           enddo
-          ! --- repopulate the points above levr
-          if (lm < levs) then
-            do k = lm+1, levs
-              lwhc(1:im,k) = lwhc(1:im,LM)
-            enddo
-          endif
         endif
 
 ! --- radiation fluxes for other physics processes

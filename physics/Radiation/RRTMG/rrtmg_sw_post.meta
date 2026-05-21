@@ -14,23 +14,9 @@
   dimensions = ()
   type = integer
   intent = in
-[levr]
-  standard_name = adjusted_vertical_layer_dimension_for_radiation
-  long_name = adjusted number of vertical layers for radiation
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
 [levs]
   standard_name = vertical_layer_dimension
   long_name = number of vertical levels
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
-[ltp]
-  standard_name = extra_top_layer
-  long_name = extra top layers
   units = count
   dimensions = ()
   type = integer
@@ -39,20 +25,6 @@
   standard_name = daytime_points_dimension
   long_name = daytime points dimension
   units = count
-  dimensions = ()
-  type = integer
-  intent = in
-[lm]
-  standard_name = vertical_dimension_for_radiation
-  long_name = number of vertical layers for radiation calculation
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
-[kd]
-  standard_name = vertical_index_difference_between_inout_and_local
-  long_name = vertical index difference between in/out and local
-  units = index
   dimensions = ()
   type = integer
   intent = in
@@ -106,7 +78,7 @@
   standard_name = tendency_of_air_temperature_due_to_shortwave_heating_on_radiation_time_step_and_radiation_levels
   long_name = total sky heating rate due to shortwave radiation
   units = K s-1
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -114,7 +86,7 @@
   standard_name = tendency_of_air_temperature_due_to_shortwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels
   long_name = clear sky heating rates due to shortwave radiation
   units = K s-1
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in

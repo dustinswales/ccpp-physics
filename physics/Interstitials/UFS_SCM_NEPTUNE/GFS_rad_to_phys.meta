@@ -1,11 +1,11 @@
 [ccpp-table-properties]
-  name = dcyc2t3
+  name = GFS_rad_to_phys
   type = scheme
   dependencies = ../../hooks/machine.F
 
 ########################################################################
 [ccpp-arg-table]
-  name = dcyc2t3_run
+  name = GFS_rad_to_phys_run
   type = scheme
 [solhr]
   standard_name = forecast_utc_hour
