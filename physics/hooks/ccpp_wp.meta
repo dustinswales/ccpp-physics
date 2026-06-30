@@ -1,11 +1,11 @@
 [ccpp-table-properties]
-  name = machine
+  name = ccpp_wp
   type = module
   dependencies = 
 
 ########################################################################
 [ccpp-arg-table]
-  name = machine
+  name = ccpp_wp
   type = module
 [kind_dyn]
   standard_name = kind_dyn

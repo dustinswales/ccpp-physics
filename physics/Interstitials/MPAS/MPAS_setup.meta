@@ -2,7 +2,7 @@
   name = MPAS_setup
   type = scheme
   dependencies_path = ../../
-  dependencies = hooks/machine.F
+  dependencies = hooks/ccpp_wp.F
 
 ########################################################################
 [ccpp-arg-table]

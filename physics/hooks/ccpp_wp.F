@@ -1,9 +1,9 @@
-!>\file machine.F
+!>\file ccpp_wp.F
 !!
-      module machine
+      module ccpp_wp
 
-!! \section arg_table_machine
-!! \htmlinclude machine.html
+!! \section arg_table_ccpp_wp
+!! \htmlinclude ccpp_wp.html
 !!
 
       implicit none
@@ -41,4 +41,4 @@
       real(kind=kind_phys), parameter :: mprec = 1.e-12           ! machine precision to restrict dep
       real(kind=kind_phys), parameter :: grib_undef = 9.99e20     ! grib undefine value
 !
-      end module machine
+      end module ccpp_wp

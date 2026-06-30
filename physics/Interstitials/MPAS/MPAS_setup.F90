@@ -3,7 +3,7 @@
 
 module MPAS_setup
   use mpi_f08
-  use machine, only : kind_phys
+  use ccpp_wp, only : kind_phys
 
   implicit none
 
