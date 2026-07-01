@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = satmedmfvdifq
   type = scheme
-  dependencies = ../../tools/funcphys.f90,../../tools/canopy_utils_mod.f,../../hooks/machine.F,../mfpbltq.f,mfscuq.f,../tridi.f
+  dependencies = ../../tools/funcphys.f90,../../tools/canopy_utils_mod.f,../../hooks/ccpp_wp.F,../mfpbltq.f,mfscuq.f,../tridi.f
 
 ########################################################################
 [ccpp-arg-table]
@@ -201,6 +201,20 @@
   type = real
   kind = kind_phys
   intent = in
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 [usfco]
   standard_name = x_ocean_current
   long_name = zonal current at ocean surface

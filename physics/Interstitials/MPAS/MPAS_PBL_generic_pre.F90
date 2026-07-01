@@ -18,7 +18,7 @@ contains
 !! \htmlinclude MPAS_PBL_generic_pre_run.html
 !!
 ! #########################################################################################
-  subroutine MPAS_PBL_generic_pre_run (im, levs, nvdiff, rtg_ozone_index,                 &
+  subroutine MPAS_PBL_generic_pre_run (ncols, nlevs, nvdiff, rtg_ozone_index,             &
        ntqv, ntcw, ntiw, ntrw, ntsw, ntlnc, ntinc, ntrnc, ntwa, ntia, ntgl, ntoz,         &
        imp_physics, imp_physics_thompson, ltaerosol, mraerosol,                           &
        qgrs, ugrs, vgrs, tgrs, vdftra, errmsg, errflg)
@@ -27,7 +27,7 @@ contains
     implicit none
 
     integer, intent(out) :: rtg_ozone_index
-    integer, intent(in) :: im, levs, nvdiff
+    integer, intent(in) :: ncols, nlevs, nvdiff
     integer, intent(in) :: ntqv, ntcw, ntiw, ntrw, ntsw, ntlnc, ntinc, ntrnc
     integer, intent(in) :: ntwa, ntia, ntgl, ntoz
     integer, intent(in) :: imp_physics, imp_physics_thompson
@@ -54,8 +54,8 @@ contains
     ! Thompson MP
     if (imp_physics == imp_physics_thompson) then
        if(ltaerosol) then
-          do k=1,levs
-             do i=1,im
+          do k=1,nlevs
+             do i=1,ncols
                 vdftra(i,k,1)  = qgrs(i,k,ntqv)
                 vdftra(i,k,2)  = qgrs(i,k,ntcw)
                 vdftra(i,k,3)  = qgrs(i,k,ntiw)
@@ -72,8 +72,8 @@ contains
           enddo
           rtg_ozone_index = 10
        elseif(mraerosol) then
-          do k=1,levs
-             do i=1,im
+          do k=1,nlevs
+             do i=1,ncols
                 vdftra(i,k,1)  = qgrs(i,k,ntqv)
                 vdftra(i,k,2)  = qgrs(i,k,ntcw)
                 vdftra(i,k,3)  = qgrs(i,k,ntiw)
@@ -88,8 +88,8 @@ contains
           enddo
           rtg_ozone_index = 10
        else
-          do k=1,levs
-             do i=1,im
+          do k=1,nlevs
+             do i=1,ncols
                 vdftra(i,k,1) = qgrs(i,k,ntqv)
                 vdftra(i,k,2) = qgrs(i,k,ntcw)
                 vdftra(i,k,3) = qgrs(i,k,ntiw)

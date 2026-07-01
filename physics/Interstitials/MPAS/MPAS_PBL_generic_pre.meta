@@ -7,14 +7,14 @@
 [ccpp-arg-table]
   name = MPAS_PBL_generic_pre_run
   type = scheme
-[im]
+[ncols]
   standard_name = horizontal_loop_extent
   long_name = horizontal loop extent
   units = count
   dimensions = ()
   type = integer
   intent = in
-[levs]
+[nlevs]
   standard_name = vertical_layer_dimension
   long_name = vertical layer dimension
   units = count
