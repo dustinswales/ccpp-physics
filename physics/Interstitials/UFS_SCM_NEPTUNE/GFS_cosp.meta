@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = GFS_cosp
   type = scheme
-  relative_path = ../../Diagnostics/COSP2
+  dependencies_path = ../../Diagnostics/COSP2
   dependencies = cosp_kinds.F90,cosp/src/cosp_config.F90,cosp/src/cosp.F90
   dependencies = cosp/src/cosp_stats.F90,cosp/subsample_and_optics_example/subcol/rng/mo_rng.F90
   dependencies = cosp/subsample_and_optics_example/subcol/scops.F90
