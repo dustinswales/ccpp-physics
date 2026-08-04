@@ -336,21 +336,19 @@
 !
 !***  FIND THE HEIGHT OF THE PBL
 !
-          LPBL=LMH
+          LPBL=1
           DO K=LMH-1,1,-1
             IF(Q2K(K)<=EPSQ2(K)*FH) THEN
               LPBL=K
-              GO TO 110
+              EXIT
             ENDIF
           ENDDO
-!
-          LPBL=1
 !
 !-----------------------------------------------------------------------
 !--------------THE HEIGHT OF THE PBL------------------------------------
 !-----------------------------------------------------------------------
 !
- 110      PBLH(I,J)=ZHK(LPBL)-ZHK(LMH+1)
+          PBLH(I,J)=ZHK(LPBL)-ZHK(LMH+1)
 !
 !----------------------------------------------------------------------
           IF(QC(I,J,LM).GT.EPSQ)THEN
@@ -715,10 +713,9 @@
               print*,'ZSLU,ZSLT,RLMO,ZU,ZT=',ZSLU,ZSLT,RLMO,ZU,ZT
               print*,'A,B,DTHV,DU2,RIB=',A,B,DTHV,DU2,RIB
               errflg = 1
-              errmsg = 'ERROR(SFCDIF): '
+              errmsg = 'ERROR(SFCDIF): in module_SF_JSFC.F90'
               return
             end if
-
 
 
             AKMS=MAX(USTARK/SIMM,CXCHS)
@@ -871,9 +868,6 @@
 !              print*,'ELFC,AKHS,DTHV,USTAR=',ELFC,AKHS,DTHV,USTAR
 !              stop
 !            end if
-
-
-
 
 !
             RZ=(ZETAT-ZTMIN2)/DZETA2

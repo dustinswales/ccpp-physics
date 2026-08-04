@@ -2628,7 +2628,7 @@ CONTAINS
     &            sh, sm,                                      &
     &            El,                                          &
     &            Dfm, Dfh, Dfq, Tcd, Qcd, Pdk, Pdt, Pdq, Pdc, &
-    &		 qWT1D,qSHEAR1D,qBUOY1D,qDISS1D,              &
+    &            qWT1D,qSHEAR1D,qBUOY1D,qDISS1D,              &
     &            tke_budget,                                  &
     &            Psig_bl,Psig_shcu,cldfra_bl1D,               &
     &            bl_mynn_mixlength,                           &
@@ -3677,10 +3677,9 @@ CONTAINS
        ht2 = 44307.692 * (1.0 - (p(k+2)/101325.)**0.190)
        if ( (((theta2-theta1)/(ht2-ht1)) .lt. 10./1500. ) .AND.       &
      &                       (ht1.lt.19000.) .and. (ht1.gt.4000.) ) then 
-          goto 86
+          exit
        endif
     ENDDO
- 86   continue
     k_tropo = MAX(kts+2, k+2)
 
     zagl = 0.

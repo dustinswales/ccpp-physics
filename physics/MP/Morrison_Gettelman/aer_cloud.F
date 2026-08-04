@@ -620,10 +620,6 @@
 
 !      deallocate (kappa_par)
 
-
-
-2033    return
-
        END subroutine aerosol_activate
 !
 
@@ -808,7 +804,6 @@
        AerPr_base_clean%dpg(9:11) = DPGI_aux(9:11)
        AerPr_base_clean%sig(9:11) = SIGI_aux(9:11)
 
-       RETURN
 !
        END SUBROUTINE AerConversion_base
 
@@ -920,7 +915,6 @@
          end do
        end do
 
-       RETURN
 !
        END SUBROUTINE AerConversion
 
@@ -1013,7 +1007,6 @@
          end do
        end do
 
-       RETURN
 !
        END SUBROUTINE AerConversion1
 
@@ -1382,7 +1375,6 @@
 
 ! *** end of subroutine ccnspec ****************************************
 !
-       return
        end subroutine ccnspec
 
 
@@ -1469,7 +1461,6 @@
          smax = smax*scal
        endif
 !
-       return
 !
 ! *** end of subroutine pdfactiv ****************************************
 !
@@ -1552,7 +1543,7 @@
 !
 ! *** perform bisection *************************************************
 !
-20     do 30 i=1,maxit_par
+       do i=1,maxit_par
        x3 = 0.5*(x1+x2)
 !
        if (ntot .gt. zero_par) then
@@ -1571,15 +1562,15 @@
        x1 = x3
        endif
 !
-       if (abs(x2-x1) .le. eps_par*x1) goto 40
+       if (abs(x2-x1) .le. eps_par*x1) exit
        niter = i
 
 
-30     continue
+       end do
 !
 ! *** converged ; return ************************************************
 !
-40      x3 = 0.5*(x1+x2)
+       x3 = 0.5*(x1+x2)
 !
        if (ntot .gt. zero_par) then
        call sintegral (x2,ndrpl,sinteg1,sinteg2,wparcel,nmodes,
@@ -1591,7 +1582,6 @@
        smax = x3
 
        ndroplet=ndrpl
-       return
 !
 ! *** end of subroutine activate ****************************************
 !
@@ -1678,7 +1668,6 @@
        summa = summa + nd(j)
 999     continue
 !
-       return
        end subroutine sintegral
 
 !=======================================================================
@@ -1732,7 +1721,6 @@
 
        end if
 !
-       return
 !
 ! *** end of subroutine props *******************************************
 !
@@ -1783,7 +1771,6 @@
 !
 ! end of function vpres
 !
-       return
        end function vpres
 
 
@@ -1819,7 +1806,6 @@
        tpars = t-273.15d0
        sft = 0.0761-1.55e-4*tpars
 !
-       return
        end function sft
 
 
@@ -1840,26 +1826,29 @@
        m=(n+1)/2d0
        xm=0.5d0*(x2+x1)
        xl=0.5d0*(x2-x1)
-       do 12 i=1,m
+       
+       do i=1,m
        z=cos(pi_par*(i-.25d0)/(n+.5d0))
- 1     continue
+       do
        p1=1.d0
        p2=0.d0
-       do 11 j=1,n
-       p3=p2
-       p2=p1
-       p1=((2.d0*j-1.)*z*p2-(j-1.d0)*p3)/j
- 11    continue
+       do j=1,n
+         p3=p2
+         p2=p1
+         p1=((2.d0*j-1.)*z*p2-(j-1.d0)*p3)/j
+       end do
+
        pp=n*(z*p1-p2)/(z*z-1.d0)
        z1=z
        z=z1-p1/pp
-       if(abs(z-z1).gt.eps_par)go to 1
+       if(abs(z-z1).gt.eps_par) exit
+       end do
+
        x(i)=xm-xl*z
        x(n+1-i)=xm+xl*z
        w(i)=2.d0*xl/((1.d0-z*z)*pp*pp)
        w(n+1-i)=w(i)
- 12    continue
-       return
+       end do
        end subroutine gauleg
 
 !C=======================================================================
@@ -1885,7 +1874,6 @@
        else
        erf = axx
        endif
-       RETURN
        END FUNCTION
 
 
@@ -1907,7 +1895,6 @@
 !      else
 !        erf=gammp(.5d0,x**2)
 !      endif
-!      return
 
 !      end function erf
 
@@ -1934,7 +1921,6 @@
        ser=ser+cof(j)/x
  11    continue
        gammln=tmp+log(stp*ser)
-       return
        end function gammln
 
 
@@ -1955,7 +1941,6 @@
 !       call gcf(gammcf,a,x,gln)
 !       gammp=1.d0-gammcf
 !     endif
-!     return
 !     end function gammp
 
 
@@ -1996,7 +1981,6 @@
 !1    continue
 !     pause 'a too large, itmax too small'
 !     gammcf=exp(-x+a*log(x)-gln)*g
-!     return
 !     end subroutine gcf
 
 
@@ -2030,7 +2014,6 @@
 !1    continue
 !     pause 'a too large, itmax too small'
 !     gamser=sum*exp(-x+a*log(x)-gln)
-!     return
 !     end subroutine gser
 
 ! +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2146,7 +2129,6 @@
        end if
 
 
-       return
        END subroutine IceParam
 
 
@@ -2239,7 +2221,6 @@
        nhet=sum3*(vmax_ice-vmin_ice)*0.5d0
        nlim=sum4*(vmax_ice-vmin_ice)*0.5d0
        sc_ice=sum5*(vmax_ice-vmin_ice)*0.5d0
-       RETURN
 
 
        END subroutine nice_Vdist
@@ -2591,8 +2572,6 @@
        sc_ice=min(shom_ice+1.0, sc_ice)
 
 
-       return
-
        END subroutine nice_param
 !*************************************************************
        real*8 function FINDSMAX(SX,DSH,
@@ -2670,7 +2649,6 @@
 
        VPRESWATER_ice=EXP(VPRESWATER_ice)
 
-       return
        END function VPRESWATER_ice
 
 !*************************************************************
@@ -2690,7 +2668,6 @@
        VPRESICE = A(0)+(A(1)/T)+(A(2)*LOG(T))+(A(3)*T)
        VPRESICE=EXP(VPRESICE)
 
-       return
        END function VPRESICE
 
 !*************************************************************
@@ -2711,7 +2688,7 @@
      & A(4))**2)))
 
        DHSUB_ice=1000d0*DHSUB_ice/18d0
-       return
+
        END function DHSUB_ice
 
 !*************************************************************
@@ -2730,7 +2707,7 @@
        TTEMP=T-273d0
 
        DENSITYICE= 1000d0*(A(0)+(A(1)*TTEMP)+(A(2)*TTEMP*TTEMP))
-       return
+
        END function DENSITYICE
 
 !*************************************************************
@@ -2768,7 +2745,7 @@
 
        WATDENSITY=WATDENSITY*1000d0
        WATDENSITY_ice=WATDENSITY
-       return
+
        END function WATDENSITY_ice
 
 
@@ -2914,8 +2891,6 @@
        del1bc_ice=cubicint_ice(Tc, T0bc, T0bc+5d0, 1d0, hbc)
        end if
 
-       RETURN
-
        END SUBROUTINE prop_ice
 
 !*************************************************************
@@ -2937,8 +2912,6 @@
      &sigmav_ice/sq2pi_par/(normv_ice + 0.001)
 
 
-       RETURN
-
 
        END SUBROUTINE gausspdf
 
@@ -2953,28 +2926,22 @@
        real*8 :: A_, B_, a0, a1, a2, a3, d, AUX
 
        if (y .le. y1) then
-       d=a
-       goto 5065
-       end if
+         d=a
+       elseif (y .ge. y2) then
+         d=b
+       else
+         AUX=y2-y1
+         A_=6d0*(a-b)/(AUX*AUX*AUX)
+         B_=a+(A_*(y1*y1*y1)/6d0)-(A_*(y1*y1)*y2*0.5d0)
 
-       if (y .ge. y2) then
-       d=b
-       goto 5065
-       end if
+         a0=B_
+         a1=A_*y1*y2
+         a2=-A_*(y1+y2)*0.5d0
+         a3=A_/3d0
+         d=a0+(a1*y)+(a2*y*y)+(a3*y*y*y)
+       endif
 
-
-       AUX=y2-y1
-       A_=6d0*(a-b)/(AUX*AUX*AUX)
-       B_=a+(A_*(y1*y1*y1)/6d0)-(A_*(y1*y1)*y2*0.5d0)
-
-       a0=B_
-       a1=A_*y1*y2
-       a2=-A_*(y1+y2)*0.5d0
-       a3=A_/3d0
-       d=a0+(a1*y)+(a2*y*y)+(a3*y*y*y)
-
-
- 5065    cubicint_ice=d
+       cubicint_ice=d
 
 
        end function cubicint_ice
@@ -2989,26 +2956,20 @@
        real*8 :: A_, a0, a1, a2, a3, d, AUX
 
        if (y .le. y1) then
-       d=0
-       goto 5065
-       end if
+         d=0
+       elseif (y .ge. y2) then
+         d=0
+       else
+         AUX=y2-y1
+         A_=6d0*(a-b)/(AUX*AUX*AUX)
 
-       if (y .ge. y2) then
-       d=0
-       goto 5065
-       end if
+         a1=A_*y1*y2
+         a2=-A_*(y1+y2)*0.5d0
+         a3=A_/3d0
+         d=(a1)+(2d0*a2*y)+(3d0*a3*y*y)
+       endif
 
-
-       AUX=y2-y1
-       A_=6d0*(a-b)/(AUX*AUX*AUX)
-
-       a1=A_*y1*y2
-       a2=-A_*(y1+y2)*0.5d0
-       a3=A_/3d0
-       d=(a1)+(2d0*a2*y)+(3d0*a3*y*y)
-
-
- 5065   dcubicint_ice=d
+       dcubicint_ice=d
 
 
        end function dcubicint_ice
@@ -3967,7 +3928,6 @@
 
       if( X_2 <= X_1) stop 91919
 
-      return
       end function
 
 
@@ -3999,10 +3959,7 @@
 
       if( X_2 <= X_1) stop 91919
 
-      return
       end function
-
-
 
 
 

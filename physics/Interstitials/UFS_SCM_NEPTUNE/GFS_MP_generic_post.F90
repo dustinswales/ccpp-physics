@@ -16,15 +16,16 @@
 !! \htmlinclude GFS_MP_generic_post_run.html
 !!
       subroutine GFS_MP_generic_post_run(                                                                                 &
-        im, levs, kdt, nrcm, nncl, ntcw, ntrac, imp_physics, imp_physics_gfdl, imp_physics_thompson, imp_physics_nssl,    &
-        imp_physics_mg, imp_physics_fer_hires, cal_pre, cplflx, cplchm, cpllnd, progsigma, con_g, rhowater, rainmin, dtf, &
-        frain, rainc, rain1, rann, xlat, xlon, gt0, gq0, prsl, prsi, phii, tsfc, ice, phil, htop, refl_10cm,              & 
-        imfshalcnv,imfshalcnv_gf,imfdeepcnv,imfdeepcnv_gf,imfdeepcnv_samf, con_t0c, snow, graupel, save_t, save_q,        &
-        rain0, ice0, snow0, graupel0, del, rain, domr_diag, domzr_diag, domip_diag, doms_diag, tprcp, srflag, sr, cnvprcp,&
-        totprcp, totice, totsnw, totgrp, cnvprcpb, totprcpb, toticeb, totsnwb, totgrpb, rain_cpl, rainc_cpl, snow_cpl,    &
-        pwat, frzr, frzrb, frozr, frozrb, tsnowp, tsnowpb, rhonewsn1, exticeden,                                          & 
+        im, levs, kdt, tend_opt_mp, nrcm, nncl, ntcw, ntrac, imp_physics, imp_physics_gfdl, imp_physics_thompson,         &
+        imp_physics_tempo, imp_physics_nssl, imp_physics_mg, imp_physics_fer_hires, cal_pre, cplflx, cplchm, cpllnd,      &
+        progsigma, con_g, rhowater, rainmin, dtf, frain, rainc, rain1, rann, xlat, xlon, ten_t, ten_u, ten_v, ten_q, dudt,&
+        dvdt, dtdt, dqdt, gt0, gu0, gv0, gq0, prsl, prsi, phii, tsfc, ice, phil, htop,                                    &
+        refl_10cm, imfshalcnv,imfshalcnv_gf,imfdeepcnv,imfdeepcnv_gf,imfdeepcnv_samf, con_t0c, snow, graupel,             &
+        rain0, ice0, snow0, graupel0, del, rain, domr_diag, domzr_diag, domip_diag, doms_diag, tprcp, srflag, sr,         &
+        cnvprcp, totprcp, totice, totsnw, totgrp, cnvprcpb, totprcpb, toticeb, totsnwb, totgrpb, rain_cpl, rainc_cpl,     &
+        snow_cpl, pwat, frzr, frzrb, frozr, frozrb, tsnowp, tsnowpb, rhonewsn1, exticeden,                                &
         drain_cpl, dsnow_cpl, lsm, lsm_ruc, lsm_noahmp, raincprv, rainncprv, iceprv, snowprv,                             &
-        graupelprv, draincprv, drainncprv, diceprv, dsnowprv, dgraupelprv, dtp,                                           &
+        graupelprv, draincprv, drainncprv, diceprv, dsnowprv, dgraupelprv, dtp, num_diag_buckets,                         &
         dtend, dtidx, index_of_temperature, index_of_process_mp,ldiag3d, qdiag3d,dqdt_qmicro, lssav, num_dfi_radar,       &
         fh_dfi_radar,index_of_process_dfi_radar, ix_dfi_radar, dfi_radar_tten, radar_tten_limits, fhour, prevsq,      &
         iopt_lake, iopt_lake_clm, lkm, use_lake_model, errmsg, errflg)
@@ -33,33 +34,39 @@
       use calpreciptype_mod, only: calpreciptype
       implicit none
 
-      integer, intent(in) :: im, levs, kdt, nrcm, nncl, ntcw, ntrac, num_dfi_radar, index_of_process_dfi_radar
+      integer, intent(in) :: im, levs, kdt, tend_opt_mp, nrcm, nncl, ntcw, ntrac, num_dfi_radar, index_of_process_dfi_radar
       integer, intent(in) :: imp_physics, imp_physics_gfdl, imp_physics_thompson, imp_physics_mg, imp_physics_fer_hires
-      integer, intent(in) :: imp_physics_nssl, iopt_lake_clm, iopt_lake, lkm
+      integer, intent(in) :: imp_physics_nssl, iopt_lake_clm, iopt_lake, lkm, imp_physics_tempo
       logical, intent(in) :: cal_pre, lssav, ldiag3d, qdiag3d, cplflx, cplchm, cpllnd, progsigma, exticeden
       integer, intent(in) :: index_of_temperature,index_of_process_mp,use_lake_model(:)
       integer, intent(in) :: imfshalcnv,imfshalcnv_gf,imfdeepcnv,imfdeepcnv_gf,imfdeepcnv_samf
+      integer, intent(in) :: num_diag_buckets
       integer, dimension (:), intent(in) :: htop
       real(kind=kind_phys),                    intent(in)    :: fh_dfi_radar(:), fhour, con_t0c
       real(kind=kind_phys),                    intent(in)    :: radar_tten_limits(:)
       integer,                                 intent(in)    :: ix_dfi_radar(:)
-      real(kind=kind_phys), dimension(:,:),    intent(inout) :: gt0,refl_10cm
+      real(kind=kind_phys), dimension(:,:),    intent(in)    :: ten_u, ten_v, ten_t
+      real(kind=kind_phys), dimension(:,:,:),  intent(in)    :: ten_q
+      real(kind=kind_phys), dimension(:,:),    intent(inout) :: dudt, dvdt, dtdt
+      real(kind=kind_phys), dimension(:,:,:),  intent(inout) :: dqdt
+      real(kind=kind_phys), dimension(:,:),    intent(inout) :: gt0,gu0,gv0,refl_10cm
 
       real(kind=kind_phys),                    intent(in)    :: dtf, frain, con_g, rainmin, rhowater
       real(kind=kind_phys), dimension(:),      intent(in)    :: rain1, xlat, xlon, tsfc
       real(kind=kind_phys), dimension(:),      intent(inout) :: ice, snow, graupel, rainc
       real(kind=kind_phys), dimension(:),      intent(in), optional :: rain0, ice0, snow0, graupel0
       real(kind=kind_phys), dimension(:,:),    intent(in)    :: rann
-      real(kind=kind_phys), dimension(:,:),    intent(in)    :: prsl, save_t, del
+      real(kind=kind_phys), dimension(:,:),    intent(in)    :: prsl, del
       real(kind=kind_phys), dimension(:,:),    intent(in)    :: prsi, phii,phil
-      real(kind=kind_phys), dimension(:,:,:),  intent(in)    :: gq0, save_q
+      real(kind=kind_phys), dimension(:,:,:),  intent(inout) :: gq0
 
       real(kind=kind_phys), dimension(:,:,:),  intent(in), optional :: dfi_radar_tten
 
       real(kind=kind_phys), dimension(:),      intent(in   ) :: sr
       real(kind=kind_phys), dimension(:),      intent(inout) :: rain, domr_diag, domzr_diag, domip_diag, doms_diag, tprcp,  &
-                                                                srflag, cnvprcp, totprcp, totice, totsnw, totgrp, cnvprcpb, &
-                                                                totprcpb, toticeb, totsnwb, totgrpb, pwat
+                                                                srflag, cnvprcp, totprcp, totice, totsnw, totgrp, &
+                                                                toticeb, totsnwb, totgrpb, pwat
+      real(kind=kind_phys), dimension(:,:),    intent(inout) :: cnvprcpb, totprcpb
       real(kind=kind_phys), dimension(:),      intent(inout), optional :: rain_cpl, rainc_cpl, snow_cpl
 
       real(kind=kind_phys), dimension(:,:,:),   intent(inout), optional :: dtend
@@ -101,11 +108,12 @@
       real(kind=kind_phys), parameter :: p850    = 85000.0_kind_phys
       ! *DH
 
-      integer :: i, k, ic, itrac, idtend, itime, idtend_radar, idtend_mp
+      integer :: i, k, n, ic, itrac, idtend, itime, idtend_radar, idtend_mp, ib
 
       real(kind=kind_phys), parameter :: zero = 0.0_kind_phys, one = 1.0_kind_phys
       real(kind=kind_phys) :: crain, csnow, onebg, tem, total_precip, tem1, tem2, ttend
       real(kind=kind_phys), dimension(im) :: domr, domzr, domip, doms, t850, work1
+      real(kind=kind_phys), dimension(im,levs) :: save_t
 
       real :: snowrat,grauprat,icerat,curat,prcpncfr,prcpcufr
       real :: rhonewsnow,rhoprcpice,rhonewgr,rhonewice
@@ -124,8 +132,65 @@
       ! Initialize CCPP error handling variables
       errmsg = ''
       errflg = 0
-
+      
       onebg = one/con_g
+      
+      save_t = gt0 !save temperature before tendency application in case 
+                   !the temperature tendency application is overwritten by radar tendencies below
+      
+      case_MP_ten: select case (tend_opt_mp)
+        case (1) !immediately apply tendencies
+                  !Current state = current state + dt*current tendency
+                  !Accumulated tendency unchanged
+          do k=1,levs
+            do i=1,im
+              gt0(i,k) = gt0(i,k) + dtp*ten_t(i,k)
+              gu0(i,k) = gu0(i,k) + dtp*ten_u(i,k)
+              gv0(i,k) = gv0(i,k) + dtp*ten_v(i,k)
+              do n = 1, ntrac
+                gq0(i,k,n) = gq0(i,k,n) + dtp*ten_q(i,k,n)
+              end do
+            end do
+          end do
+        case (2) !add tendencies to sum
+                  !Accumulated tendency = accumulated tendency + current tendency
+                  !Current state unchanged
+          do k=1,levs
+            do i=1,im
+              dtdt(i,k) = dtdt(i,k) + ten_t(i,k)
+              dudt(i,k) = dudt(i,k) + ten_u(i,k)
+              dvdt(i,k) = dvdt(i,k) + ten_v(i,k)
+              do n = 1, ntrac
+                dqdt(i,k,n) = dqdt(i,k,n) + ten_q(i,k,n)
+              end do
+            end do
+          end do
+        case (3) !add tendencies to sum and apply
+                  !Current state = current state + dt*(accumulated tendency + current tendency)
+                  !Accumulated tendency = 0
+          do k=1,levs
+            do i=1,im
+              gt0(i,k) = gt0(i,k) + dtp*(dtdt(i,k) + ten_t(i,k))
+              dtdt(i,k) = 0.0
+              gu0(i,k) = gu0(i,k) + dtp*(dudt(i,k) + ten_u(i,k))
+              dudt(i,k) = 0.0
+              gv0(i,k) = gv0(i,k) + dtp*(dvdt(i,k) + ten_v(i,k))
+              dvdt(i,k) = 0.0
+              do n = 1, ntrac
+                gq0(i,k,n) = gq0(i,k,n) + dtp*(dqdt(i,k,n) + ten_q(i,k,n))
+                dqdt(i,k,n) = 0.0
+              end do
+            end do
+          end do
+        case (4) !Current state unchanged
+                  !Accumulated tendency unchanged
+                  !Current tendency unchanged (but will be overwritten during next primary scheme)
+          exit case_MP_ten
+        case default
+          errflg = 1
+          errmsg = 'A tendency application control was outside of the acceptable range (1-4)'
+          return
+      end select case_MP_ten
       
       do i = 1, im
         rain(i) = rainc(i) + frain * rain1(i) ! time-step convective plus explicit
@@ -133,7 +198,7 @@
 !
 ! Combine convective reflectivity with MP reflectivity for selected
 ! parameterizations.
-     if ( (imp_physics==imp_physics_thompson .or. imp_physics==imp_physics_nssl) .and. &
+     if ( (imp_physics==imp_physics_thompson .or. imp_physics==imp_physics_tempo .or. imp_physics==imp_physics_nssl) .and. &
        (imfdeepcnv==imfdeepcnv_samf .or. imfdeepcnv==imfdeepcnv_gf .or. imfshalcnv==imfshalcnv_gf) ) then
          do i=1,im
            factor(i) = 0.0
@@ -178,7 +243,8 @@
       endif
 
 ! compute surface snowfall, graupel/sleet, freezing rain and precip ice density
-      if (imp_physics == imp_physics_gfdl .or. imp_physics == imp_physics_thompson .or. imp_physics == imp_physics_nssl ) then
+      if (imp_physics == imp_physics_gfdl .or. imp_physics == imp_physics_thompson .or. &
+           imp_physics == imp_physics_tempo .or. imp_physics == imp_physics_nssl ) then
          do i = 1, im
             if (gt0(i,1) .le. 273) then
                frzr(i) = frzr(i) + rain0(i)
@@ -256,7 +322,7 @@
         ice     = ice0
         snow    = snow0
       ! Do it right from the beginning for Thompson
-      else if (imp_physics == imp_physics_thompson .or. imp_physics == imp_physics_nssl ) then
+      else if (imp_physics == imp_physics_thompson .or. imp_physics == imp_physics_tempo .or. imp_physics == imp_physics_nssl ) then
         tprcp   = max (zero, rainc + frain * rain1) ! time-step convective and explicit precip
         graupel = frain*graupel0              ! time-step graupel
         ice     = frain*ice0                  ! time-step ice
@@ -302,7 +368,8 @@
 !
 !       HCHUANG: use new precipitation type to decide snow flag for LSM snow accumulation
 
-        if (imp_physics /= imp_physics_gfdl .and. imp_physics /= imp_physics_thompson .and. imp_physics /= imp_physics_nssl) then
+        if (imp_physics /= imp_physics_gfdl .and. imp_physics /= imp_physics_thompson .and. &
+             imp_physics /= imp_physics_tempo .and. imp_physics /= imp_physics_nssl) then
           do i=1,im
             tprcp(i)  = max(zero, rain(i) )
             if(doms(i) > zero .or. domip(i) > zero) then
@@ -348,7 +415,7 @@
            idtend_mp = dtidx(index_of_temperature,index_of_process_mp)
            if(idtend_radar>0 .or. idtend_mp>0) then
               if(idtend_mp>0) then
-                 dtend(:,1:2,idtend_mp) = dtend(:,1:2,idtend_mp) + (gt0(:,1:2)-save_t(:,1:2))*frain
+                 dtend(:,1:2,idtend_mp) = dtend(:,1:2,idtend_mp) + ten_t(:,1:2)*dtp*frain
               endif
               do k=3,levs-2 ! Avoid model top and bottom in case DA forgets to
                  do i=1,im
@@ -358,12 +425,12 @@
                           dtend(i,k,idtend_radar) = dtend(i,k,idtend_radar) + (gt0(i,k)-save_t(i,k)) * frain
                        endif
                     else if(idtend_mp>0) then
-                       dtend(i,k,idtend_mp) = dtend(i,k,idtend_mp) + (gt0(i,k)-save_t(i,k)) * frain
+                       dtend(i,k,idtend_mp) = dtend(i,k,idtend_mp) + ten_t(i,k)*dtp*frain
                     endif
                  enddo
               enddo
               if(idtend_mp>0) then
-                 dtend(:,levs-1:levs,idtend_mp) = dtend(:,levs-1:levs,idtend_mp) + (gt0(:,levs-1:levs)-save_t(:,levs-1:levs))*frain
+                 dtend(:,levs-1:levs,idtend_mp) = dtend(:,levs-1:levs,idtend_mp) + ten_t(:,levs-1:levs)*dtp*frain
               endif
            endif
         endif
@@ -390,7 +457,7 @@
 !! \f$0^oC\f$.
 
       if (imp_physics == imp_physics_gfdl .or. imp_physics == imp_physics_thompson .or. &
-          imp_physics == imp_physics_nssl ) then
+          imp_physics == imp_physics_tempo .or. imp_physics == imp_physics_nssl ) then
 
 ! determine convective rain/snow by surface temperature
 ! determine large-scale rain/snow by rain/snow coming out directly from MP
@@ -449,7 +516,7 @@
 
       if_save_fields: if (lssav) then
 !        if (Model%me == 0) print *,'in phys drive, kdt=',Model%kdt, &
-!          'totprcpb=', Diag%totprcpb(1),'totprcp=',Diag%totprcp(1), &
+!          'totprcpb=', Diag%totprcpb(1,1),'totprcp=',Diag%totprcp(1), &
 !          'rain=',Diag%rain(1)
         do i=1,im
           cnvprcp (i) = cnvprcp (i) + rainc(i)
@@ -458,21 +525,28 @@
           totsnw  (i) = totsnw  (i) + snow(i)
           totgrp  (i) = totgrp  (i) + graupel(i)
 
-          cnvprcpb(i) = cnvprcpb(i) + rainc(i)
-          totprcpb(i) = totprcpb(i) + rain(i)
           toticeb (i) = toticeb (i) + ice(i)
           totsnwb (i) = totsnwb (i) + snow(i)
           totgrpb (i) = totgrpb (i) + graupel(i)
+        enddo
+        do ib=1,num_diag_buckets
+          do i=1,im
+            cnvprcpb(i,ib) = cnvprcpb(i,ib) + rainc(i)
+            totprcpb(i,ib) = totprcpb(i,ib) + rain(i)
+          enddo
         enddo
 
         if_tendency_diagnostics: if (ldiag3d) then
            idtend = dtidx(index_of_temperature,index_of_process_mp)
            if(idtend>=1) then
-              do k=1,levs
-                 do i=1,im
-                    dtend(i,k,idtend) = dtend(i,k,idtend) + (gt0(i,k)-save_t(i,k)) * frain
-                 enddo
-              enddo
+              !don't overwrite radar tendencies calculated above when radar temperature tendencies are active
+              if(itime>num_dfi_radar) then
+                do k=1,levs
+                  do i=1,im 
+                    dtend(i,k,idtend) = dtend(i,k,idtend) + ten_t(i,k)*dtp*frain
+                  enddo
+                enddo
+              endif
            endif
            if_tracer_diagnostics: if (qdiag3d) then
               dtend_q: do itrac=1,ntrac
@@ -480,7 +554,7 @@
                  if(idtend>=1) then
                     do k=1,levs
                        do i=1,im
-                          dtend(i,k,idtend) = dtend(i,k,idtend) + (gq0(i,k,itrac)-save_q(i,k,itrac)) * frain
+                          dtend(i,k,idtend) = dtend(i,k,idtend) + ten_q(i,k,itrac)*dtp*frain
                        enddo
                     enddo
                  endif
@@ -493,7 +567,7 @@
       if(progsigma)then
          do k=1,levs
             do i=1,im
-               dqdt_qmicro(i,k)=(gq0(i,k,1)-save_q(i,k,1))/dtp
+               dqdt_qmicro(i,k)=ten_q(i,k,1)
             enddo
          enddo
       endif

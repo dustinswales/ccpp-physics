@@ -1,9 +1,17 @@
 [ccpp-table-properties]
   name = GFS_rrtmg_pre
   type = scheme
-  relative_path = ../../
+  dependencies_path = ../../
   dependencies = tools/funcphys.f90,hooks/machine.F
-  dependencies = MP/module_mp_radar.F90,MP/Thompson/module_mp_thompson.F90,MP/Thompson/module_mp_thompson_make_number_concentrations.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_params.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_cfgs.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_ml.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_utils.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_aerosols.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_diags.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_main.F90
+  dependencies = MP/TEMPO/tempo_v3/src/module_mp_tempo_driver.F90
+  dependencies = MP/Thompson/module_mp_thompson.F90,MP/Thompson/module_mp_thompson_make_number_concentrations.F90
   dependencies = Radiation/RRTMG/radcons.f90,Radiation/radiation_aerosols.f
   dependencies = Radiation/radiation_astronomy.f,Radiation/radiation_clouds.f,Radiation/radiation_gases.f
   dependencies = Radiation/RRTMG/radlw_param.f,Radiation/RRTMG/radsw_param.f,Radiation/radiation_cloud_overlap.F90
@@ -469,23 +477,16 @@
   dimensions = ()
   type = integer
   intent = in
+[imp_physics_tempo]
+  standard_name = identifier_for_tempo_microphysics_scheme
+  long_name = choice of TEMPO microphysics scheme
+  units = flag
+  dimensions = ()
+  type = integer
+  intent = in
 [imp_physics_gfdl]
   standard_name = identifier_for_gfdl_microphysics_scheme
   long_name = choice of GFDL microphysics scheme
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[imp_physics_zhao_carr]
-  standard_name = identifier_for_zhao_carr_microphysics_scheme
-  long_name = choice of Zhao-Carr microphysics scheme
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[imp_physics_zhao_carr_pdf]
-  standard_name = identifier_for_zhao_carr_pdf_microphysics_scheme
-  long_name = choice of Zhao-Carr microphysics scheme with PDF clouds
   units = flag
   dimensions = ()
   type = integer
@@ -566,6 +567,7 @@
   units = km
   dimensions = ()
   type = real
+  kind = kind_phys
   intent = in
 [idcor]
   standard_name = flag_for_decorrelation_length_method
@@ -731,6 +733,22 @@
   standard_name = tunable_parameter_for_ice_supersaturation
   long_name = ice supersaturation parameter for PDF clouds
   units = none
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[xr_con]
+  standard_name = multiplicative_tuning_parameter_for_Xu_Randall_cloud_fraction
+  long_name = multiplicative tuning parameter for Xu Randall cloud fraction
+  units = 1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[xr_exp]
+  standard_name = exponent_tuning_parameter_for_Xu_Randall_cloud_fraction
+  long_name = exponent tuning parameter for Xu Randall cloud fraction
+  units = 1
   dimensions = ()
   type = real
   kind = kind_phys
@@ -1087,8 +1105,8 @@
   kind = kind_phys
   intent = inout
 [qci_conv]
-  standard_name = convective_cloud_condesate_after_rainout
-  long_name = convective cloud condesate after rainout
+  standard_name = convective_cloud_condensate_after_rainout
+  long_name = convective cloud condensate after rainout
   units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real

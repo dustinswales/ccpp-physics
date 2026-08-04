@@ -81,32 +81,36 @@ get_filename_component(LOCAL_CURRENT_SOURCE_DIR ${FULL_PATH_TO_CMAKELISTS} DIREC
 
 #------------------------------------------------------------------------------
 
-# List of files that need to be compiled without OpenMP
-set(SCHEMES_OPENMP_OFF ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp/mo_gas_optics.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp/mo_rrtmgp_constants.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp/mo_gas_concentrations.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp/mo_rrtmgp_util_string.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp/kernels/mo_gas_optics_kernels.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp/mo_gas_optics_rrtmgp.F90
+# List of files that should be compiled with RTE-RRTMGP compilation flags
+set(SCHEMES_RTERRTMGP ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_constants.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_concentrations.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/gas-optics/mo_gas_optics_util_string.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp-frontend/mo_gas_optics_rrtmgp.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp-kernels/mo_gas_optics_rrtmgp_kernels.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rrtmgp-frontend/mo_cloud_optics_rrtmgp.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_fluxes_byband.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/solar_variability/mo_solar_variability.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_heating_rates.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_fluxes_bygpoint.F90
                        ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_compute_bc.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/cloud_optics/mo_cloud_sampling.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/cloud_optics/mo_cloud_optics.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_rte_config.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_source_functions.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_rte_sw.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_fluxes.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_rte_lw.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_rte_util_array.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_rte_solver_kernels.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_optical_props_kernels.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/kernels/mo_fluxes_broadband_kernels.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_rte_kind.F90
-                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte/mo_optical_props.F90)
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/extensions/mo_cloud_sampling.F90
+		       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_util_array_validation.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_config.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_source_functions.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_sw.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_fluxes.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_lw.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_rte_util_array.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_rte_solver_kernels.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_optical_props_kernels.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-kernels/mo_fluxes_broadband_kernels.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_rte_kind.F90
+                       ${LOCAL_CURRENT_SOURCE_DIR}/physics/Radiation/RRTMGP/rte-rrtmgp/rte-frontend/mo_optical_props.F90)
+
+# List of files that need to be compiled without OpenMP (currently a copy of SCHEMES_RTERRTMGP)
+set(SCHEMES_OPENMP_OFF ${SCHEMES_RTERRTMGP})
 
 #------------------------------------------------------------------------------
 # Add COSP files to CCPP build
@@ -160,11 +164,19 @@ if(SCHEMES_DYNAMICS)
   list(REMOVE_ITEM SCHEMES ${SCHEMES_DYNAMICS})
 endif()
 
+# Remove files that need to be compiled with different flags for RTE-RRTMGP from list
+# of files with standard compiler flags, and assign special flags
+if(SCHEMES_RTERRTMGP)
+  SET_PROPERTY(SOURCE ${SCHEMES_RTERRTMGP}
+               APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_RTERRTMGP}")
+  list(REMOVE_ITEM SCHEMES ${SCHEMES_RTERRTMGP})
+endif()
+
 # Remove files that need to be compiled without OpenMP from list
 # of files with standard compiler flags, and assign no-OpenMP flags
 if(SCHEMES_OPENMP_OFF)
   SET_PROPERTY(SOURCE ${SCHEMES_OPENMP_OFF}
-               APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_PHYSICS}")
+               APPEND_STRING PROPERTY COMPILE_FLAGS " ${CMAKE_Fortran_FLAGS_OPENMP_OFF}")
   list(REMOVE_ITEM SCHEMES ${SCHEMES_OPENMP_OFF})
 endif()
 
@@ -220,7 +232,7 @@ endif()
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 
-add_library(ccpp_physics STATIC ${SCHEMES} ${SCHEMES_OPENMP_OFF} ${SCHEMES_DYNAMICS} ${CAPS})
+add_library(ccpp_physics STATIC ${SCHEMES} ${SCHEMES_RTERRTMGP} ${SCHEMES_OPENMP_OFF} ${SCHEMES_DYNAMICS} ${CAPS})
 
 set_target_properties(ccpp_physics PROPERTIES VERSION ${PROJECT_VERSION}
                                      SOVERSION ${PROJECT_VERSION_MAJOR})
@@ -232,8 +244,17 @@ target_include_directories(ccpp_physics PUBLIC
 
 target_link_libraries(ccpp_physics PRIVATE MPI::MPI_Fortran)
 target_link_libraries(ccpp_physics PUBLIC w3emc::w3emc_d
-                                          sp::sp_d
-                                          NetCDF::NetCDF_Fortran)
+                                          NetCDF::NetCDF_Fortran
+				             )
+if(ip_FOUND)
+  target_link_libraries(ccpp_physics PUBLIC ip::ip_d)
+else()
+  target_link_libraries(ccpp_physics PUBLIC sp::sp_d)
+endif()
+#add FMS for FV3 only
+if(FV3 OR MPAS)
+  target_link_libraries(ccpp_physics PUBLIC fms)
+endif()
 
 # Define where to install the library
 install(TARGETS ccpp_physics

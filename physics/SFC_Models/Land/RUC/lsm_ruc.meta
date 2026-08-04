@@ -153,7 +153,7 @@
   kind = kind_phys
   intent = in
 [q1]
-  standard_name = specific_humidity_at_surface_adjacent_layer
+  standard_name = physics_timestep_initial_specific_humidity_at_surface_adjacent_layer
   long_name = water vapor specific humidity at lowest model layer
   units = kg kg-1
   dimensions = (horizontal_dimension)
@@ -635,6 +635,22 @@
   dimensions = ()
   type = logical
   intent = in
+[use_cdeps_data]
+  standard_name = do_cdeps_inline
+  long_name = flag for using data provided by CDEPS inline (default false)
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
+[mask_dat]
+  standard_name = land_sea_mask_from_data
+  long_name = landmask
+  units = flag
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = in
+  optional = True
 [exticeden]
   standard_name = do_external_surface_frozen_precipitation_density
   long_name = flag for calculating frozen precip ice density outside of the LSM
@@ -746,7 +762,7 @@
   kind = kind_phys
   intent = in
 [t1]
-  standard_name = air_temperature_at_surface_adjacent_layer
+  standard_name = physics_timestep_initial_air_temperature_at_surface_adjacent_layer
   long_name = mean temperature at lowest model layer
   units = K
   dimensions = (horizontal_loop_extent)
@@ -754,7 +770,7 @@
   kind = kind_phys
   intent = in
 [q1]
-  standard_name = specific_humidity_at_surface_adjacent_layer
+  standard_name = physics_timestep_initial_specific_humidity_at_surface_adjacent_layer
   long_name = water vapor specific humidity at lowest model layer
   units = kg kg-1
   dimensions = (horizontal_loop_extent)
@@ -762,7 +778,7 @@
   kind = kind_phys
   intent = in
 [qc]
-  standard_name = cloud_liquid_water_mixing_ratio_at_surface_adjacent_layer
+  standard_name = physics_timestep_initial_cloud_liquid_water_mixing_ratio_at_surface_adjacent_layer
   long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates) at lowest model layer
   units = kg kg-1
   dimensions = (horizontal_loop_extent)
@@ -775,7 +791,7 @@
   units = index
   dimensions = (horizontal_loop_extent)
   type = integer
-  intent = in
+  intent = inout
 [vtype]
   standard_name = vegetation_type_classification
   long_name = vegetation type at each grid cell

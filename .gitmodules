@@ -1,8 +1,20 @@
 [submodule "physics/Radiation/RRTMGP/rte-rrtmgp"]
   path = physics/Radiation/RRTMGP/rte-rrtmgp
-  url = https://github.com/earth-system-radiation/rte-rrtmgp
+  url = https://github.com/NCAR/rte-rrtmgp
   branch = main
 [submodule "physics/cosp"]
   path = physics/Diagnostics/COSP2/cosp
   url = https://github.com/NCAR/COSPv2.0
   branch = master
+[submodule "physics/MP/TEMPO/tempo_v3"]
+  path = physics/MP/TEMPO/tempo_v3
+  url = https://github.com/NCAR/TEMPO
+  branch = main
+[submodule "physics/SFC_Layer/MYNN/MYNN"]
+  path = physics/SFC_Layer/MYNN/MYNN
+  url = https://github.com/NCAR/MYNN-SFC
+  branch = ccpp/dev
+[submodule "physics/CONV/C3"]
+  path = physics/CONV/C3
+  url = https://github.com/ufs-community/c3
+  branch = main

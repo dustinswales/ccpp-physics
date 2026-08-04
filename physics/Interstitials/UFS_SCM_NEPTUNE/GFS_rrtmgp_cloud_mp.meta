@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = GFS_rrtmgp_cloud_mp
   type = scheme
-  relative_path = ../../
+  dependencies_path = ../../
   dependencies = hooks/machine.F
   dependencies = Radiation/radiation_tools.F90,Radiation/radiation_clouds.f,Radiation/RRTMGP/rrtmgp_lw_cloud_optics.F90
   dependencies = MP/module_mp_radar.F90,MP/Thompson/module_mp_thompson_make_number_concentrations.F90,MP/Thompson/module_mp_thompson.F90
@@ -384,8 +384,8 @@
   intent = inout
   optional = True
 [qci_conv]
-  standard_name = convective_cloud_condesate_after_rainout
-  long_name = convective cloud condesate after rainout
+  standard_name = convective_cloud_condensate_after_rainout
+  long_name = convective cloud condensate after rainout
   units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
@@ -468,20 +468,6 @@
   dimensions = ()
   type = real
   kind = kind_phys
-  intent = in
-[doGP_cldoptics_PADE]
-  standard_name = flag_to_calc_lw_cld_optics_using_RRTMGP_PADE
-  long_name = logical flag to control cloud optics scheme.
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[doGP_cldoptics_LUT]
-  standard_name = flag_to_calc_lw_cld_optics_using_RRTMGP_LUT
-  long_name = logical flag to control cloud optics scheme.
-  units = flag
-  dimensions = ()
-  type = logical
   intent = in
 [doGP_smearclds]
   standard_name = flag_for_implicit_sgs_cloud_in_RRTMGP

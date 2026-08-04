@@ -5,7 +5,7 @@
 module GFS_rrtmgp_cloud_mp
   use machine,      only: kind_phys
   use radiation_tools,   only: check_error_msg
-  use module_radiation_clouds, only: progcld_thompson
+  use module_radiation_clouds, only: progcld_thompson, cld_frac_XuRandall
   use rrtmgp_lw_cloud_optics, only: &
        radliq_lwr => radliq_lwrLW, radliq_upr => radliq_uprLW,&
        radice_lwr => radice_lwrLW, radice_upr => radice_uprLW  
@@ -42,8 +42,7 @@ contains
        relhum, lsmask, xlon, xlat, dx, tv_lay, effrin_cldliq, effrin_cldice,             &
        effrin_cldrain, effrin_cldsnow, tracer, cnv_mixratio, cld_cnv_frac, qci_conv,     &
        deltaZ, deltaZc, deltaP, qc_mynn, qi_mynn, cld_pbl_frac, con_g, con_rd, con_eps,  &
-       con_ttp, doGP_cldoptics_PADE, doGP_cldoptics_LUT, doGP_smearclds,                 &
-       cld_frac, cld_lwp, cld_reliq,                                                     &
+       con_ttp, doGP_smearclds, cld_frac, cld_lwp, cld_reliq,                            &
        cld_iwp, cld_reice, cld_swp, cld_resnow, cld_rwp, cld_rerain, precip_frac,        &
        cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_pbl_lwp,              &
        cld_pbl_reliq, cld_pbl_iwp, cld_pbl_reice, lwp_ex, iwp_ex, lwp_fc, iwp_fc,        &
@@ -84,8 +83,6 @@ contains
          do_mynnedmf,               & !< Flag to activate MYNN-EDMF 
          uni_cld,                   & !< Flag for unified cloud scheme
          lmfdeep2,                  & !< Flag for mass flux deep convection 
-         doGP_cldoptics_LUT,        & !< Flag to do GP cloud-optics (LUTs)
-         doGP_cldoptics_PADE,       & !<                            (PADE approximation)
          doGP_smearclds               !< If true, add sgs clouds to gridmean clouds
     real(kind_phys), intent(in) :: &
          con_g,                     & !< Physical constant: gravitational constant
@@ -275,23 +272,21 @@ contains
     ! Bound effective radii for RRTMGP, LUT's for cloud-optics go from
     !   2.5 - 21.5 microns for liquid clouds,
     !   10  - 180  microns for ice-clouds
-    if (doGP_cldoptics_PADE .or. doGP_cldoptics_LUT) then
-       where(cld_reliq .lt. radliq_lwr) cld_reliq = radliq_lwr
-       where(cld_reliq .gt. radliq_upr) cld_reliq = radliq_upr
-       where(cld_reice .lt. radice_lwr) cld_reice = radice_lwr
-       where(cld_reice .gt. radice_upr) cld_reice = radice_upr
-       if (imfdeepcnv == imfdeepcnv_samf .or. imfdeepcnv == imfdeepcnv_gf) then
-          where(cld_cnv_reliq .lt. radliq_lwr) cld_cnv_reliq = radliq_lwr
-          where(cld_cnv_reliq .gt. radliq_upr) cld_cnv_reliq = radliq_upr
-          where(cld_cnv_reice .lt. radice_lwr) cld_cnv_reice = radice_lwr
-          where(cld_cnv_reice .gt. radice_upr) cld_cnv_reice = radice_upr
-       endif
-       if (do_mynnedmf) then
-          where(cld_pbl_reliq .lt. radliq_lwr) cld_pbl_reliq = radliq_lwr
-          where(cld_pbl_reliq .gt. radliq_upr) cld_pbl_reliq = radliq_upr
-          where(cld_pbl_reice .lt. radice_lwr) cld_pbl_reice = radice_lwr
-          where(cld_pbl_reice .gt. radice_upr) cld_pbl_reice = radice_upr
-       endif
+    where(cld_reliq .lt. radliq_lwr) cld_reliq = radliq_lwr
+    where(cld_reliq .gt. radliq_upr) cld_reliq = radliq_upr
+    where(cld_reice .lt. radice_lwr) cld_reice = radice_lwr
+    where(cld_reice .gt. radice_upr) cld_reice = radice_upr
+    if (imfdeepcnv == imfdeepcnv_samf .or. imfdeepcnv == imfdeepcnv_gf) then
+       where(cld_cnv_reliq .lt. radliq_lwr) cld_cnv_reliq = radliq_lwr
+       where(cld_cnv_reliq .gt. radliq_upr) cld_cnv_reliq = radliq_upr
+       where(cld_cnv_reice .lt. radice_lwr) cld_cnv_reice = radice_lwr
+       where(cld_cnv_reice .gt. radice_upr) cld_cnv_reice = radice_upr
+    endif
+    if (do_mynnedmf) then
+       where(cld_pbl_reliq .lt. radliq_lwr) cld_pbl_reliq = radliq_lwr
+       where(cld_pbl_reliq .gt. radliq_upr) cld_pbl_reliq = radliq_upr
+       where(cld_pbl_reice .lt. radice_lwr) cld_pbl_reice = radice_lwr
+       where(cld_pbl_reice .gt. radice_upr) cld_pbl_reice = radice_upr
     endif
 
     ! Instantaneous 2D (max-in-column) cloud fraction
@@ -376,9 +371,9 @@ contains
              !eff radius cloud ice (microns), from Mishra et al. (2014, JGR Atmos, fig 6b) 
              if(qi > 1.E-8) cld_cnv_reice(iCol,iLay) = max(173.45 + 2.14*(t_lay(iCol,iLay)-273.15), 20.)
       
-             ! Xu-Randall (1996) cloud-fraction.
-             cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay),            &
-                  qs_lay(iCol,iLay), relhum(iCol,iLay), qc+qi, alpha0)
+             ! Xu-Randall (1996) cloud-fraction, lambda = 0.5
+             cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay)*0.01,    &
+                qs_lay(iCol,iLay), relhum(iCol,iLay), qc+qi, alpha0, 0.5, 1.0)   
           endif
        enddo
     enddo
@@ -508,9 +503,10 @@ contains
              cld_cnv_reliq(iCol,iLay) = reliq_def
              cld_cnv_reice(iCol,iLay) = reice_def
 
-             ! Xu-Randall (1996) cloud-fraction.
-             cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay),              &
-               qs_lay(iCol,iLay), relhum(iCol,iLay), cnv_mixratio(iCol,iLay), alpha0)
+             ! Xu-Randall (1996) cloud-fraction, lambda = 0.5
+             cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay)*0.01,  &
+               qs_lay(iCol,iLay), relhum(iCol,iLay), cnv_mixratio(iCol,iLay),     &
+               alpha0, 0.5, 1.0)
           endif
        enddo
     enddo
@@ -743,14 +739,12 @@ contains
           cld_swp(iCol,iLay)  = max(0., cld_condensate(iCol,iLay,4) * tem1 * deltaP)
        
           ! Xu-Randall (1996) cloud-fraction. **Additionally, Conditioned on relative-humidity**
-          if (present(cond_cfrac_onRH) .and. relhum(iCol,iLay) > 0.99) then
-             cld_frac(iCol,iLay) = 1._kind_phys
-          else
-             cld_mr = cld_condensate(iCol,iLay,1) + cld_condensate(iCol,iLay,2) +  &
-                  cld_condensate(iCol,iLay,3) + cld_condensate(iCol,iLay,4)
-             cld_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay),            &
-                  qs_lay(iCol,iLay), relhum(iCol,iLay), cld_mr, alpha0)
-          endif
+          ! lambda = 0.5
+          cld_mr = cld_condensate(iCol,iLay,1) + cld_condensate(iCol,iLay,2) +          &
+               cld_condensate(iCol,iLay,3) + cld_condensate(iCol,iLay,4)
+          cld_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay)*0.01,               &
+               qs_lay(iCol,iLay), relhum(iCol,iLay), cld_mr, alpha0,                    &
+               0.5, 1.0, cond_cfrac_onRH)
        enddo
     enddo
 
@@ -777,45 +771,6 @@ contains
     enddo
 
   end subroutine cloud_mp_thompson
-
-!> This function computes the cloud-fraction following
-!! Xu-Randall(1996) \cite xu_and_randall_1996 
-!!
-  function cld_frac_XuRandall(p_lay, qs_lay, relhum, cld_mr, alpha)
-    implicit none
-    ! Inputs
-    real(kind_phys), intent(in) :: &
-       p_lay,    & !< Pressure (Pa)
-       qs_lay,   & !< Saturation vapor-pressure (Pa)
-       relhum,   & !< Relative humidity
-       cld_mr,   & !< Total cloud mixing ratio
-       alpha       !< Scheme parameter (default=100)
-
-    ! Outputs
-    real(kind_phys) :: cld_frac_XuRandall
-
-    ! Locals
-    real(kind_phys) :: clwt, clwm, onemrh, tem1, tem2, tem3
-
-    ! Parameters
-    real(kind_phys) :: &
-       lambda = 0.50, & !
-       P      = 0.25
-
-    clwt = 1.0e-6 * (p_lay*0.001)
-    if (cld_mr > clwt) then
-       onemrh = max(1.e-10, 1.0 - relhum)
-       tem1   = alpha / min(max((onemrh*qs_lay)**lambda,0.0001),1.0)
-       tem2   = max(min(tem1*(cld_mr - clwt), 50.0 ), 0.0 )
-       tem3   = sqrt(sqrt(relhum)) ! This assumes "p" = 0.25. Identical, but cheaper than relhum**p
-       !
-       cld_frac_XuRandall = max( tem3*(1.0-exp(-tem2)), 0.0 )
-    else
-       cld_frac_XuRandall = 0.0
-    endif
-
-    return
-  end function
 
   !> This routine is a wrapper to update the Thompson effective particle sizes used by the
   !! RRTMGP radiation scheme.

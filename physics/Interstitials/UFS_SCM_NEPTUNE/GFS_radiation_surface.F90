@@ -6,6 +6,7 @@
       module GFS_radiation_surface
 
       use machine,                   only: kind_phys
+      use mpi_f08
 
       contains
 
@@ -16,13 +17,16 @@
 !> \section arg_table_GFS_radiation_surface_init Argument Table
 !! \htmlinclude GFS_radiation_surface_init.html
 !!
-      subroutine GFS_radiation_surface_init (me, ialb, iems, semis_file, con_pi, errmsg, errflg)
+      subroutine GFS_radiation_surface_init (mpicomm, mpirank, mpiroot, &
+          ialb, iems, semis_file, con_pi, errmsg, errflg)
 
       use module_radiation_surface, only: sfc_init
 
       implicit none
 
-      integer,                              intent(in)  :: me, ialb, iems
+      type(MPI_Comm),                       intent(in)  :: mpicomm
+      integer,                              intent(in)  :: mpirank, mpiroot
+      integer,                              intent(in)  :: ialb, iems
       character(len=26),                    intent(in)  :: semis_file
       real(kind_phys),                      intent(in)  :: con_pi
       character(len=*),                     intent(out) :: errmsg
@@ -32,13 +36,14 @@
       errmsg = ''
       errflg = 0
 
-      if ( me == 0 ) then
+      if ( mpirank==mpiroot ) then
         print *,'In GFS_radiation_surface_init, before calling sfc_init'
         print *,'ialb=',ialb,' iems=',iems
       end if
 
       ! Call surface initialization routine
-      call sfc_init ( me, ialb, iems, semis_file, con_pi, errmsg, errflg )
+      call sfc_init ( mpicomm, mpirank, mpiroot, &
+        ialb, iems, semis_file, con_pi, errmsg, errflg )
 
       end subroutine GFS_radiation_surface_init
 
@@ -47,7 +52,7 @@
 !! \htmlinclude GFS_radiation_surface_run.html
 !!
       subroutine GFS_radiation_surface_run (                            &
-        ialb, im, nf_albd, frac_grid, lslwr, lsswr, lsm, lsm_noahmp,    &
+        ialb, im, frac_grid, lslwr, lsswr, lsm, lsm_noahmp,             &
         lsm_ruc, xlat, xlon, slmsk, lndp_type, n_var_lndp, sfc_alb_pert,&
         lndp_var_list, lndp_prt_list, landfrac, snodl, snodi, sncovr,   &
         sncovr_ice, fice, zorl, hprime, tsfg, tsfa, tisfc, coszen,      &
@@ -59,12 +64,11 @@
         semisbase, semis, sfcalb, sfc_alb_dif, errmsg, errflg)
 
       use module_radiation_surface,  only: f_zero, f_one,  &
-                                           epsln,          &
                                            setemis, setalb
 
       implicit none
 
-      integer,               intent(in) :: im, nf_albd, ialb
+      integer,               intent(in) :: im, ialb
       logical,               intent(in) :: frac_grid, lslwr, lsswr, use_cice_alb, cplice
       integer,               intent(in) :: lsm, lsm_noahmp, lsm_ruc, lndp_type, n_var_lndp
       real(kind=kind_phys),  intent(in) :: min_seaice, min_lakeice, con_ttp
@@ -181,8 +185,7 @@
                      alvsf, alnsf, alvwf, alnwf, facsf, facwf, fice, tisfc,                    &
                      albdvis_lnd, albdnir_lnd, albivis_lnd, albinir_lnd,                       &
                      albdvis_ice, albdnir_ice, albivis_ice, albinir_ice,                       &
-                     im, nf_albd, sfc_alb_pert, lndp_alb, fracl, fraco, fraci, icy, ialb,      &
-                     con_ttp,                                                                  & !  ---  inputs
+                     im, sfc_alb_pert, lndp_alb, fracl, fraco, fraci, icy, ialb, con_ttp,      & !  ---  inputs
                      sfcalb )                                                                    !  ---  outputs
 
 !> -# Approximate mean surface albedo from vis- and nir- diffuse values.

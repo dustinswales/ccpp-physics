@@ -1,7 +1,7 @@
 [ccpp-table-properties]
   name = GFS_rad_time_vary
   type = scheme
-  relative_path = ../../
+  dependencies_path = ../../
   dependencies = hooks/machine.F,Radiation/mersenne_twister.f,Radiation/RRTMG/radcons.f90
 
 ########################################################################
@@ -131,23 +131,16 @@
   dimensions = ()
   type = integer
   intent = in
-[imp_physics_zhao_carr]
-  standard_name = identifier_for_zhao_carr_microphysics_scheme
-  long_name = choice of Zhao-Carr microphysics scheme
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
 [ipsd0]
   standard_name = initial_seed_for_mcica
-  long_name = initial permutaion seed for mcica radiation
+  long_name = initial permutation seed for mcica radiation
   units = 1
   dimensions =  ()
   type = integer
   intent = in
 [ipsdlim]
   standard_name = limit_for_initial_seed_for_mcica
-  long_name = limit for initial permutaion seed for mcica radiation
+  long_name = limit for initial permutation seed for mcica radiation
   units = 1
   dimensions =  ()
   type = integer
@@ -207,7 +200,7 @@
   intent = inout
   optional = True
 [t]
-  standard_name = air_temperature
+  standard_name = physics_timestep_initial_air_temperature
   long_name = model layer mean temperature
   units = K
   dimensions = (horizontal_dimension,vertical_layer_dimension)
@@ -215,7 +208,7 @@
   kind = kind_phys
   intent = in
 [qv]
-  standard_name = specific_humidity
+  standard_name = physics_timestep_initial_specific_humidity
   long_name = water vapor specific humidity
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_layer_dimension)

@@ -1,10 +1,10 @@
 [ccpp-table-properties]
   name = GFS_rrtmgp_setup
   type = scheme
-  relative_path = ../../
+  dependencies_path = ../../
   dependencies = hooks/machine.F,MP/module_mp_radar.F90,MP/Thompson/module_mp_thompson.F90
   dependencies = Radiation/radiation_aerosols.f,photochem/module_ozphys.F90
-  dependencies = Radiation/radiation_gases.f,Radiation/radiation_astronomy.f
+  dependencies = Radiation/radiation_gases.f,Radiation/RRTMG/iounitdef.f,Radiation/radiation_astronomy.f
 
 ########################################################################
 [ccpp-arg-table]
@@ -49,20 +49,6 @@
   intent = in
   standard_name = identifier_for_wsm6_microphysics_scheme
   long_name = choice of WSM6 microphysics scheme
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[imp_physics_zhao_carr]
-  standard_name = identifier_for_zhao_carr_microphysics_scheme
-  long_name = choice of Zhao-Carr microphysics scheme
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[imp_physics_zhao_carr_pdf]
-  standard_name = identifier_for_zhao_carr_pdf_microphysics_scheme
-  long_name = choice of Zhao-Carr microphysics scheme with PDF clouds
   units = flag
   dimensions = ()
   type = integer
@@ -190,9 +176,23 @@
   dimensions = (4)
   type = integer
   intent = in
-[me]
+[mpicomm]
+  standard_name = mpi_communicator
+  long_name = MPI communicator
+  units = index
+  dimensions = ()
+  type = MPI_Comm
+  intent = in
+[mpirank]
   standard_name = mpi_rank
   long_name = current MPI-rank
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
+[mpiroot]
+  standard_name = mpi_root
+  long_name = master MPI-rank
   units = index
   dimensions = ()
   type = integer
@@ -263,7 +263,7 @@
   intent = in
 [ipsd0]
   standard_name = initial_seed_for_mcica
-  long_name = initial permutaion seed for mcica radiation
+  long_name = initial permutation seed for mcica radiation
   units = 1
   dimensions =  ()
   type = integer
@@ -339,9 +339,23 @@
   dimensions = ()
   type = logical
   intent = in
-[me]
+[mpicomm]
+  standard_name = mpi_communicator
+  long_name = MPI communicator
+  units = index
+  dimensions = ()
+  type = MPI_Comm
+  intent = in
+[mpirank]
   standard_name = mpi_rank
   long_name = current MPI-rank
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
+[mpiroot]
+  standard_name = mpi_root
+  long_name = master MPI-rank
   units = index
   dimensions = ()
   type = integer

@@ -62,9 +62,7 @@ module module_mp_thompson
    use machine, only: wp => kind_phys, sp => kind_sngl_prec, dp => kind_dbl_prec
    use module_mp_radar
 
-#ifdef MPI
-      use mpi_f08
-#endif
+   use mpi_f08
 
    implicit none
 
@@ -92,10 +90,17 @@ module module_mp_thompson
 !.. droplet concentration and nu_c is also variable depending on local
 !.. droplet number concentration.
    !real(wp), parameter :: Nt_c = 100.e6
-   real(wp), parameter :: Nt_c_o = 50.e6
-   real(wp), parameter :: Nt_c_l = 150.e6
    real(wp), parameter, private :: Nt_c_max = 1999.e6
 
+   ! Tuning parameters
+   real(wp)            :: Nt_c_l = 150.e6   ! Cloud number concentration over land (set in thompson_init)
+   real(wp)            :: Nt_c_o = 50.e6    ! Cloud number concentration over ocean (set in thompson_init)
+   real(wp)            :: av_i
+   real(wp)            :: xnc_max = 1000.e3
+   real(wp)            :: ssati_min = 0.15
+   real(wp)            :: Nt_i_max = 4999.e3_dp
+   real(wp)            :: rr_min = 1000.0
+   
 !..Declaration of constants for assumed CCN/IN aerosols when none in
 !.. the input data.  Look inside the init routine for modifications
 !.. due to surface land-sea points or vegetation characteristics.
@@ -146,12 +151,12 @@ module module_mp_thompson
    real(wp), parameter, private :: av_r = 4854.0
    real(wp), parameter, private :: bv_r = 1.0
    real(wp), parameter, private :: fv_r = 195.0
-   real(wp), parameter, private :: av_s = 40.0
-   real(wp), parameter, private :: bv_s = 0.55
+   real(wp), parameter          :: av_s = 40.0
+   real(wp), parameter          :: bv_s = 0.55
    real(wp), parameter, private :: fv_s = 100.0
    real(wp), parameter, private :: av_g = 442.0
    real(wp), parameter, private :: bv_g = 0.89
-   real(wp), parameter, private :: bv_i = 1.0
+   real(wp), parameter          :: bv_i = 1.0
    real(wp), parameter, private :: av_c = 0.316946E8
    real(wp), parameter, private :: bv_c = 2.0
 
@@ -216,7 +221,7 @@ module module_mp_thompson
    real(wp), parameter, private :: xm0i = R1
    real(wp), parameter, private :: D0c = 1.e-6
    real(wp), parameter, private :: D0r = 50.e-6
-   real(wp), parameter, private :: D0s = 300.e-6
+   real(wp), parameter          :: D0s = 300.e-6
    real(wp), parameter, private :: D0g = 350.e-6
    real(wp), private :: D0i, xm0s, xm0g
 
@@ -456,7 +461,7 @@ module module_mp_thompson
          logical:: micro_init
          real(wp) :: stime, etime
          logical, parameter :: precomputed_tables = .FALSE.
-
+         
 ! Set module derived constants
          am_r = PI*rho_w/6.0
          am_g = PI*rho_g/6.0
@@ -1038,7 +1043,8 @@ module module_mp_thompson
                               tprr_rcs, tprv_rev, tten3, qvten3,      &
                               qrten3, qsten3, qgten3, qiten3, niten3, &
                               nrten3, ncten3, qcten3,                 &
-                              pfils, pflls)
+                              pfils, pflls,                           &
+                              fs_fac_rain, fs_fac_snow)
 
          implicit none
 
@@ -1107,6 +1113,8 @@ module module_mp_thompson
                            tprr_rcs, tprv_rev, tten3, qvten3,      &
                            qrten3, qsten3, qgten3, qiten3, niten3, &
                            nrten3, ncten3, qcten3
+         ! Fall speed adjustment
+         real(wp), INTENT (IN), optional  :: fs_fac_rain, fs_fac_snow
 
    !..Local variables
          real(wp), dimension(kts:kte):: &
@@ -1476,7 +1484,8 @@ module module_mp_thompson
                            tprr_rcs1, tprv_rev1,                            &
                            tten1, qvten1, qrten1, qsten1,                   &
                            qgten1, qiten1, niten1, nrten1, ncten1, qcten1,  &
-                           pfil1, pfll1)
+                           pfil1, pfll1,                                    &
+                           fs_fac_rain, fs_fac_snow)
 
                pcp_ra(i,j) = pcp_ra(i,j) + pptrain
                pcp_sn(i,j) = pcp_sn(i,j) + pptsnow
@@ -1896,11 +1905,10 @@ module module_mp_thompson
                         tprr_rcs1, tprv_rev1,                            &
                         tten1, qvten1, qrten1, qsten1,                   &
                         qgten1, qiten1, niten1, nrten1, ncten1, qcten1,  &
-                        pfil1, pfll1) 
+                        pfil1, pfll1,                                    &
+                        fs_fac_rain, fs_fac_snow)
 
-#ifdef MPI
       use mpi_f08
-#endif
 
       implicit none
 
@@ -1934,6 +1942,8 @@ module module_mp_thompson
                           tprr_rcs1, tprv_rev1, tten1, qvten1,       &
                           qrten1, qsten1, qgten1, qiten1, niten1,    &
                           nrten1, ncten1, qcten1
+      ! Fall speed adjustment
+      real(wp), intent(in), optional :: fs_fac_rain, fs_fac_snow
 
 #if ( WRF_CHEM == 1 )
       real(wp), dimension(kts:kte), intent(inout) :: &
@@ -2017,7 +2027,6 @@ module module_mp_thompson
       real(wp) :: Ef_ra, Ef_sa, Ef_ga
       real(wp) :: dtsave, odts, odt, odzq, hgt_agl, SR
       real(wp) :: xslw1, ygra1, zans1, eva_factor
-      real(wp) av_i
       integer :: i, k, k2, n, nn, nstep, k_0, kbot, IT, iexfrq
       integer, dimension(5) :: ksed1
       integer :: nir, nis, nig, nii, nic, niin
@@ -2029,6 +2038,7 @@ module module_mp_thompson
       logical :: debug_flag
       integer :: nu_c
 
+      real(wp) :: fallspeed_adjustment_factor
 !+---+
 
       debug_flag = .false.
@@ -2042,8 +2052,6 @@ module module_mp_thompson
       odt = 1./dt
       odts = 1./dtsave
       iexfrq = 1
-! Transition value of coefficient matching at crossover from cloud ice to snow
-      av_i = av_s * D0s ** (bv_s - bv_i)
 
 !+---+-----------------------------------------------------------------+
 !> - Initialize Source/sink terms.  First 2 chars: "pr" represents source/sink of
@@ -2269,7 +2277,7 @@ module module_mp_thompson
             ni(k) = max(R2, ni1d(k)*rho(k))
             if (ni(k).le. R2) then
                lami = cie(2)/5.E-6
-               ni(k) = min(4999.e3_dp, cig(1)*oig2*ri(k)/am_i*lami**bm_i)
+               ni(k) = min(Nt_i_max, cig(1)*oig2*ri(k)/am_i*lami**bm_i)
             endif
             L_qi(k) = .true.
             lami = (am_i*cig(2)*oig1*ni(k)/ri(k))**obmi
@@ -2277,7 +2285,7 @@ module module_mp_thompson
             xDi = (bm_i + mu_i + 1.) * ilami
             if (xDi.lt. 5.E-6) then
                lami = cie(2)/5.E-6
-               ni(k) = min(4999.e3_dp, cig(1)*oig2*ri(k)/am_i*lami**bm_i)
+               ni(k) = min(Nt_i_max, cig(1)*oig2*ri(k)/am_i*lami**bm_i)
             elseif (xDi.gt. 300.E-6) then
                lami = cie(2)/300.E-6
                ni(k) = cig(1)*oig2*ri(k)/am_i*lami**bm_i
@@ -2933,13 +2941,13 @@ module module_mp_thompson
 
 !>  - Deposition nucleation of dust/mineral from DeMott et al (2010)
 !! we may need to relax the temperature and ssati constraints.
-               if ( (ssati(k).ge. 0.15) .or. (ssatw(k).gt. eps &
+               if ( (ssati(k).ge. ssati_min) .or. (ssatw(k).gt. eps &
                                     .and. temp(k).lt.253.15) ) then
                   if (dustyIce .AND. (is_aerosol_aware .or. merra2_aerosol_aware)) then
                      xnc = iceDeMott(tempc,qv(k),qvs(k),qvsi(k),rho(k),nifa(k))
                      xnc = xnc*(1.0 + 50.*rand3)
                   else
-                     xnc = min(1000.E3, TNO*EXP(ATO*(T_0-temp(k))))
+                     xnc = min(xnc_max, TNO*EXP(ATO*(T_0-temp(k))))
                   endif
                   xni = ni(k) + (pni_rfz(k)+pni_wfz(k))*dtsave
                   pni_inu(k) = 0.5*(xnc-xni + abs(xnc-xni))*odts
@@ -2949,7 +2957,7 @@ module module_mp_thompson
 
 !>  - Freezing of aqueous aerosols based on Koop et al (2001, Nature)
                xni = smo0(k)+ni(k) + (pni_rfz(k)+pni_wfz(k)+pni_inu(k))*dtsave
-               if ((is_aerosol_aware .or. merra2_aerosol_aware) .AND. homogIce .AND. (xni.le.4999.E3)    & 
+               if ((is_aerosol_aware .or. merra2_aerosol_aware) .AND. homogIce .AND. (xni.le.Nt_i_max)    & 
                               .AND.(temp(k).lt.238).AND.(ssati(k).ge.0.4) ) then
                   xnc = iceKoop(temp(k),qv(k),qvs(k),nwfa(k), dtsave)
                   pni_iha(k) = xnc*odts
@@ -3282,7 +3290,7 @@ module module_mp_thompson
             xDi = (bm_i + mu_i + 1.) * ilami
             if (xDi.lt. 5.E-6) then
                lami = cie(2)/5.E-6
-               xni = min(4999.e3_dp, cig(1)*oig2*xri/am_i*lami**bm_i)
+               xni = min(Nt_i_max, cig(1)*oig2*xri/am_i*lami**bm_i)
                niten(k) = (xni-ni1d(k)*rho(k))*odts*orho
             elseif (xDi.gt. 300.E-6) then 
                lami = cie(2)/300.E-6
@@ -3293,8 +3301,8 @@ module module_mp_thompson
             niten(k) = -ni1d(k)*odts
          endif
          xni=max(0.,(ni1d(k) + niten(k)*dtsave)*rho(k))
-         if (xni.gt.4999.E3) &
-                niten(k) = (4999.E3-ni1d(k)*rho(k))*odts*orho
+         if (xni.gt.Nt_i_max) &
+                niten(k) = (Nt_i_max-ni1d(k)*rho(k))*odts*orho
 
 !>  - Rain tendency
          qrten(k) = qrten(k) + (prr_wau(k) + prr_rcw(k) &
@@ -3769,6 +3777,9 @@ module module_mp_thompson
       enddo
 
       if (ANY(L_qr .eqv. .true.)) then
+         fallspeed_adjustment_factor=1.0
+         if ( present(fs_fac_rain) ) fallspeed_adjustment_factor=fs_fac_rain
+
          do k = kte, kts, -1
             vtr = 0.
             rhof(k) = SQRT(RHO_NOT/rho(k))
@@ -3777,7 +3788,7 @@ module module_mp_thompson
                lamr = (am_r*crg(3)*org2*nr(k)/rr(k))**obmr
                vtr = rhof(k)*av_r*crg(6)*org3 * lamr**cre(3)                 &
                            *((lamr+fv_r)**(-cre(6)))
-               vtrk(k) = vtr
+               vtrk(k) = vtr*fallspeed_adjustment_factor
 ! First below is technically correct:
 !         vtr = rhof(k)*av_r*crg(5)*org2 * lamr**cre(2)                 &
 !                     *((lamr+fv_r)**(-cre(5)))
@@ -3785,7 +3796,7 @@ module module_mp_thompson
 ! Goal: less prominent size sorting
                vtr = rhof(k)*av_r*crg(7)/crg(12) * lamr**cre(12)             &
                            *((lamr+fv_r)**(-cre(7)))
-               vtnrk(k) = vtr
+               vtnrk(k) = vtr*fallspeed_adjustment_factor
             else
                vtrk(k) = vtrk(k+1)
                vtnrk(k) = vtnrk(k+1)
@@ -3869,6 +3880,9 @@ module module_mp_thompson
 !+---+-----------------------------------------------------------------+
 
        if (ANY(L_qs .eqv. .true.)) then
+         fallspeed_adjustment_factor=1.0
+         if ( present(fs_fac_snow) ) fallspeed_adjustment_factor=fs_fac_snow
+
          nstep = 0
          do k = kte, kts, -1
             vts = 0.
@@ -3886,6 +3900,7 @@ module module_mp_thompson
                t3_vts = Kap0*csg(1)*ils1**cse(1)
                t4_vts = Kap1*Mrat**mu_s*csg(7)*ils2**cse(7)
                vts = rhof(k)*av_s * (t1_vts+t2_vts)/(t3_vts+t4_vts)
+               vts=vts*fallspeed_adjustment_factor
                if (prr_sml(k) .gt. 0.0) then
       !           vtsk(k) = max(vts*vts_boost(k),                             &
       !    &                vts*((vtrk(k)-vts*vts_boost(k))/(temp(k)-T_0)))
@@ -3977,7 +3992,7 @@ module module_mp_thompson
                   pfll1(k) = pfll1(k) + sed_r(k)*DT*onstep(1)
                enddo
 
-               if (rr(kts).gt.R1*1000.) then
+               if (rr(kts).gt.R1*rr_min) then
                   pptrain = pptrain + sed_r(kts)*DT*onstep(1)
                endif 
             enddo
@@ -4072,7 +4087,7 @@ module module_mp_thompson
                pfil1(k) = pfil1(k) + sed_i(k)*DT*onstep(2)
             enddo
 
-            if (ri(kts).gt.R1*1000.) then
+            if (ri(kts).gt.R1*rr_min) then
                pptice = pptice + sed_i(kts)*DT*onstep(2)
             endif 
          enddo
@@ -4102,7 +4117,7 @@ module module_mp_thompson
                pfil1(k) = pfil1(k) + sed_s(k)*DT*onstep(3)
             enddo
 
-            if (rs(kts).gt.R1*1000.) then
+            if (rs(kts).gt.R1*rr_min) then
                pptsnow = pptsnow + sed_s(kts)*DT*onstep(3)
             endif 
          enddo
@@ -4133,7 +4148,7 @@ module module_mp_thompson
                   pfil1(k) = pfil1(k) + sed_g(k)*DT*onstep(4)
                enddo
 
-               if (rg(kts).gt.R1*1000.) then
+               if (rg(kts).gt.R1*rr_min) then
                   pptgraul = pptgraul + sed_g(kts)*DT*onstep(4)
                endif
             enddo
@@ -4261,7 +4276,7 @@ module module_mp_thompson
                lami = cie(2)/300.E-6
             endif
             ni1d(k) = min(cig(1)*oig2*qi1d(k)/am_i*lami**bm_i,           &
-                           4999.e3_dp/rho(k))
+                           Nt_i_max/rho(k))
          endif
          qr1d(k) = qr1d(k) + qrten(k)*DT
          nr1d(k) = max(R2/rho(k), nr1d(k) + nrten(k)*DT)
@@ -4400,9 +4415,7 @@ module module_mp_thompson
 
       good = 0
         INQUIRE(FILE=qr_acr_qg_file, EXIST=lexist)
-#ifdef MPI
         call MPI_BARRIER(mpi_communicator,ierr)
-#endif
         IF ( lexist ) THEN
           OPEN(63,file=qr_acr_qg_file,form="unformatted",err=1234)
 !sms$serial begin
@@ -4575,9 +4588,7 @@ module module_mp_thompson
 
       good = 0
         INQUIRE(FILE=qr_acr_qs_file, EXIST=lexist)
-#ifdef MPI
         call MPI_BARRIER(mpi_communicator,ierr)
-#endif
         IF ( lexist ) THEN
           !write(0,*) "ThompMP: read "//qr_acr_qs_file//" instead of computing"
           OPEN(63,file=qr_acr_qs_file,form="unformatted",err=1234)
@@ -4836,9 +4847,7 @@ module module_mp_thompson
 
       good = 0
         INQUIRE(FILE=freeze_h2o_file,EXIST=lexist)
-#ifdef MPI
         call MPI_BARRIER(mpi_communicator,ierr)
-#endif
         IF ( lexist ) THEN
           !write(0,*) "ThompMP: read "//freeze_h2o_file//" instead of computing"
           OPEN(63,file=freeze_h2o_file,form="unformatted",err=1234)
@@ -5368,9 +5377,8 @@ module module_mp_thompson
          n_local = ta_Na(1) + 1.0
       endif
       do n = 2, ntb_arc
-         if (n_local.ge.ta_Na(n-1) .and. n_local.lt.ta_Na(n)) goto 8003
+         if (n_local.ge.ta_Na(n-1) .and. n_local.lt.ta_Na(n)) exit
       enddo
- 8003 continue
       i = n
       x1 = LOG(ta_Na(i-1))
       x2 = LOG(ta_Na(i))
@@ -5381,9 +5389,8 @@ module module_mp_thompson
          w_local = ta_Ww(1) + 0.001
       endif
       do n = 2, ntb_arw
-         if (w_local.ge.ta_Ww(n-1) .and. w_local.lt.ta_Ww(n)) goto 8005
+         if (w_local.ge.ta_Ww(n-1) .and. w_local.lt.ta_Ww(n)) exit
       enddo
- 8005 continue
       j = n
       y1 = LOG(ta_Ww(j-1))
       y2 = LOG(ta_Ww(j))
@@ -5454,7 +5461,7 @@ module module_mp_thompson
       C=1./FPMIN
       D=1./B
       H=D
-      DO 11 I=1,ITMAX
+      DO I=1,ITMAX
         AN=-I*(I-A)
         B=B+2.
         D=AN*D+B
@@ -5464,10 +5471,10 @@ module module_mp_thompson
         D=1./D
         DEL=D*C
         H=H*DEL
-        IF(ABS(DEL-1.).LT.gEPS)GOTO 1
- 11   CONTINUE
-      PRINT *, 'A TOO LARGE, ITMAX TOO SMALL IN GCF'
- 1    GAMMCF=EXP(-X+A*LOG(X)-GLN)*H
+        IF(ABS(DEL-1.).LT.gEPS) EXIT
+      END DO
+      IF (I.EQ.ITMAX) PRINT *, 'A TOO LARGE, ITMAX TOO SMALL IN GCF'
+     GAMMCF=EXP(-X+A*LOG(X)-GLN)*H
    END SUBROUTINE GCF
 !  (C) Copr. 1986-92 Numerical Recipes Software 2.02
 
@@ -5495,14 +5502,14 @@ module module_mp_thompson
       AP=A
       SUM=1./A
       DEL=SUM
-      DO 11 N=1,ITMAX
+      DO N=1,ITMAX
         AP=AP+1.
         DEL=DEL*X/AP
         SUM=SUM+DEL
-        IF(ABS(DEL).LT.ABS(SUM)*gEPS)GOTO 1
- 11   CONTINUE
-      PRINT *,'A TOO LARGE, ITMAX TOO SMALL IN GSER'
- 1    GAMSER=SUM*EXP(-X+A*LOG(X)-GLN)
+        IF(ABS(DEL).LT.ABS(SUM)*gEPS) EXIT
+      END DO
+      IF (N.EQ.ITMAX) PRINT *,'A TOO LARGE, ITMAX TOO SMALL IN GSER'
+      GAMSER=SUM*EXP(-X+A*LOG(X)-GLN)
    END SUBROUTINE GSER
 !  (C) Copr. 1986-92 Numerical Recipes Software 2.02
 
