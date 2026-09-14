@@ -1,14 +1,17 @@
 [ccpp-table-properties]
-  name = unified_ugwp
+  name = cires_ugwp
   type = scheme
-  dependencies = ../hooks/machine.F
-  dependencies = cires_ugwp_triggers.F90,cires_ugwp_initialize.F90
-  dependencies = cires_orowam2017.f,cires_ugwp_module.F90,gwdps.f,ugwp_driver_v0.F90
-  dependencies = drag_suite.F90
+  dependencies=../../hooks/machine.F
+  dependencies=shared/cires_ugwp_triggers.F90
+  dependencies=shared/cires_ugwp_initialize.F90
+  dependencies=shared/cires_orowam2017.f
+  dependencies=shared/cires_ugwp_module.F90
+  dependencies=shared/ugwp_driver_v0.F90
+  dependencies=../gwdc/gwdps.f
 
 ########################################################################
 [ccpp-arg-table]
-  name = unified_ugwp_init
+  name = cires_ugwp_init
   type = scheme
 [me]
   standard_name = mpi_rank
@@ -53,13 +56,6 @@
   dimensions = ()
   type = character
   kind = len=*
-  intent = in
-[jdat]
-  standard_name = date_and_time_of_forecast_in_united_states_order
-  long_name = current forecast date and time
-  units = none
-  dimensions = (8)
-  type = integer
   intent = in
 [lonr]
   standard_name = number_of_equatorial_longitude_points
@@ -115,22 +111,6 @@
   type = real
   kind = kind_phys
   intent = in
-[con_pi]
-  standard_name = pi
-  long_name = ratio of a circle's circumference to its diameter
-  units = none
-  dimensions = ()
-  type = real
-  kind = kind_phys
-  intent = in
-[con_rerth]
-  standard_name = radius_of_earth
-  long_name = radius of earth
-  units = m
-  dimensions = ()
-  type = real
-  kind = kind_phys
-  intent = in
 [pa_rf_in]
   standard_name = air_pressure_at_bottom_extent_of_rayleigh_damping
   long_name = pressure level from which Rayleigh Damping is applied
@@ -155,55 +135,6 @@
   type = real
   kind = kind_phys
   intent = in
-[do_ugwp]
-  standard_name = flag_for_unified_gravity_wave_physics_gravity_wave_drag_scheme
-  long_name = flag to activate CIRES UGWP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_ugwp_v0]
-  standard_name = flag_for_ugwp_version_0
-  long_name = flag to activate ver 0 CIRES UGWP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_ugwp_v0_orog_only]
-  standard_name = flag_for_ugwp_version_0_orographic_gwd
-  long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_ugwp_v0_nst_only]
-  standard_name = flag_for_ugwp_version_0_nonorographic_gwd
-  long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gsl_drag_ls_bl]
-  standard_name = do_gsl_drag_suite_mesoscale_orographic_and_blocking_drag
-  long_name = flag to activate GSL drag suite - mesoscale GWD and blocking
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gsl_drag_ss]
-  standard_name = do_gsl_drag_suite_small_scale_orographic_drag
-  long_name = flag to activate GSL drag suite - small-scale GWD
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gsl_drag_tofd]
-  standard_name = do_gsl_drag_suite_turbulent_orographic_form_drag
-  long_name = flag to activate GSL drag suite - turb orog form drag
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
 [gwd_opt]
   standard_name = control_for_drag_suite_gravity_wave_drag
   long_name = flag to choose gwd scheme
@@ -211,36 +142,9 @@
   dimensions = ()
   type = integer
   intent = in
-[errmsg]
-  standard_name = ccpp_error_message
-  long_name = error message for error handling in CCPP
-  units = none
-  dimensions = ()
-  type = character
-  kind = len=*
-  intent = out
-[errflg]
-  standard_name = ccpp_error_code
-  long_name = error code for error handling in CCPP
-  units = 1
-  dimensions = ()
-  type = integer
-  intent = out
-
-########################################################################
-[ccpp-arg-table]
-  name = unified_ugwp_final
-  type = scheme
-[do_ugwp_v0]
-  standard_name = flag_for_ugwp_version_0
-  long_name = flag to activate ver 0 CIRES UGWP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_ugwp_v0_nst_only]
-  standard_name = flag_for_ugwp_version_0_nonorographic_gwd
-  long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
+[do_ugwp]
+  standard_name = flag_for_unified_gravity_wave_physics_gravity_wave_drag_scheme
+  long_name = flag to activate CIRES UGWP
   units = flag
   dimensions = ()
   type = logical
@@ -263,8 +167,35 @@
 
 ########################################################################
 [ccpp-arg-table]
-  name = unified_ugwp_run
+  name = cires_ugwp_final
   type = scheme
+[errmsg]
+  standard_name = ccpp_error_message
+  long_name = error message for error handling in CCPP
+  units = none
+  dimensions = ()
+  type = character
+  kind = len=*
+  intent = out
+[errflg]
+  standard_name = ccpp_error_code
+  long_name = error code for error handling in CCPP
+  units = 1
+  dimensions = ()
+  type = integer
+  intent = out
+
+########################################################################
+[ccpp-arg-table]
+  name = cires_ugwp_run
+  type = scheme
+[do_ugwp]
+  standard_name = flag_for_unified_gravity_wave_physics_gravity_wave_drag_scheme
+  long_name = flag to activate CIRES UGWP
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
 [me]
   standard_name = mpi_rank
   long_name = MPI rank of current process
@@ -292,22 +223,6 @@
   units = count
   dimensions = ()
   type = integer
-  intent = in
-[ak]
-  standard_name = sigma_pressure_hybrid_coordinate_a_coefficient
-  long_name = a parameter for sigma pressure level calculations
-  units = Pa
-  dimensions = (vertical_interface_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
-[bk]
-  standard_name = sigma_pressure_hybrid_coordinate_b_coefficient
-  long_name = b parameter for sigma pressure level calculations
-  units = none
-  dimensions = (vertical_interface_dimension)
-  type = real
-  kind = kind_phys
   intent = in
 [ntrac]
   standard_name = number_of_tracers
@@ -425,248 +340,6 @@
   type = real
   kind = kind_phys
   intent = in
-[varss]
-  standard_name = standard_deviation_of_subgrid_orography_small_scale
-  long_name = standard deviation of subgrid height_above_mean_sea_level small scale
-  units = m
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[oc1ss]
-  standard_name = convexity_of_subgrid_orography_small_scale
-  long_name = convexity of subgrid height_above_mean_sea_level small scale
-  units = none
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[oa4ss]
-  standard_name = asymmetry_of_subgrid_orography_small_scale
-  long_name = asymmetry of subgrid height_above_mean_sea_level small scale
-  units = none
-  dimensions = (horizontal_loop_extent,4)
-  type = real
-  kind = kind_phys
-  intent = in
-[ol4ss]
-  standard_name = fraction_of_grid_box_with_subgrid_orography_higher_than_critical_height_small_scale
-  long_name = horizontal fraction of grid box covered by subgrid height_above_mean_sea_level higher than critical height small scale
-  units = frac
-  dimensions = (horizontal_loop_extent,4)
-  type = real
-  kind = kind_phys
-  intent = in
-[dx]
-  standard_name = characteristic_grid_lengthscale
-  long_name = size of the grid cell
-  units = m
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[dusfc_ms]
-  standard_name = vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
-  long_name = integrated x momentum flux from mesoscale gwd
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dvsfc_ms]
-  standard_name = vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
-  long_name = integrated y momentum flux from mesoscale gwd
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dusfc_bl]
-  standard_name = vertically_integrated_x_momentum_flux_due_to_blocking_drag
-  long_name = integrated x momentum flux from blocking drag
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dvsfc_bl]
-  standard_name = vertically_integrated_y_momentum_flux_due_to_blocking_drag
-  long_name = integrated y momentum flux from blocking drag
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dusfc_ss]
-  standard_name = vertically_integrated_x_momentum_flux_due_to_small_scale_gravity_wave_drag
-  long_name = integrated x momentum flux from small scale gwd
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dvsfc_ss]
-  standard_name = vertically_integrated_y_momentum_flux_due_to_small_scale_gravity_wave_drag
-  long_name = integrated y momentum flux from small scale gwd
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dusfc_fd]
-  standard_name = vertically_integrated_x_momentum_flux_due_to_form_drag
-  long_name = integrated x momentum flux from form drag
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dvsfc_fd]
-  standard_name = vertically_integrated_y_momentum_flux_due_to_form_drag
-  long_name = integrated y momentum flux from form drag
-  units = Pa
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtaux2d_ms]
-  standard_name = tendency_of_x_wind_due_to_mesoscale_orographic_gravity_wave_drag
-  long_name = instantaneous change in x wind due to orographic gw drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtauy2d_ms]
-  standard_name = tendency_of_y_wind_due_to_mesoscale_orographic_gravity_wave_drag
-  long_name = instantaneous change in y wind due to orographic gw drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtaux2d_bl]
-  standard_name = tendency_of_x_wind_due_to_blocking_drag
-  long_name = x wind tendency from blocking drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtauy2d_bl]
-  standard_name = tendency_of_y_wind_due_to_blocking_drag
-  long_name = y wind tendency from blocking drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtaux2d_ss]
-  standard_name = tendency_of_x_wind_due_to_small_scale_gravity_wave_drag
-  long_name = x wind tendency from small scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtauy2d_ss]
-  standard_name = tendency_of_y_wind_due_to_small_scale_gravity_wave_drag
-  long_name = y wind tendency from small scale gwd
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtaux2d_fd]
-  standard_name = tendency_of_x_wind_due_to_form_drag
-  long_name = x wind tendency from form drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtauy2d_fd]
-  standard_name = tendency_of_y_wind_due_to_form_drag
-  long_name = y wind tendency from form drag
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dudt_ngw]
-  standard_name = tendency_of_x_wind_due_to_nonorographic_gravity_wave_drag
-  long_name = zonal wind tendency due to non-stationary GWs
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dvdt_ngw]
-  standard_name = tendency_of_y_wind_due_to_nonorographic_gravity_wave_drag
-  long_name = meridional wind tendency due to non-stationary GWs
-  units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[dtdt_ngw]
-  standard_name = tendency_of_air_temperature_due_to_nonorographic_gravity_wave_drag
-  long_name = air temperature tendency due to non-stationary GWs
-  units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = out
-  optional = True
-[br1]
-  standard_name = bulk_richardson_number_at_lowest_model_level
-  long_name = bulk Richardson number at the surface
-  units = none
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[hpbl]
-  standard_name = atmosphere_boundary_layer_thickness
-  long_name = PBL thickness
-  units = m
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
-[vtype]
-  standard_name = vegetation_type_classification
-  long_name = vegetation type for lsm
-  units = index
-  dimensions = (horizontal_loop_extent)
-  type = integer
-  intent = in
-[slmsk]
-  standard_name = area_type
-  long_name = landmask: sea/land/ice=0/1/2
-  units = flag
-  dimensions = (horizontal_loop_extent)
-  type = real
-  kind = kind_phys
-  intent = in
 [do_tofd]
   standard_name = flag_for_turbulent_orographic_form_drag_in_unified_gravity_wave_physics_gravitiy_wave_drag_scheme
   long_name = flag for turbulent orographic form drag
@@ -681,13 +354,6 @@
   dimensions = ()
   type = logical
   intent = in
-[ugwp_seq_update]
-  standard_name = do_ugwp_sequential_update
-  long_name = flag for ugwp sequential update
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
 [cdmbgwd]
   standard_name = multiplicative_tunable_parameters_for_mountain_blocking_and_orographic_gravity_wave_drag
   long_name = multiplication factors for cdmb and gwd
@@ -695,21 +361,6 @@
   dimensions = (4)
   type = real
   kind = kind_phys
-  intent = in
-[alpha_fd]
-  standard_name = alpha_coefficient_for_turbulent_orographic_form_drag
-  long_name = alpha coefficient for Beljaars et al turbulent orographic form drag
-  units = 1
-  dimensions = ()
-  type = real
-  kind = kind_phys
-  intent = in
-[jdat]
-  standard_name = date_and_time_of_forecast_in_united_states_order
-  long_name = current forecast date and time
-  units = none
-  dimensions = (8)
-  type = integer
   intent = in
 [xlat]
   standard_name = latitude
@@ -752,7 +403,7 @@
   kind = kind_phys
   intent = in
 [ugrs]
-  standard_name = physics_timestep_initial_x_wind
+  standard_name = x_wind
   long_name = zonal wind
   units = m s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -760,7 +411,7 @@
   kind = kind_phys
   intent = in
 [vgrs]
-  standard_name = physics_timestep_initial_y_wind
+  standard_name = y_wind
   long_name = meridional wind
   units = m s-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -768,18 +419,18 @@
   kind = kind_phys
   intent = in
 [tgrs]
-  standard_name = physics_timestep_initial_air_temperature
+  standard_name = air_temperature
   long_name = model layer mean temperature
   units = K
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
-[q1]
-  standard_name = physics_timestep_initial_specific_humidity
-  long_name = mid-layer specific humidity of water vapor
+[qgrs]
+  standard_name = tracer_concentration
+  long_name = model layer mean tracer concentration
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
   type = real
   kind = kind_phys
   intent = in
@@ -878,14 +529,6 @@
   type = real
   kind = kind_phys
   intent = out
-[gw_dqdt]
-  standard_name = tendency_of_tracer_concentration
-  long_name = tendency of tracer concentration calculated by one physics scheme
-  units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
-  type = real
-  kind = kind_phys
-  intent = out
 [gw_kdis]
   standard_name = atmosphere_momentum_diffusivity_due_to_gravity_wave_drag
   long_name = eddy mixing due to UGWP
@@ -926,6 +569,102 @@
   type = real
   kind = kind_phys
   intent = out
+[zmtb]
+  standard_name = height_of_mountain_blocking
+  long_name = height of mountain blocking drag
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+[zlwb]
+  standard_name = height_of_low_level_wave_breaking
+  long_name = height of low level wave breaking
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+[zogw]
+  standard_name = height_of_launch_level_of_orographic_gravity_wave
+  long_name = height of launch level of orographic gravity wave
+  units = m
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+[dusfc_ms]
+  standard_name = vertically_integrated_x_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = integrated x momentum flux from mesoscale gwd
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dvsfc_ms]
+  standard_name = vertically_integrated_y_momentum_flux_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = integrated y momentum flux from mesoscale gwd
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dusfc_bl]
+  standard_name = vertically_integrated_x_momentum_flux_due_to_blocking_drag
+  long_name = integrated x momentum flux from blocking drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dvsfc_bl]
+  standard_name = vertically_integrated_y_momentum_flux_due_to_blocking_drag
+  long_name = integrated y momentum flux from blocking drag
+  units = Pa
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dudt_ogw]
+  standard_name = tendency_of_x_wind_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = instantaneous change in x wind due to orographic gw drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dtauy2d_ms]
+  standard_name = tendency_of_y_wind_due_to_mesoscale_orographic_gravity_wave_drag
+  long_name = instantaneous change in y wind due to orographic gw drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dtaux2d_bl]
+  standard_name = tendency_of_x_wind_due_to_blocking_drag
+  long_name = x wind tendency from blocking drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
+[dtauy2d_bl]
+  standard_name = tendency_of_y_wind_due_to_blocking_drag
+  long_name = y wind tendency from blocking drag
+  units = m s-2
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  type = real
+  kind = kind_phys
+  intent = out
+  optional = True
 [dudt_mtb]
   standard_name = instantaneous_change_in_x_wind_due_to_mountain_blocking_drag
   long_name = instantaneous change in x wind due to mountain blocking drag
@@ -985,14 +724,6 @@
   type = real
   kind = kind_phys
   intent = in
-[con_omega]
-  standard_name = angular_velocity_of_earth
-  long_name = angular velocity of earth
-  units = s-1
-  dimensions = ()
-  type = real
-  kind = kind_phys
-  intent = in
 [con_pi]
   standard_name = pi
   long_name = ratio of a circle's circumference to its diameter
@@ -1025,14 +756,6 @@
   type = real
   kind = kind_phys
   intent = in
-[con_rerth]
-  standard_name = radius_of_earth
-  long_name = radius of earth
-  units = m
-  dimensions = ()
-  type = real
-  kind = kind_phys
-  intent = in
 [con_fvirt]
   standard_name = ratio_of_vapor_to_dry_air_gas_constants_minus_one
   long_name = rv/rd - 1 (rv = ideal gas constant for water vapor)
@@ -1041,9 +764,17 @@
   type = real
   kind = kind_phys
   intent = in
+[con_omega]
+  standard_name = angular_velocity_of_earth
+  long_name = angular velocity of earth
+  units = s-1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
 [rain]
-  standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
-  long_name = total precipitation amount in each time step
+  standard_name = lwe_thickness_of_precipitation_amount_on_dynamics_timestep
+  long_name = total rain at this time step
   units = m
   dimensions = (horizontal_loop_extent)
   type = real
@@ -1057,13 +788,14 @@
   type = integer
   intent = in
 [q_tke]
-  standard_name = physics_timestep_initial_turbulent_kinetic_energy
+  standard_name = turbulent_kinetic_energy
   long_name = turbulent kinetic energy
   units = J kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [dqdt_tke]
   standard_name = process_split_cumulative_tendency_of_turbulent_kinetic_energy
   long_name = turbulent kinetic energy tendency due to model physics
@@ -1072,6 +804,7 @@
   type = real
   kind = kind_phys
   intent = in
+  optional = True
 [lprnt]
   standard_name = flag_print
   long_name = control flag for diagnostic print out
@@ -1085,13 +818,6 @@
   units = index
   dimensions = ()
   type = integer
-  intent = in
-[ldiag3d]
-  standard_name = flag_for_diagnostics_3D
-  long_name = flag for 3d diagnostic fields
-  units = flag
-  dimensions = ()
-  type = logical
   intent = in
 [dtend]
   standard_name = cumulative_change_of_state_variables
@@ -1109,13 +835,6 @@
   dimensions = (number_of_tracers_plus_one_hundred,number_of_cumulative_change_processes)
   type = integer
   intent = in
-[index_of_temperature]
-  standard_name = index_of_temperature_in_cumulative_change_index
-  long_name = index of temperature in first dimension of array cumulative change index
-  units = index
-  dimensions = ()
-  type = integer
-  intent = in
 [index_of_x_wind]
   standard_name = index_of_x_wind_in_cumulative_change_index
   long_name = index of x-wind in first dimension of array cumulative change index
@@ -1126,6 +845,13 @@
 [index_of_y_wind]
   standard_name = index_of_y_wind_in_cumulative_change_index
   long_name = index of y-wind in first dimension of array cumulative change index
+  units = index
+  dimensions = ()
+  type = integer
+  intent = in
+[index_of_temperature]
+  standard_name = index_of_temperature_in_cumulative_change_index
+  long_name = index of temperature in first dimension of array cumulative change index
   units = index
   dimensions = ()
   type = integer
@@ -1144,6 +870,13 @@
   dimensions = ()
   type = integer
   intent = in
+[ldiag3d]
+  standard_name = flag_for_diagnostics_3D
+  long_name = flag for 3d diagnostic fields
+  units = flag
+  dimensions = ()
+  type = logical
+  intent = in
 [lssav]
   standard_name = flag_for_diagnostics
   long_name = logical flag for storing diagnostics
@@ -1158,86 +891,14 @@
   dimensions = ()
   type = logical
   intent = in
-[do_ugwp_v0]
-  standard_name = flag_for_ugwp_version_0
-  long_name = flag to activate ver 0 CIRES UGWP
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_ugwp_v0_orog_only]
-  standard_name = flag_for_ugwp_version_0_orographic_gwd
-  long_name = flag to activate ver 0 CIRES UGWP - orographic GWD only
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_ugwp_v0_nst_only]
-  standard_name = flag_for_ugwp_version_0_nonorographic_gwd
-  long_name = flag to activate ver 0 CIRES UGWP - non-stationary GWD only
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gsl_drag_ls_bl]
-  standard_name = do_gsl_drag_suite_mesoscale_orographic_and_blocking_drag
-  long_name = flag to activate GSL drag suite - mesoscale GWD and blocking
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gsl_drag_ss]
-  standard_name = do_gsl_drag_suite_small_scale_orographic_drag
-  long_name = flag to activate GSL drag suite - small-scale GWD
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gsl_drag_tofd]
-  standard_name = do_gsl_drag_suite_turbulent_orographic_form_drag
-  long_name = flag to activate GSL drag suite - turb orog form drag
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[do_gwd_opt_psl]
-  standard_name = do_gsl_drag_suite_with_psl_gwd_option
-  long_name = flag to activate PSL drag suite - mesoscale GWD and blocking
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
-[psl_gwd_dx_factor]
-  standard_name = effective_grid_spacing_of_psl_gwd_suite
-  long_name = multiplication of grid spacing
-  units = 1
-  dimensions = ()
+[ten_q]
+  standard_name = tendency_of_tracer_concentration
+  long_name = tendency of tracer concentration calculated by one physics scheme
+  units = kg kg-1 s-1
+  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
   type = real
   kind = kind_phys
-  intent = in
-[gwd_opt]
-  standard_name = control_for_drag_suite_gravity_wave_drag
-  long_name = flag to choose gwd scheme
-  units = flag
-  dimensions = ()
-  type = integer
-  intent = in
-[spp_wts_gwd]
-  standard_name = spp_weights_for_gravity_wave_drag_scheme
-  long_name = spp weights for gravity wave drag scheme
-  units = 1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
-  type = real
-  kind = kind_phys
-  intent = in
-  optional = True
-[spp_gwd]
-  standard_name = control_for_gravity_wave_drag_spp_perturbations
-  long_name = control for gravity wave drag spp perturbations
-  units = count
-  dimensions = ()
-  type = integer
-  intent = in
+  intent = out
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
