@@ -9,7 +9,7 @@
   name = gwdc_post_run
   type = scheme
 [im]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -64,7 +64,7 @@
   standard_name = instantaneous_x_stress_due_to_gravity_wave_drag
   long_name = zonal stress at cloud top due to convective gravity wave drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -72,7 +72,7 @@
   standard_name = instantaneous_y_stress_due_to_gravity_wave_drag
   long_name = meridional stress at cloud top due to convective gravity wave drag
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -80,7 +80,7 @@
   standard_name = tendency_of_x_wind_due_to_convective_gravity_wave_drag
   long_name = zonal wind tendency due to convective gravity wave drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -88,7 +88,7 @@
   standard_name = tendency_of_y_wind_due_to_convective_gravity_wave_drag
   long_name = meridional wind tendency due to convective gravity wave drag
   units = m s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -96,7 +96,7 @@
   standard_name = time_integral_of_x_stress_due_to_gravity_wave_drag
   long_name = integral over time of zonal stress due to gravity wave drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -104,7 +104,7 @@
   standard_name = time_integral_of_y_stress_due_to_gravity_wave_drag
   long_name = integral over time of meridional stress due to gravity wave drag
   units = Pa s
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -112,7 +112,7 @@
   standard_name = cumulative_change_of_state_variables
   long_name = diagnostic tendencies for state variables
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
   type = real
   kind = kind_phys
   intent = inout
@@ -149,7 +149,7 @@
   standard_name = x_wind
   long_name = zonal wind
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -157,7 +157,7 @@
   standard_name = y_wind
   long_name = meridional wind
   units = m s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -165,7 +165,7 @@
   standard_name = air_temperature
   long_name = air temperature
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout

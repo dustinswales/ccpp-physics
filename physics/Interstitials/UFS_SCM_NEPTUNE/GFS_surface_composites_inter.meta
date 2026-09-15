@@ -9,7 +9,7 @@
   name = GFS_surface_composites_inter_run
   type = scheme
 [im]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -19,28 +19,28 @@
   standard_name = flag_nonzero_land_surface_fraction
   long_name = flag indicating presence of some land surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = in
 [icy]
   standard_name = flag_nonzero_sea_ice_surface_fraction
   long_name = flag indicating presence of some sea ice surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = in
 [wet]
   standard_name = flag_nonzero_wet_surface_fraction
   long_name = flag indicating presence of some ocean or lake surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [semis_wat]
   standard_name = surface_longwave_emissivity_over_water
   long_name = surface lw emissivity in fraction over water
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -48,7 +48,7 @@
   standard_name = surface_longwave_emissivity_over_land
   long_name = surface lw emissivity in fraction over land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -56,7 +56,7 @@
   standard_name = surface_longwave_emissivity_over_ice
   long_name = surface lw emissivity in fraction over ice
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -64,7 +64,7 @@
   standard_name = surface_downwelling_longwave_flux
   long_name = surface downwelling longwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -72,7 +72,7 @@
   standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_land
   long_name = total sky surface downward longwave flux absorbed by the ground over land
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -80,7 +80,7 @@
   standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_ice
   long_name = total sky surface downward longwave flux absorbed by the ground over ice
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -88,7 +88,7 @@
   standard_name = surface_downwelling_longwave_flux_absorbed_by_ground_over_water
   long_name = total sky surface downward longwave flux absorbed by the ground over water
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -96,7 +96,7 @@
   standard_name = surface_upwelling_shortwave_flux
   long_name = surface upwelling shortwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -104,7 +104,7 @@
   standard_name = surface_downwelling_shortwave_flux
   long_name = surface downwelling shortwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -112,7 +112,7 @@
   standard_name = surface_net_downwelling_shortwave_flux
   long_name = surface net downwelling shortwave flux at current time
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in

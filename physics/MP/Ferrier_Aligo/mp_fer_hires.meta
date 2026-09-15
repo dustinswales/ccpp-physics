@@ -118,7 +118,7 @@
   name = mp_fer_hires_run
   type = scheme
 [ncol]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -150,7 +150,7 @@
   standard_name = area_type
   long_name = landmask: sea/land/ice=0/1/2
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind= kind_phys
   intent = in
@@ -158,7 +158,7 @@
   standard_name = air_pressure_at_interface
   long_name = air pressure at model layer interfaces
   units = Pa
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -166,7 +166,7 @@
   standard_name = air_pressure
   long_name = mean layer pressure
   units = Pa
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -174,7 +174,7 @@
   standard_name = air_temperature
   long_name = air temperature
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -182,7 +182,7 @@
   standard_name = specific_humidity
   long_name = water vapor specific humidity
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -190,7 +190,7 @@
   standard_name = accumulated_change_of_air_temperature_due_to_FA_scheme
   long_name = accumulated change of air temperature due to FA MP scheme
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -199,7 +199,7 @@
   standard_name = ratio_of_snowfall_to_rainfall
   long_name = snow ratio: ratio of snow to total precipitation (explicit only)
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -207,7 +207,7 @@
   standard_name = cloud_liquid_water_mixing_ratio
   long_name = ratio of mass of cloud water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -215,7 +215,7 @@
   standard_name = rain_mixing_ratio
   long_name = ratio of mass of rain water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -223,7 +223,7 @@
   standard_name = cloud_ice_mixing_ratio
   long_name = ratio of mass of ice water to mass of dry air plus vapor (without condensates)
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -231,7 +231,7 @@
   standard_name = mass_weighted_rime_factor
   long_name = mass weighted rime factor
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -239,7 +239,7 @@
   standard_name = lwe_thickness_of_explicit_precipitation_amount
   long_name = explicit precipitation ( rain, ice, snow, graupel, ...) on physics timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -268,7 +268,7 @@
   standard_name = radar_reflectivity_10cm
   long_name = instantaneous refl_10cm
   units = dBZ
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -284,7 +284,7 @@
   standard_name = characteristic_grid_lengthscale
   long_name = relative dx for the grid cell
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -332,7 +332,7 @@
   standard_name = tendency_of_air_temperature
   long_name = tendency of air temperature calculated by one physics scheme
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -340,7 +340,7 @@
   standard_name = tendency_of_specific_humidity
   long_name = water vapor specific humidity tendency
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -348,7 +348,7 @@
   standard_name = tendency_of_cloud_liquid_water_mixing_ratio
   long_name = cloud condensed water mixing ratio tendency
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -356,7 +356,7 @@
   standard_name = tendency_of_rain_mixing_ratio
   long_name = ratio of mass of rain water tendency to mass of dry air plus vapor (without condensates)
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -364,7 +364,7 @@
   standard_name = tendency_of_cloud_ice_mixing_ratio
   long_name = cloud condensed water mixing ratio tendency
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -372,7 +372,7 @@
   standard_name = tendency_of_mass_weighted_rime_factor
   long_name = mass weighted rime factor tendency
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -380,7 +380,7 @@
   standard_name = tendency_of_tracer_concentration
   long_name = tendency of tracer concentration calculated by one physics scheme
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,number_of_tracers)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,number_of_tracers)
   type = real
   kind = kind_phys
   intent = out

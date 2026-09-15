@@ -8,7 +8,7 @@
   name = GFS_surface_composites_pre_run
   type = scheme
 [im]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -32,7 +32,7 @@
   standard_name = flag_for_cice
   long_name = flag for cice
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [cplflx]
@@ -81,7 +81,7 @@
   standard_name = land_sea_mask_from_data
   long_name = landmask
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -90,7 +90,7 @@
   standard_name = sea_surface_temperature_from_data
   long_name = sfc temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -99,7 +99,7 @@
   standard_name = surface_skin_temperature_over_ice_from_data
   long_name = surface skin temperature over ice
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -108,7 +108,7 @@
   standard_name = sea_ice_thickness_from_data
   long_name = sea-ice thickness
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -117,7 +117,7 @@
   standard_name = sea_ice_area_fraction_of_sea_area_fraction_from_data
   long_name = sea-ice concentration [0,1]
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -126,7 +126,7 @@
   standard_name = land_area_fraction
   long_name = fraction of horizontal grid area occupied by land
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -134,7 +134,7 @@
   standard_name = lake_area_fraction
   long_name = fraction of horizontal grid area occupied by lake
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -142,7 +142,7 @@
   standard_name = lake_depth
   long_name = lake depth
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -150,7 +150,7 @@
   standard_name = sea_area_fraction
   long_name = fraction of horizontal grid area occupied by ocean
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -158,7 +158,7 @@
   standard_name = land_area_fraction_for_microphysics
   long_name = land area fraction used in microphysics schemes
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -166,28 +166,28 @@
   standard_name = flag_nonzero_land_surface_fraction
   long_name = flag indicating presence of some land surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [icy]
   standard_name = flag_nonzero_sea_ice_surface_fraction
   long_name = flag indicating presence of some sea ice surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [lake]
   standard_name = flag_nonzero_lake_surface_fraction
   long_name = flag indicating presence of some lake surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [use_lake_model]
   standard_name = flag_for_using_lake_model
   long_name = flag indicating lake points using a lake model
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = in
 [iopt_lake]
@@ -208,14 +208,14 @@
   standard_name = flag_nonzero_wet_surface_fraction
   long_name = flag indicating presence of some ocean or lake surface area fraction
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [hice]
   standard_name = sea_ice_thickness
   long_name = sea ice thickness
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -223,7 +223,7 @@
   standard_name = sea_ice_area_fraction_of_sea_area_fraction
   long_name = ice fraction over open water
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -231,7 +231,7 @@
   standard_name = surface_roughness_length_over_water
   long_name = surface roughness length over water
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -239,7 +239,7 @@
   standard_name = surface_roughness_length_over_land
   long_name = surface roughness length over land
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -247,7 +247,7 @@
   standard_name = surface_roughness_length_over_ice
   long_name = surface roughness length over ice
   units = cm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -255,7 +255,7 @@
   standard_name = lwe_surface_snow
   long_name = water equivalent snow depth
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -263,7 +263,7 @@
   standard_name = surface_snow_thickness_water_equivalent_over_land
   long_name = water equivalent snow depth over land
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -271,7 +271,7 @@
   standard_name = surface_snow_thickness_water_equivalent_over_ice
   long_name = water equivalent snow depth over ice
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -279,7 +279,7 @@
   standard_name = physics_timestep_initial_air_temperature_at_surface_adjacent_layer
   long_name = mean temperature at lowest model layer
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -287,7 +287,7 @@
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep
   long_name = total precipitation amount in each time step
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -295,7 +295,7 @@
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_water
   long_name = total precipitation amount in each time step over water
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -303,7 +303,7 @@
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_land
   long_name = total precipitation amount in each time step over land
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -311,7 +311,7 @@
   standard_name = nonnegative_lwe_thickness_of_precipitation_amount_on_dynamics_timestep_over_ice
   long_name = total precipitation amount in each time step over ice
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -319,7 +319,7 @@
   standard_name = surface_friction_velocity
   long_name = boundary layer parameter
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -327,7 +327,7 @@
   standard_name = surface_friction_velocity_over_water
   long_name = surface friction velocity over water
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -335,7 +335,7 @@
   standard_name = surface_friction_velocity_over_land
   long_name = surface friction velocity over land
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -343,7 +343,7 @@
   standard_name = surface_friction_velocity_over_ice
   long_name = surface friction velocity over ice
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -351,7 +351,7 @@
   standard_name = lwe_thickness_of_surface_snow_amount
   long_name = water equiv of acc snow depth over land and sea ice
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -359,7 +359,7 @@
   standard_name = water_equivalent_accumulated_snow_depth_over_land
   long_name = water equiv of acc snow depth over land
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -367,7 +367,7 @@
   standard_name = water_equivalent_accumulated_snow_depth_over_ice
   long_name = water equiv of acc snow depth over ice
   units = mm
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -375,7 +375,7 @@
   standard_name = surface_upward_potential_latent_heat_flux_over_ice
   long_name = surface upward potential latent heat flux over ice
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -383,7 +383,7 @@
   standard_name = surface_skin_temperature
   long_name = surface skin temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -391,7 +391,7 @@
   standard_name = sea_surface_temperature
   long_name = sea surface temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -399,7 +399,7 @@
   standard_name = surface_skin_temperature_over_land
   long_name = surface skin temperature over land
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -407,7 +407,7 @@
   standard_name = surface_skin_temperature_over_water
   long_name = surface skin temperature over water
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -415,7 +415,7 @@
   standard_name = surface_skin_temperature_over_ice
   long_name = surface skin temperature over ice
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -423,7 +423,7 @@
   standard_name = surface_skin_temperature_after_iteration_over_water
   long_name = surface skin temperature after iteration over water
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -431,7 +431,7 @@
   standard_name = surface_skin_temperature_after_iteration_over_land
   long_name = surface skin temperature after iteration over land
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -439,7 +439,7 @@
   standard_name = surface_skin_temperature_after_iteration_over_ice
   long_name = surface skin temperature after iteration over ice
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -447,7 +447,7 @@
   standard_name = upward_heat_flux_in_soil_over_ice
   long_name = soil heat flux over ice
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -463,21 +463,21 @@
   standard_name = sea_land_ice_mask
   long_name = sea/land/ice mask (=0/1/2)
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = inout
 [islmsk_cice]
   standard_name = sea_land_ice_mask_cice
   long_name = sea/land/ice mask cice (=0/1/2)
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = inout
 [slmsk]
   standard_name = area_type
   long_name = landmask: sea/land/ice=0/1/2
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -485,7 +485,7 @@
   standard_name = surface_specific_humidity
   long_name = surface air saturation specific humidity
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -493,7 +493,7 @@
   standard_name = surface_specific_humidity_over_water
   long_name = surface air saturation specific humidity over water
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -501,7 +501,7 @@
   standard_name = surface_specific_humidity_over_land
   long_name = surface air saturation specific humidity over land
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -509,7 +509,7 @@
   standard_name = surface_specific_humidity_over_ice
   long_name = surface air saturation specific humidity over ice
   units = kg kg-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout

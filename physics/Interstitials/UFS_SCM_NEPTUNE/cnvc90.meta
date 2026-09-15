@@ -16,7 +16,7 @@
   kind = kind_phys
   intent = in
 [im]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -26,7 +26,7 @@
   standard_name = lwe_thickness_of_convective_precipitation_amount_on_dynamics_timestep
   long_name = convective rainfall amount on dynamics timestep
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -34,14 +34,14 @@
   standard_name = vertical_index_at_cloud_base
   long_name = vertical index at cloud base
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = in
 [ktop]
   standard_name = vertical_index_at_cloud_top
   long_name = vertical index at cloud top
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = in
 [km]
@@ -55,7 +55,7 @@
   standard_name = air_pressure_at_interface
   long_name = interface pressure
   units = Pa
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -63,7 +63,7 @@
   standard_name = cumulative_lwe_thickness_of_convective_precipitation_amount_between_sw_radiation_calls
   long_name = accumulated convective rainfall amount for cnvc90 only
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -71,7 +71,7 @@
   standard_name = cumulative_min_vertical_index_at_cloud_base_between_sw_radiation_calls
   long_name = smallest cloud base vertical index encountered thus far
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -79,7 +79,7 @@
   standard_name = cumulative_max_vertical_index_at_cloud_base_between_sw_radiation_calls
   long_name = largest cloud top vertical index encountered thus far
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -87,7 +87,7 @@
   standard_name = convective_cloud_area_fraction_between_sw_radiation_calls_from_cnvc90
   long_name = fraction of convective cloud
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -95,7 +95,7 @@
   standard_name = pressure_at_convective_cloud_base_between_sw_radiation_calls_from_cnvc90
   long_name = pressure at bottom of convective cloud
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -103,7 +103,7 @@
   standard_name = pressure_at_convective_cloud_top_between_sw_radiation_calls_from_cnvc90
   long_name = pressure at top of convective cloud
   units = Pa
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout

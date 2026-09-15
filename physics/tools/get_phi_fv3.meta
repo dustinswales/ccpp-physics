@@ -9,7 +9,7 @@
   name = get_phi_fv3_run
   type = scheme
 [ix]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal dimension
   units = count
   dimensions = ()
@@ -34,7 +34,7 @@
   standard_name = air_temperature
   long_name = air temperature
   units = K
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -42,7 +42,7 @@
   standard_name = specific_humidity
   long_name = mid-layer specific humidity of water vapor
   units = kg kg-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -50,7 +50,7 @@
   standard_name = geopotential_difference_between_midlayers_divided_by_midlayer_virtual_temperature
   long_name = difference between mid-layer geopotentials divided by mid-layer virtual temperature
   units = m2 s-2 K-1
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -58,7 +58,7 @@
   standard_name = geopotential_at_interface
   long_name = interface geopotential
   units = m2 s-2
-  dimensions = (horizontal_loop_extent,vertical_interface_dimension)
+  dimensions = (horizontal_dimension,vertical_interface_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -66,7 +66,7 @@
   standard_name = geopotential
   long_name = mid-layer geopotential
   units = m2 s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out

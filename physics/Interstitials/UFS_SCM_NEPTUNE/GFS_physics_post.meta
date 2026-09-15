@@ -8,7 +8,7 @@
   name = GFS_physics_post_run
   type = scheme
 [nCol]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -25,7 +25,7 @@
   standard_name = cumulative_change_of_state_variables
   long_name = diagnostic tendencies for state variables
   units = mixed
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
+  dimensions = (horizontal_dimension,vertical_layer_dimension,cumulative_change_of_state_variables_outer_index_max)
   type = real
   kind = kind_phys
   intent = inout
@@ -125,7 +125,7 @@
   standard_name = ozone_tendency_due_to_production_and_loss_rate
   long_name = ozone tendency due to production and loss rate
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -134,7 +134,7 @@
   standard_name = ozone_tendency_due_to_ozone_mixing_ratio
   long_name = ozone tendency due to ozone mixing ratio
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -143,7 +143,7 @@
   standard_name = ozone_tendency_due_to_temperature
   long_name = ozone tendency due to temperature
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -152,7 +152,7 @@
   standard_name = ozone_tendency_due_to_overhead_ozone_column
   long_name = ozone tendency due to overhead ozone column
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -168,7 +168,7 @@
   standard_name = water_vapor_tendency_due_to_production_and_loss_rate
   long_name = water_vapor tendency due to production and loss rate
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -177,7 +177,7 @@
   standard_name = water_vapor_tendency_due_to_water_vapor_mixing_ratio
   long_name = water_vapor tendency due to water_vapor mixing ratio
   units = kg kg-1 s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in

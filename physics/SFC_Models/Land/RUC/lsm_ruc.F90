@@ -805,7 +805,7 @@ module lsm_ruc
 !!  -   1. configuration information (c):
 !!\n  \a ffrozp  - fraction of frozen precipitation
 !!\n  \a frpcpn  - .true. if mixed phase precipitation available
-!!\n  \a 1:im - horizontal_loop_extent
+!!\n  \a 1:im - horizontal_dimension
 !!\n  \a fice    - fraction of sea-ice in the grid cell
 !!\n  \a delt    - timestep (sec) (dt should not exceed 3600 secs)
 !!\n  \a conflx2 - height (\f$m\f$) above ground of atmospheric forcing variables

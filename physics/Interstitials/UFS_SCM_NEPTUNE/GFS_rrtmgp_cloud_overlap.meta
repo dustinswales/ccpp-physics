@@ -10,7 +10,7 @@
   name = GFS_rrtmgp_cloud_overlap_run
   type = scheme
 [nCol]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal dimension
   units = count
   dimensions = ()
@@ -56,7 +56,7 @@
   standard_name = latitude
   long_name = latitude
   units = radian
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   intent = in
   kind = kind_phys 
@@ -64,7 +64,7 @@
   standard_name = layer_thickness_from_layer_center
   long_name = layer_thickness
   units = m
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -176,7 +176,7 @@
   standard_name = total_cloud_fraction
   long_name = layer total cloud fraction
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -184,7 +184,7 @@
   standard_name = convective_cloud_fraction_for_RRTMGP
   long_name = layer convective cloud fraction
   units = frac
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -221,7 +221,7 @@
   standard_name = cloud_decorrelation_length
   long_name = cloud decorrelation length
   units = km
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -229,7 +229,7 @@
   standard_name = cloud_overlap_param
   long_name = cloud overlap parameter
   units = km
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -238,7 +238,7 @@
   standard_name = precip_overlap_param
   long_name = precipitation overlap parameter
   units = km
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -247,7 +247,7 @@
   standard_name = convective_cloud_overlap_param
   long_name = convective cloud overlap parameter
   units = km
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = out

@@ -17,7 +17,7 @@
 !! \htmlinclude GFS_rrtmg_pre_run.html
 !!    
 !>\section rrtmg_pre_gen General Algorithm
-      subroutine GFS_rrtmg_pre_run (im, levs, lm, lmk, lmp, n_var_lndp, lextop,&
+      subroutine GFS_rrtmg_pre_run (im, levs, lm, n_var_lndp, lextop,          &
         ltp, imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_c3, me, ncnd, ntrac,        &
         num_p3d, npdf3d, xr_cnvcld,                                            &
         ncnvcld3d,ntqv, ntcw,ntiw, ntlnc, ntinc, ntrnc, ntsnc, ntccn, top_at_1,&
@@ -94,7 +94,7 @@
       use module_ozphys, only: ty_ozphys
       implicit none
 
-      integer,              intent(in)  :: im, levs, lm, lmk, lmp, ltp,        &
+      integer,              intent(in)  :: im, levs, lm, ltp,                  &
                                            n_var_lndp, imfdeepcnv,             &
                                            imfdeepcnv_gf, imfdeepcnv_c3,       &
                                            me, ncnd, ntrac,                    &
@@ -317,8 +317,8 @@
           kd = 0                   ! index diff between in/out and local
           kt = 1                   ! index diff between lyr and upper bound
           kb = 0                   ! index diff between lyr and lower bound
-          lla = LMK                ! local index at the 2nd level from top
-          llb = LMP                ! local index at toa level
+          lla = levs               ! local index at the 2nd level from top
+          llb = LM                 ! local index at toa level
           lya = LM                 ! local index for the 2nd layer from top
           lyb = LP1                ! local index for the top layer
         else                       ! vertical from toa downward
@@ -448,7 +448,7 @@
 !> - Get layer ozone mass mixing ratio (if use ozone climatology data,
 
       if (ntoz > 0) then            ! interactive ozone generation
-        do k=1,lmk
+        do k=1,levs
           do i=1,im
             olyr(i,k) = max( QMIN, tracer1(i,k,ntoz) )
           enddo
@@ -478,11 +478,11 @@
 
 !  --- ...  set up non-prognostic gas volume mixing ratioes
 
-      call getgases (plvl, xlon, xlat, IM, LMK, ico2, top_at_1,& !  --- inputs
+      call getgases (plvl, xlon, xlat, IM, levs, ico2, top_at_1,& !  --- inputs
                      con_pi, gasvmr)                             !  --- outputs
 
 !CCPP: re-assign gasvmr(:,:,NF_VGAS) to gasvmr_X(:,:)
-      do k = 1, LMK
+      do k = 1, levs
         do i = 1, IM
            gasvmr_co2    (i,k)  = gasvmr(i,k,1)
            gasvmr_n2o    (i,k)  = gasvmr(i,k,2)
@@ -498,7 +498,7 @@
       enddo
 
 !> - Get temperature at layer interface, and layer moisture.
-      do k = 2, LMK
+      do k = 2, levs
         do i = 1, IM
           tem2da(i,k) = log( plyr(i,k) )
           tem2db(i,k) = log( plvl(i,k) )
@@ -510,10 +510,10 @@
           tem1d (i)   = QME6
           tem2da(i,1) = log( plyr(i,1) )
           tem2db(i,1) = log( max(prsmin, plvl(i,1)) )
-          tem2db(i,LMP) = log( plvl(i,LMP) )
-          tsfa  (i)   = tlyr(i,LMK)                  ! sfc layer air temp
+          tem2db(i,LM) = log( plvl(i,LM) )
+          tsfa  (i)   = tlyr(i,levs)                 ! sfc layer air temp
           tlvl(i,1)   = tlyr(i,1)
-          tlvl(i,LMP) = tskn(i)
+          tlvl(i,LM) = tskn(i)
         enddo
 
         do k = 1, LM
@@ -534,7 +534,7 @@
           enddo
         endif
 
-        do k = 2, LMK
+        do k = 2, levs
           do i = 1, IM
             tlvl(i,k) = tlyr(i,k) + (tlyr(i,k-1) - tlyr(i,k))           &
      &                * (tem2db(i,k)   - tem2da(i,k))                   &
@@ -550,24 +550,24 @@
 
         tem0d = 0.001 * rog
         do i = 1, IM
-          do k = 1, LMK
+          do k = 1, levs
             dz(i,k) = tem0d * (tem2db(i,k+1) - tem2db(i,k)) * tvly(i,k)
           enddo
 
-          hz(i,LMP) = 0.0
-          do k = LMK, 1, -1
+          hz(i,LM) = 0.0
+          do k = levs, 1, -1
             hz(i,k) = hz(i,k+1) + dz(i,k)
           enddo
 
-          do k = LMK, 1, -1
+          do k = levs, 1, -1
             pfac = (tem2db(i,k+1) - tem2da(i,k)) / (tem2db(i,k+1) - tem2db(i,k))
             hzb(i,k) = hz(i,k+1) + pfac * (hz(i,k) - hz(i,k+1))
           enddo
 
-          do k = LMK-1, 1, -1
+          do k = levs-1, 1, -1
             dzb(i,k) = hzb(i,k) - hzb(i,k+1)
           enddo
-          dzb(i,LMK) = hzb(i,LMK) - hz(i,LMP)
+          dzb(i,levs) = hzb(i,levs) - hz(i,LM)
         enddo
 
       else                               ! input data from sfc to toa
@@ -576,10 +576,10 @@
           tem1d (i)   = QME6
           tem2da(i,1) = log( plyr(i,1) )
           tem2db(i,1) = log( plvl(i,1) )
-          tem2db(i,LMP) = log( max(prsmin, plvl(i,LMP)) )
+          tem2db(i,LM) = log( max(prsmin, plvl(i,LM)) )
           tsfa  (i)   = tlyr(i,1)                    ! sfc layer air temp
           tlvl(i,1)   = tskn(i)
-          tlvl(i,LMP) = tlyr(i,LMK)
+          tlvl(i,LM) = tlyr(i,levs)
         enddo
 
         do k = LM, 1, -1
@@ -599,7 +599,7 @@
           enddo
         endif
 
-        do k = 1, LMK-1
+        do k = 1, levs-1
           do i = 1, IM
             tlvl(i,k+1) = tlyr(i,k) + (tlyr(i,k+1) - tlyr(i,k))         &
      &                  * (tem2db(i,k+1) - tem2da(i,k))                 &
@@ -615,21 +615,21 @@
 
         tem0d = 0.001 * rog
         do i = 1, IM
-          do k = LMK, 1, -1
+          do k = levs, 1, -1
             dz(i,k) = tem0d * (tem2db(i,k) - tem2db(i,k+1)) * tvly(i,k)
           enddo
 
           hz(i,1) = 0.0
-          do k = 1, LMK
+          do k = 1, levs
             hz(i,k+1) = hz(i,k) + dz(i,k)
           enddo
 
-          do k = 1, LMK
+          do k = 1, levs
             pfac = (tem2db(i,k) - tem2da(i,k)) / (tem2db(i,k) - tem2db(i,k+1))
             hzb(i,k) = hz(i,k) + pfac * (hz(i,k+1) - hz(i,k))
           enddo
 
-          do k = 2, LMK
+          do k = 2, levs
             dzb(i,k) = hzb(i,k) - hzb(i,k-1)
           enddo
           dzb(i,1) = hzb(i,1) - hz(i,1)
@@ -665,7 +665,7 @@
 
 !>---   add smoke and dust ---
        if (rrfs_sd .and. aero_dir_fdb) then
-         do k=1,lmk
+         do k=1,levs
            do i=1,im
              aer_nm(i,k,1 )=aer_nm(i,k,1 )+ qgrs(i,k,ntdust)*fdb_coef(1)*1.e-9    ! dust bin1
              aer_nm(i,k,2 )=aer_nm(i,k,2 )+(qgrs(i,k,ntdust)*fdb_coef(2)          &
@@ -682,13 +682,13 @@
 !> - Call module_radiation_aerosols::setaer() to setup aerosols
 !! property profile for radiation.
       call setaer (plvl, plyr, prslk1, tvly, rhly, slmsk,    & !  ---  inputs
-                   tracer1, aer_nm, xlon, xlat, IM, LMK, LMP,&
+                   tracer1, aer_nm, xlon, xlat, IM, levs, LM,&
                    lsswr, lslwr, iaermdl, iaerflg, top_at_1, con_pi,  &
                    con_rd, con_g, faersw, faerlw, aerodp, ext550, errflg, errmsg)         !  ---  outputs
 
 ! CCPP
       do j = 1,NBDSW
-        do k = 1, LMK
+        do k = 1, levs
           do i = 1, IM
             ! NF_AESW = 3
             faersw1(i,k,j) = faersw(i,k,j,1)
@@ -699,7 +699,7 @@
        enddo
 
       do j = 1,NBDLW
-        do k = 1, LMK
+        do k = 1, levs
           do i = 1, IM
             ! NF_AELW = 3
             faerlw1(i,k,j) = faerlw(i,k,j,1)
@@ -717,20 +717,20 @@
 !      if (ntcw > 0) then                            ! prognostic cloud schemes
         ccnd = 0.0_kind_phys
         if (ncnd == 1) then                          
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)        ! liquid water/ice
             enddo
           enddo
         elseif (ncnd == 2) then                      ! MG
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)        ! liquid water
               ccnd(i,k,2) = tracer1(i,k,ntiw)        ! ice water
             enddo
           enddo
         elseif (ncnd == 4) then                      ! MG2
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)                     ! liquid water
               ccnd(i,k,2) = tracer1(i,k,ntiw)                     ! ice water
@@ -739,7 +739,7 @@
             enddo
           enddo
         elseif (ncnd == 5 .or. ncnd == 6) then       ! GFDL MP, Thompson, MG3, NSSL
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               ccnd(i,k,1) = tracer1(i,k,ntcw)                     ! liquid water
               ccnd(i,k,2) = tracer1(i,k,ntiw)                     ! ice water
@@ -757,7 +757,7 @@
           enddo
           ! for Thompson MP - prepare variables for calc_effr
           if_thompson: if (imp_physics == imp_physics_thompson .and. (ltaerosol .or. mraerosol)) then
-            do k=1,LMK
+            do k=1,levs
               do i=1,IM
                 qvs = qlyr(i,k)
                 qv_mp (i,k) = qvs/(1.-qvs)
@@ -772,7 +772,7 @@
               enddo
             enddo
           elseif (imp_physics == imp_physics_thompson) then
-            do k=1,LMK
+            do k=1,levs
               do i=1,IM
                 qvs = qlyr(i,k)
                 qv_mp (i,k) = qvs/(1.-qvs)
@@ -791,7 +791,7 @@
             enddo
           endif if_thompson
           if (imp_physics == imp_physics_tempo) then
-            do k=1,LMK
+            do k=1,levs
               do i=1,IM
                 qvs = qlyr(i,k)
                 qv_mp (i,k) = qvs/(1.-qvs)
@@ -826,7 +826,7 @@
           endif
         endif
         do n=1,ncndl
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               if (ccnd(i,k,n) < epsq) ccnd(i,k,n) = 0.0
             enddo
@@ -838,18 +838,18 @@
 
 ! rsun the  summation methods and order make the difference in calculation
 
-!            clw(:,:) = clw(:,:) + tracer1(:,1:LMK,ntcw)   &
-!                                + tracer1(:,1:LMK,ntiw)   &
-!                                + tracer1(:,1:LMK,ntrw)   &
-!                                + tracer1(:,1:LMK,ntsw)   &
-!                                + tracer1(:,1:LMK,ntgl)
-            ccnd(:,:,1) =               tracer1(:,1:LMK,ntcw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntrw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntiw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntsw)
-            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:LMK,ntgl)
+!            clw(:,:) = clw(:,:) + tracer1(:,1:levs,ntcw)   &
+!                                + tracer1(:,1:levs,ntiw)   &
+!                                + tracer1(:,1:levs,ntrw)   &
+!                                + tracer1(:,1:levs,ntsw)   &
+!                                + tracer1(:,1:levs,ntgl)
+            ccnd(:,:,1) =               tracer1(:,1:levs,ntcw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntrw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntiw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntsw)
+            ccnd(:,:,1) = ccnd(:,:,1) + tracer1(:,1:levs,ntgl)
           endif
-          do k=1,LMK
+          do k=1,levs
             do i=1,IM
               if (ccnd(i,k,1) < EPSQ ) ccnd(i,k,1) = 0.0
             enddo
@@ -966,9 +966,9 @@
                   effri(i,k) = MAX(re_qi_min_thompson, MIN(effri(i,k), re_qi_max_thompson))*1.e6
                   effrs(i,k) = MAX(re_qs_min_thompson, MIN(effrs(i,k), re_qs_max_thompson))*1.e6
                end do
-               effrl(i,lmk) = re_qc_min_thompson*1.e6
-               effri(i,lmk) = re_qi_min_thompson*1.e6
-               effrs(i,lmk) = re_qs_min_thompson*1.e6
+               effrl(i,levs) = re_qc_min_thompson*1.e6
+               effri(i,levs) = re_qi_min_thompson*1.e6
+               effrs(i,levs) = re_qs_min_thompson*1.e6
           end do
           effrr(:,:) = 1000. ! rrain_def=1000.
           ! Update global arrays
@@ -993,9 +993,9 @@
                   effri(i,k) = MAX(re_qi_min_thompson, MIN(effri(i,k), re_qi_max_thompson))*1.e6
                   effrs(i,k) = MAX(re_qs_min_thompson, MIN(effrs(i,k), re_qs_max_thompson))*1.e6
                end do
-               effrl(i,lmk) = re_qc_min_thompson*1.e6
-               effri(i,lmk) = re_qi_min_thompson*1.e6
-               effrs(i,lmk) = re_qs_min_thompson*1.e6
+               effrl(i,levs) = re_qc_min_thompson*1.e6
+               effri(i,levs) = re_qi_min_thompson*1.e6
+               effrs(i,levs) = re_qs_min_thompson*1.e6
           end do
           effrr(:,:) = 1000. ! rrain_def=1000.
           ! Update global arrays
@@ -1039,7 +1039,7 @@
             enddo
           enddo
         else                                                      ! all the rest
-          do k=1,lmk
+          do k=1,levs
             do i=1,im
               deltaq(i,k) = 0.0
               cnvw  (i,k) = 0.0
@@ -1052,7 +1052,7 @@
         call radiation_clouds_prop                                      &
      &     ( plyr, plvl, tlyr, tvly, qlyr, qstl, rhly,                  &    !  ---  inputs:
      &       ccnd, ncndl, cnvw, cnvc, tracer1,                          &
-     &       xlat, xlon, slmsk, dz, delp, IM, LM, LMK, LMP,             &
+     &       xlat, xlon, slmsk, dz, delp, IM, LM, levs, LM,             &
      &       deltaq, sup, dcorr_con, me, icloud, kdt,                   &
      &       ntrac, ntcw, ntiw, ntrw, ntsw, ntgl, ntclamt,              &
      &       imp_physics, imp_physics_nssl, imp_physics_fer_hires,      &
@@ -1083,7 +1083,7 @@
               call cdfnor(tmp_wt,cdfz)
               cldp1d(i) = cdfz
           enddo
-          do k = 1, LMK
+          do k = 1, levs
              do i = 1, IM
                 ! compute beta distribution parameters
                 m = cld_frac(i,k)

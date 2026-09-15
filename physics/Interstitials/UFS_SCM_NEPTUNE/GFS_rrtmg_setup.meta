@@ -23,7 +23,7 @@
   kind = kind_phys
   intent = in
 [levr]
-  standard_name = vertical_dimension_for_radiation
+  standard_name = vertical_interface_dimension
   long_name = number of vertical levels for radiation calculations
   units = count
   dimensions = ()

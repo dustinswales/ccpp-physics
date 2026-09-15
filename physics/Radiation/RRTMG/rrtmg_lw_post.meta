@@ -8,7 +8,7 @@
   name = rrtmg_lw_post_run
   type = scheme
 [im]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -29,7 +29,7 @@
   type = integer
   intent = in
 [lm]
-  standard_name = vertical_dimension_for_radiation
+  standard_name = vertical_interface_dimension
   long_name = number of vertical layers for radiation calculation
   units = count
   dimensions = ()
@@ -60,7 +60,7 @@
   standard_name = surface_air_temperature_for_radiation
   long_name = lowest model layer air temperature for radiation
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -68,7 +68,7 @@
   standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_time_step_and_radiation_levels
   long_name = total sky heating rate due to longwave radiation
   units = K s-1
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -76,7 +76,7 @@
   standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_time_step_and_radiation_levels
   long_name = clear sky heating rate due to longwave radiation
   units = K s-1
-  dimensions = (horizontal_loop_extent,adjusted_vertical_layer_dimension_for_radiation)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -84,14 +84,14 @@
   standard_name = surface_lw_fluxes_assuming_total_and_clear_sky_on_radiation_timestep
   long_name = lw radiation fluxes at sfc
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = sfcflw_type
   intent = in
 [tsflw]
   standard_name = air_temperature_at_surface_adjacent_layer_on_radiation_timestep
   long_name = surface air temp during lw calculation
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -99,7 +99,7 @@
   standard_name = surface_downwelling_longwave_flux_on_radiation_timestep
   long_name = total sky sfc downward lw flux
   units = W m-2
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -107,7 +107,7 @@
   standard_name = tendency_of_air_temperature_due_to_longwave_heating_on_radiation_timestep
   long_name = total sky lw heating rate
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -115,7 +115,7 @@
   standard_name = tendency_of_air_temperature_due_to_longwave_heating_assuming_clear_sky_on_radiation_timestep
   long_name = clear sky lw heating rates
   units = K s-1
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = inout

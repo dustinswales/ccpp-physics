@@ -11,7 +11,7 @@
 !> \section arg_table_rrtmg_sw_post_run Argument Table
 !! \htmlinclude rrtmg_sw_post_run.html
 !!
-      subroutine rrtmg_sw_post_run (im, levr, levs, ltp, nday, lm, kd, lsswr,  &
+      subroutine rrtmg_sw_post_run (im, levs, nday, lm, kd, lsswr,             &
                  swhtr, sfcalb1, sfcalb2, sfcalb3, sfcalb4, htswc, htsw0,      &
                  nirbmdi, nirdfdi, visbmdi, visdfdi, nirbmui, nirdfui, visbmui,&
                  visdfui, sfcdsw, sfcnsw, htrsw, swhc, scmpsw, sfcfsw, topfsw, &
@@ -23,8 +23,8 @@
 
       implicit none
 
-      integer,                              intent(in)    :: im, levr, levs,   &
-                                                             ltp, nday, lm, kd
+      integer,                              intent(in)    :: im, levs,   &
+                                                             nday, lm, kd
       logical,                              intent(in)    :: lsswr, swhtr 
       real(kind=kind_phys), dimension(:),   intent(in)    :: sfcalb1, sfcalb2, &
                                                              sfcalb3, sfcalb4

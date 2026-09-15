@@ -128,7 +128,7 @@
   type = integer
   intent = in
 [im]
-  standard_name = horizontal_loop_extent
+  standard_name = horizontal_dimension
   long_name = horizontal loop extent
   units = count
   dimensions = ()
@@ -145,7 +145,7 @@
   standard_name = vegetation_area_fraction
   long_name = areal fractional cover of green vegetation
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -153,7 +153,7 @@
   standard_name = sea_land_ice_mask
   long_name = landmask: sea/land/ice=0/1/2
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = in
 [isot]
@@ -174,63 +174,63 @@
   standard_name = soil_type_classification
   long_name = soil type for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = inout
 [scolor]
   standard_name = soil_color_classification
   long_name = soil color for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = inout
 [vtype]
   standard_name = vegetation_type_classification
   long_name = vegetation type for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = inout
 [slope]
   standard_name = surface_slope_classification
   long_name = sfc slope type for lsm
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = inout
 [vtype_save]
   standard_name = vegetation_type_classification_save
   long_name = vegetation type for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = out
 [stype_save]
   standard_name = soil_type_classification_save
   long_name = soil type for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = out
 [scolor_save]
   standard_name = soil_color_classification_save
   long_name = soil color for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = out
 [slope_save]
   standard_name = surface_slope_classification_save
   long_name = sfc slope type for lsm save
   units = index
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = out
 [prsik_1]
   standard_name = surface_dimensionless_exner_function
   long_name = dimensionless Exner function at lowest model interface
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -238,7 +238,7 @@
   standard_name = dimensionless_exner_function_at_surface_adjacent_layer
   long_name = dimensionless Exner function at lowest model layer
   units = none
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -246,7 +246,7 @@
   standard_name = surface_skin_temperature
   long_name = surface skin temperature
   units = K
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -254,7 +254,7 @@
   standard_name = geopotential
   long_name = geopotential at model layer centers
   units = m2 s-2
-  dimensions = (horizontal_loop_extent,vertical_layer_dimension)
+  dimensions = (horizontal_dimension,vertical_layer_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -270,7 +270,7 @@
   standard_name = bounded_vegetation_area_fraction
   long_name = areal fractional cover of green vegetation bounded on the bottom
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -278,7 +278,7 @@
   standard_name = ratio_of_exner_function_between_midlayer_and_interface_at_lowest_model_layer
   long_name = Exner function ratio bt midlayer and interface at 1st layer
   units = ratio
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -286,7 +286,7 @@
   standard_name = height_above_ground_at_lowest_model_layer
   long_name = layer 1 height above ground (not MSL)
   units = m
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -308,7 +308,7 @@
   standard_name = surface_stochastic_weights_from_coupled_process
   long_name = weights for stochastic surface physics perturbation
   units = 1
-  dimensions = (horizontal_loop_extent,number_of_perturbed_land_surface_variables)
+  dimensions = (horizontal_dimension,number_of_perturbed_land_surface_variables)
   type = real
   kind = kind_phys
   intent = in
@@ -335,7 +335,7 @@
   standard_name = perturbation_of_momentum_roughness_length
   long_name = perturbation of momentum roughness length
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -343,7 +343,7 @@
   standard_name = perturbation_of_heat_to_momentum_roughness_length_ratio
   long_name = perturbation of heat to momentum roughness length ratio
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -351,7 +351,7 @@
   standard_name = perturbation_of_soil_type_b_parameter
   long_name = perturbation of soil type "b" parameter
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -359,7 +359,7 @@
   standard_name = perturbation_of_leaf_area_index
   long_name = perturbation of leaf area index
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -367,7 +367,7 @@
   standard_name = perturbation_of_vegetation_fraction
   long_name = perturbation of vegetation fraction
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -390,21 +390,21 @@
   standard_name = flag_for_cice
   long_name = flag for cice
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = logical
   intent = inout
 [islmsk_cice]
   standard_name = sea_land_ice_mask_cice
   long_name = sea/land/ice mask cice (=0/1/2)
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = integer
   intent = out
 [slimskin_cpl]
   standard_name = area_type_from_coupled_process
   long_name = sea/land/ice mask input (=0/1/2)
   units = flag
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -413,7 +413,7 @@
   standard_name = wind_speed_at_lowest_model_layer
   long_name = wind speed at lowest model level
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -421,7 +421,7 @@
   standard_name = physics_timestep_initial_x_wind_at_surface_adjacent_layer
   long_name = zonal wind at lowest model layer
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -429,7 +429,7 @@
   standard_name = physics_timestep_initial_y_wind_at_surface_adjacent_layer
   long_name = meridional wind at lowest model layer
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = in
@@ -437,7 +437,7 @@
   standard_name = enhancement_to_wind_speed_at_surface_adjacent_layer_due_to_convection
   long_name = surface wind enhancement due to convection
   units = m s-1
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = inout
@@ -446,7 +446,7 @@
   standard_name = volume_fraction_of_condensed_water_in_soil_at_wilting_point
   long_name = wilting point (volumetric)
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
@@ -454,7 +454,7 @@
   standard_name = threshold_volume_fraction_of_condensed_water_in_soil
   long_name = soil moisture threshold (volumetric)
   units = frac
-  dimensions = (horizontal_loop_extent)
+  dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
   intent = out
