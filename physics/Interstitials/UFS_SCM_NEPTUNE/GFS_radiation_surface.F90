@@ -125,7 +125,7 @@ contains
        ! For MPAS dycore, the shortwave surface albedo and longwave surface emissivity are provided
        ! as part of the surface fields.
        !
-       ! These are updated (daily) by calling ufs_mpas_landuse_update() in the MPAS-to-CCPP
+       ! These are updated (daily) by calling ufs_mpas_surface_update() in the MPAS-to-CCPP
        ! coupling, just before calling the CCPP radiation group, which is where this interstitial
        ! is called :)
        !

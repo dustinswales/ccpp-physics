@@ -47,7 +47,7 @@
         clouds9, cldsa, cldfra, cldfra2d, lwp_ex,iwp_ex, lwp_fc,iwp_fc,        &
         faersw1, faersw2, faersw3, faerlw1, faerlw2, faerlw3, alpha, rrfs_sd,  &
         aero_dir_fdb, fdb_coef, spp_wts_rad, spp_rad, ico2, ozphys,            &
-        dycore_active, dycore_fv3, errmsg, errflg)
+        dycore_active, dycore_fv3, dycore_mpas, first_time_step, errmsg, errflg)
 
       use machine,                   only: kind_phys, kind_dbl_prec
 
@@ -113,7 +113,7 @@
                                            imp_physics_nssl,                   &
                                            imp_physics_fer_hires,              &
                                            yearlen, icloud, iaermdl, iaerflg,  &
-                                           dycore_active, dycore_fv3
+                                           dycore_active, dycore_fv3, dycore_mpas
 
       integer,              intent(in)  ::                                     &
          iovr,                             & ! choice of cloud-overlap method
@@ -140,7 +140,7 @@
                                           lcnorm, top_at_1, lextop, mraerosol
       logical,              intent(in) :: rrfs_sd, aero_dir_fdb, xr_cnvcld
 
-      logical,              intent(in) :: nssl_ccn_on, nssl_invertccn
+      logical,              intent(in) :: nssl_ccn_on, nssl_invertccn, first_time_step
       integer,              intent(in) :: spp_rad
       real(kind_phys),      intent(in), optional :: spp_wts_rad(:,:)
 
@@ -757,7 +757,7 @@
             enddo
           enddo
           ! for Thompson MP - prepare variables for calc_effr
-          if (dycore_active == dycore_fv3) then
+          if ((dycore_active == dycore_fv3) .or. first_time_step) then
              if_thompson: if (imp_physics == imp_physics_thompson .and. (ltaerosol .or. mraerosol)) then
                 do k=1,LMK
                    do i=1,IM
@@ -935,7 +935,7 @@
           endif
 
        elseif (imp_physics == imp_physics_thompson) then       !  Thompson MP
-          if (dycore_active == dycore_fv3) then
+          if ((dycore_active == dycore_fv3) .or. first_time_step) then
              !
              ! Compute effective radii for QC, QI, QS with (GF, MYNN) or without (all others) sub-grid clouds
              !
@@ -982,8 +982,20 @@
                 enddo
              enddo
           end if
+          if (dycore_active == dycore_mpas) then
+             ! Global arrays (*_inout) are updated by MP. Local arrays (no suffix) are used in radiation_cloud_props
+             ! to update global arrays.
+             do k=1,lm
+                k1 = k + kd
+                do i=1,im
+                   effrl(i,k1) = effrl_inout(i,k)
+                   effri(i,k1) = effri_inout(i,k)
+                   effrs(i,k1) = effrs_inout(i,k)
+                enddo
+             enddo
+          end if
        elseif (imp_physics == imp_physics_tempo) then       ! Tempo
-          if (dycore_active == dycore_fv3) then
+          if (dycore_active == dycore_fv3 .or. first_time_step) then
              do i=1,im
                 islmsk = nint(slmsk(i))
                 call effective_radius(temp=tlyr(i,:), l_qc=l_qc(i,:), nc=nc_mp(i,:), &
@@ -1010,7 +1022,18 @@
                 enddo
              enddo
           end if
-
+          if (dycore_active == dycore_mpas) then
+             ! Global arrays (*_inout) are updated by MP. Local arrays (no suffix) are used in radiation_cloud_props
+             ! to update global arrays.
+             do k=1,lm
+                k1 = k + kd
+                do i=1,im
+                   effrl(i,k1) = effrl_inout(i,k)
+                   effri(i,k1) = effri_inout(i,k)
+                   effrs(i,k1) = effrs_inout(i,k)
+                enddo
+             enddo
+          end if
         else                                                           ! all other cases
           cldcov = 0.0
         endif
