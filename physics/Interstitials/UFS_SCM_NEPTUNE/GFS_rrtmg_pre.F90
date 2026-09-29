@@ -1031,6 +1031,12 @@
                    effrl(i,k1) = effrl_inout(i,k)
                    effri(i,k1) = effri_inout(i,k)
                    effrs(i,k1) = effrs_inout(i,k)
+                   if (.not. (effrl(i,k1) == effrl(i,k1))) effrl(i,k1) = re_qc_min_thompson*1.e6
+                   if (.not. (effri(i,k1) == effri(i,k1))) effri(i,k1) = re_qi_min_thompson*1.e6
+                   if (.not. (effrs(i,k1) == effrs(i,k1))) effrs(i,k1) = re_qs_min_thompson*1.e6
+                   effrl(i,k1) = max(re_qc_min_thompson*1.e6, min(effrl(i,k1), re_qc_max_thompson*1.e6))
+                   effri(i,k1) = max(re_qi_min_thompson*1.e6, min(effri(i,k1), re_qi_max_thompson*1.e6))
+                   effrs(i,k1) = max(re_qs_min_thompson*1.e6, min(effrs(i,k1), re_qs_max_thompson*1.e6))
                 enddo
              enddo
           end if
