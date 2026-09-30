@@ -122,20 +122,35 @@ contains
     !> UFS-MPAS specific Radiation-to-Surface coupling
     !> #######################################################################################
     if (dycore_active == dycore_mpas) then
-       ! For MPAS dycore, the shortwave surface albedo and longwave surface emissivity are provided
-       ! as part of the surface fields.
-       !
-       ! These are updated (daily) by calling ufs_mpas_surface_update() in the MPAS-to-CCPP
-       ! coupling, just before calling the CCPP radiation group, which is where this interstitial
-       ! is called :)
-       !
-       ! Here we asign the same shortwave surface albedo to all channels.
+       ! Open water: salb/semis from the host (MPAS land-use values, 0.08 / table emissivity).
+       ! Land and sea ice: albedo/emissivity from the LSM (RUC), as in stock MPAS.
        if (lsswr) then
-          do i = 1,size(sfcalb,2)
-             sfcalb(:,i) = salb(:)
-          end do
-       end if
-       ! The surface emissivity is unmodified here and has intent(inout).
+          do i = 1, im
+             if (lsm == lsm_ruc .and. nint(slmsk(i)) == 1) then            ! land
+                sfcalb(i,1) = albdnir_lnd(i)
+                sfcalb(i,2) = albinir_lnd(i)
+                sfcalb(i,3) = albdvis_lnd(i)
+                sfcalb(i,4) = albivis_lnd(i)
+             elseif (lsm == lsm_ruc .and. nint(slmsk(i)) == 2 .and. present(albdvis_ice)) then ! sea ice
+                sfcalb(i,1) = fice(i)*albdnir_ice(i) + (f_one-fice(i))*0.08_kind_phys
+                sfcalb(i,2) = fice(i)*albinir_ice(i) + (f_one-fice(i))*0.08_kind_phys
+                sfcalb(i,3) = fice(i)*albdvis_ice(i) + (f_one-fice(i))*0.08_kind_phys
+                sfcalb(i,4) = fice(i)*albivis_ice(i) + (f_one-fice(i))*0.08_kind_phys
+             else                                                           ! open water / other LSM
+                sfcalb(i,:) = salb(i)
+             endif
+          enddo
+       endif
+       if (lslwr) then
+          do i = 1, im
+             if (lsm == lsm_ruc .and. nint(slmsk(i)) == 1) then
+                semis(i) = semis_lnd(i)
+             elseif (lsm == lsm_ruc .and. nint(slmsk(i)) == 2) then
+                semis(i) = fice(i)*semis_ice(i) + (f_one-fice(i))*0.98_kind_phys
+             endif
+             ! open water: semis keeps the value set by the host
+          enddo
+       endif
     endif
 
     !> #######################################################################################

@@ -1028,9 +1028,10 @@
              do k=1,lm
                 k1 = k + kd
                 do i=1,im
-                   effrl(i,k1) = effrl_inout(i,k)
-                   effri(i,k1) = effri_inout(i,k)
-                   effrs(i,k1) = effrs_inout(i,k)
+                   ! DJS2026: This is is a temporary fix until the framework can do this transform for us.
+                   effrl(i,k1) = effrl_inout(i,k)*1.e6
+                   effri(i,k1) = effri_inout(i,k)*1.e6
+                   effrs(i,k1) = effrs_inout(i,k)*1.e6
                    if (.not. (effrl(i,k1) == effrl(i,k1))) effrl(i,k1) = re_qc_min_thompson*1.e6
                    if (.not. (effri(i,k1) == effri(i,k1))) effri(i,k1) = re_qi_min_thompson*1.e6
                    if (.not. (effrs(i,k1) == effrs(i,k1))) effrs(i,k1) = re_qs_min_thompson*1.e6
