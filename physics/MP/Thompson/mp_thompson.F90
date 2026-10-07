@@ -386,8 +386,7 @@ module mp_thompson
                               is_initialized, fs_fac_rain, fs_fac_snow, &
                               ten_q, dspechum, dqc, dqr,           &
                               dqi, dqs, dqg, dni, dnr, dnc, dnwfa, &
-                              dnifa, dtgrs, ten_u, ten_v,          &
-                              re_cloud, re_ice, re_snow, errmsg, errflg)
+                              dnifa, dtgrs, ten_u, ten_v, errmsg, errflg)
 
          implicit none
 
@@ -436,10 +435,6 @@ module mp_thompson
          real(kind_phys),           intent(inout) :: ice(:)
          real(kind_phys),           intent(inout) :: snow(:)
          real(kind_phys),           intent(  out) :: sr(:)
-         ! Effective radii, for coupling to radiation.
-         real(kind_phys), optional, intent(  out) :: re_cloud(:,:)
-         real(kind_phys), optional, intent(  out) :: re_ice(:,:)
-         real(kind_phys), optional, intent(  out) :: re_snow(:,:)
          ! Radar reflectivity
          real(kind_phys),           intent(inout) :: refl_10cm(:,:)
          real(kind_phys),           intent(inout) :: max_hail_diam_sfc(:)
@@ -454,7 +449,7 @@ module mp_thompson
          logical,                   intent(in)    :: ext_diag
          real(kind_phys), target,   intent(inout), optional :: diag3d(:,:,:)
          logical,                   intent(in)    :: reset_diag3d
-
+         
          real(kind_phys),           intent(  out) :: ten_q(:,:,:)
          real(kind_phys),           intent(  out) :: ten_u(:,:)
          real(kind_phys),           intent(  out) :: ten_v(:,:)
@@ -531,6 +526,9 @@ module mp_thompson
          integer         :: do_radar_ref_mp                 ! integer instead of logical do_radar_ref
          ! Effective cloud radii - turned off in CCPP (taken care off in radiation)
          logical, parameter :: do_effective_radii = .false.
+         integer, parameter :: has_reqc = 0
+         integer, parameter :: has_reqi = 0
+         integer, parameter :: has_reqs = 0
          integer, parameter :: kme_stoch = 1
          integer         :: spp_mp_opt 
          ! Dimensions used in mp_gt_driver
@@ -582,7 +580,7 @@ module mp_thompson
          ! Initialize the CCPP error handling variables
          errmsg = ''
          errflg = 0
-
+         
          ten_q    = 0.0 ! Since this scheme is outputting tracer tendencies individually,
                         ! we also need to initialize the entire array to 0, so that when
                         ! tendencies are applied, all tracer tendencies other than those
@@ -820,6 +818,7 @@ module mp_thompson
                               refl_10cm=refl_10cm,                                           &
                               diagflag=diagflag, do_radar_ref=do_radar_ref_mp,               &
                               max_hail_diam_sfc=max_hail_diam_sfc,                           &
+                              has_reqc=has_reqc, has_reqi=has_reqi, has_reqs=has_reqs,       &
                               aero_ind_fdb=aero_ind_fdb, rand_perturb_on=spp_mp_opt,         &
                               kme_stoch=kme_stoch,                                           &
                               rand_pert=spp_wts_mp, spp_var_list=spp_var_list,               &
@@ -829,8 +828,7 @@ module mp_thompson
                               ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,          &
                               its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte,          &
                               fullradar_diag=fullradar_diag, istep=istep, nsteps=nsteps,     &
-                              first_time_step=first_time_step, re_cloud=re_cloud,            &
-                              re_ice=re_ice, re_snow=re_snow, errmsg=errmsg, errflg=errflg,  &
+                              first_time_step=first_time_step, errmsg=errmsg, errflg=errflg, &
                               ! Extended diagnostics
                               ext_diag=ext_diag,                                             &
                               ! vts1=vts1, txri=txri, txrc=txrc,                             &
@@ -863,6 +861,7 @@ module mp_thompson
                                refl_10cm=refl_10cm,                                           &
                                diagflag=diagflag, do_radar_ref=do_radar_ref_mp,               &
                                max_hail_diam_sfc=max_hail_diam_sfc,                           &
+                               has_reqc=has_reqc, has_reqi=has_reqi, has_reqs=has_reqs,       &
                                aero_ind_fdb=aero_ind_fdb, rand_perturb_on=spp_mp_opt,         &
                                kme_stoch=kme_stoch,                                           &
                                rand_pert=spp_wts_mp, spp_var_list=spp_var_list,               &
@@ -872,8 +871,7 @@ module mp_thompson
                                ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,          &
                                its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte,          &
                                fullradar_diag=fullradar_diag, istep=istep, nsteps=nsteps,     &
-                               first_time_step=first_time_step, re_cloud=re_cloud,            &
-                               re_ice=re_ice, re_snow=re_snow, errmsg=errmsg, errflg=errflg,  &
+                               first_time_step=first_time_step, errmsg=errmsg, errflg=errflg, &
                                ! Extended diagnostics
                                ext_diag=ext_diag,                                             &
                                ! vts1=vts1, txri=txri, txrc=txrc,                             &
@@ -905,6 +903,7 @@ module mp_thompson
                               refl_10cm=refl_10cm,                                           &
                               diagflag=diagflag, do_radar_ref=do_radar_ref_mp,               &
                               max_hail_diam_sfc=max_hail_diam_sfc,                           &
+                              has_reqc=has_reqc, has_reqi=has_reqi, has_reqs=has_reqs,       &
                               rand_perturb_on=spp_mp_opt, kme_stoch=kme_stoch,               &
                               rand_pert=spp_wts_mp, spp_var_list=spp_var_list,               &
                               spp_prt_list=spp_prt_list, n_var_spp=n_var_spp,                &
@@ -913,8 +912,7 @@ module mp_thompson
                               ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,          &
                               its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte,          &
                               fullradar_diag=fullradar_diag, istep=istep, nsteps=nsteps,     &
-                              first_time_step=first_time_step, re_cloud=re_cloud,            &
-                              re_ice=re_ice, re_snow=re_snow, errmsg=errmsg, errflg=errflg,  &
+                              first_time_step=first_time_step, errmsg=errmsg, errflg=errflg, &
                               ! Extended diagnostics
                               ext_diag=ext_diag,                                             &
                               ! vts1=vts1, txri=txri, txrc=txrc,                             &

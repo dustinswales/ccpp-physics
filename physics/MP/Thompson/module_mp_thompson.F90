@@ -1016,6 +1016,7 @@ module module_mp_thompson
                               max_hail_diam_sfc,                      &
                               vt_dbz_wt, first_time_step,             &
                               re_cloud, re_ice, re_snow,              &
+                              has_reqc, has_reqi, has_reqs,           &
                               aero_ind_fdb, rand_perturb_on,          &
                               kme_stoch,                              &
                               rand_pert, spp_prt_list, spp_var_list,  &
@@ -1068,6 +1069,7 @@ module module_mp_thompson
          real(wp), dimension(:,:), intent(in), optional :: rand_pert
          real(wp), dimension(:), intent(in), optional :: spp_prt_list, spp_stddev_cutoff
          character(len=10), dimension(:), intent(in), optional :: spp_var_list
+         integer, intent(in):: has_reqc, has_reqi, has_reqs
 #if ( WRF_CHEM == 1 )
          real(wp), dimension(ims:ime, kms:kme, jms:jme), intent(inout):: &
                            rainprod, evapprod
@@ -1731,7 +1733,7 @@ module module_mp_thompson
                      endif
                   ENDIF diagflag_present
 
-                  IF (present(re_cloud) .and. present(re_ice) .and. present(re_snow)) THEN
+                  IF (has_reqc.ne.0 .and. has_reqi.ne.0 .and. has_reqs.ne.0) THEN
                      do k = kts, kte
                         re_qc1d(k) = re_qc_min
                         re_qi1d(k) = re_qi_min
