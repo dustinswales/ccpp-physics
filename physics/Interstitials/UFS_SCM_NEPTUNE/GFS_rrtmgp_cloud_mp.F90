@@ -36,7 +36,7 @@ contains
 !!
   subroutine GFS_rrtmgp_cloud_mp_run(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice,     &
        i_cldrain, i_cldsnow, i_cldgrpl, i_cldtot, i_cldliq_nc, i_cldice_nc, i_twa, kdt,  &
-       imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_samf, doSWrad, doLWrad, effr_in, lmfshal,   &
+       imfdeepcnv, imfdeepcnv_gf, imfdeepcnv_samf, doSWrad, doLWrad, effr_in,            &
        ltaerosol,mraerosol, icloud, imp_physics, imp_physics_thompson, imp_physics_gfdl, &
        lgfdlmprad, do_mynnedmf, uni_cld, lmfdeep2, p_lev, p_lay, t_lay, qs_lay, q_lay,   &
        relhum, lsmask, xlon, xlat, dx, tv_lay, effrin_cldliq, effrin_cldice,             &
@@ -46,7 +46,7 @@ contains
        cld_iwp, cld_reice, cld_swp, cld_resnow, cld_rwp, cld_rerain, precip_frac,        &
        cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_pbl_lwp,              &
        cld_pbl_reliq, cld_pbl_iwp, cld_pbl_reice, lwp_ex, iwp_ex, lwp_fc, iwp_fc,        &
-       cldfra2d, errmsg, errflg)
+       cldfra2d, alpha, lambda, errmsg, errflg)
     implicit none
 
     ! Inputs   
@@ -76,7 +76,6 @@ contains
          doSWrad,                   & !< Call SW radiation?
          doLWrad,                   & !< Call LW radiation?
          effr_in,                   & !< Provide hydrometeor radii from macrophysics?
-         lmfshal,                   & !< Flag for mass-flux shallow convection scheme used by Xu-Randall
          ltaerosol,                 & !< Flag for aerosol option
          mraerosol,                 & !< Flag for aerosol option
          lgfdlmprad,                & !< Flag for GFDLMP radiation interaction
@@ -122,7 +121,11 @@ contains
          p_lev                        !< Pressure at model-level interfaces (Pa)
     real(kind_phys), dimension(:,:,:),intent(in) :: &
          tracer                       !< Cloud condensate amount in layer by type ()
-
+    real(kind_phys), intent(in) :: &
+         alpha                        !< Multiplicative tuning parameter for Xu Randall cloud fraction
+    real(kind_phys), intent(in) :: &
+         lambda                       !< Exponential tuning parameter for Xu Randall cloud fraction
+    
     ! Outputs
     real(kind_phys), dimension(:), intent(inout) :: &
          lwp_ex,                    & !< Total liquid water path from explicit microphysics
@@ -159,7 +162,6 @@ contains
 
     ! Local
     integer :: iCol, iLay
-    real(kind_phys) :: alpha0
     real(kind_phys), dimension(nCol,nLev) :: cldcov, cldtot, cldcnv
 
     if (.not. (doSWrad .or. doLWrad)) return
@@ -234,17 +236,15 @@ contains
 
        ! Grell-Freitas convective clouds?
        if (imfdeepcnv == imfdeepcnv_gf) then
-          alpha0 = 100.
           call cloud_mp_GF(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,     &
-               qci_conv, con_ttp, con_g, alpha0,                                        &
+               qci_conv, con_ttp, con_g, alpha, lambda,                                 &
                cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_cnv_frac)
        endif
 
        ! SAMF scale & aerosol-aware mass-flux convective clouds?
        if (imfdeepcnv == imfdeepcnv_samf) then
-          alpha0 = 200.
           call cloud_mp_SAMF(nCol, nLev, t_lay, p_lev, p_lay, qs_lay, relhum,           &
-               cnv_mixratio, con_ttp, con_g, alpha0,                                    &
+               cnv_mixratio, con_ttp, con_g, alpha, lambda,                             &
                cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, cld_cnv_reice, cld_cnv_frac)
        endif
 
@@ -257,16 +257,11 @@ contains
        cld_resnow = effrin_cldsnow
 
        ! Thomson MP using modified Xu-Randall cloud-fraction (additionally conditioned on RH)
-       alpha0 = 2000.
-       if (lmfshal) then
-          alpha0 = 100.
-          if (lmfdeep2) alpha0 = 200.
-       endif
        call cloud_mp_thompson(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice, i_cldrain,&
             i_cldsnow, i_cldgrpl, p_lev, p_lay, tv_lay, t_lay, tracer, qs_lay, q_lay,   &
-            relhum, con_ttp, con_g, con_rd, con_eps, alpha0, cnv_mixratio, lwp_ex,      &
-            iwp_ex, lwp_fc, iwp_fc, cld_frac, cld_lwp, cld_iwp, cld_swp, cld_rwp,       &
-            cond_cfrac_onRH = .true., doGP_smearclds = doGP_smearclds)
+            relhum, con_ttp, con_g, con_rd, con_eps, alpha, lambda, cnv_mixratio,       &
+            lwp_ex, iwp_ex, lwp_fc, iwp_fc, cld_frac, cld_lwp, cld_iwp, cld_swp,        &
+            cld_rwp, cond_cfrac_onRH = .true., doGP_smearclds = doGP_smearclds)
     endif
 
     ! Bound effective radii for RRTMGP, LUT's for cloud-optics go from
@@ -316,7 +311,7 @@ contains
 !!              not GFDL-EMC)
 !!
   subroutine cloud_mp_GF(nCol, nLev, lsmask, t_lay, p_lev, p_lay, qs_lay, relhum,        &
-       qci_conv, con_ttp, con_g, alpha0, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp,        &
+       qci_conv, con_ttp, con_g, alpha, lambda, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp, &
        cld_cnv_reice, cld_cnv_frac)
     implicit none
 
@@ -329,7 +324,8 @@ contains
     real(kind_phys), intent(in) :: &
          con_g,         & !< Physical constant: gravitational constant 
          con_ttp,       & !< Triple point temperature of water (K)
-         alpha0           !<
+         alpha,         & !< Multiplicative tuning parameter for Xu Randall cloud fraction
+         lambda           !< Exponent tuning parameter for Xu Randall cloud fraction
     real(kind_phys), dimension(:,:),intent(in) :: &
          t_lay,         & !< Temperature at layer centers (K)
          p_lev,         & !< Pressure at layer interfaces (Pa)
@@ -371,9 +367,9 @@ contains
              !eff radius cloud ice (microns), from Mishra et al. (2014, JGR Atmos, fig 6b) 
              if(qi > 1.E-8) cld_cnv_reice(iCol,iLay) = max(173.45 + 2.14*(t_lay(iCol,iLay)-273.15), 20.)
       
-             ! Xu-Randall (1996) cloud-fraction, lambda = 0.5
+             ! Xu-Randall (1996) cloud-fraction.
              cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay)*0.01,    &
-                qs_lay(iCol,iLay), relhum(iCol,iLay), qc+qi, alpha0, 0.5, 1.0)   
+                qs_lay(iCol,iLay), relhum(iCol,iLay), qc+qi, alpha, lambda, 1.0)   
           endif
        enddo
     enddo
@@ -461,8 +457,8 @@ contains
 !!   (DJS asks: Does the SAMF scheme produce a cloud-fraction?)
 !!
   subroutine cloud_mp_SAMF(nCol, nLev, t_lay, p_lev, p_lay, qs_lay, relhum,              &
-       cnv_mixratio, con_ttp, con_g, alpha0, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp,    &
-       cld_cnv_reice, cld_cnv_frac)
+       cnv_mixratio, con_ttp, con_g, alpha, lambda, cld_cnv_lwp, cld_cnv_reliq,          &
+       cld_cnv_iwp, cld_cnv_reice, cld_cnv_frac)
     implicit none
 
     ! Inputs
@@ -472,7 +468,8 @@ contains
     real(kind_phys), intent(in) :: &
          con_g,         & !< Physical constant: gravity         (m s-2)
          con_ttp,       & !< Triple point temperature of water  (K)
-         alpha0           !<
+         alpha,         & !< Multiplicative tuning parameter for Xu Randall cloud fraction
+         lambda           !< Exponential tuning parameter for Xu Randall cloud fraction
     real(kind_phys), dimension(:,:),intent(in) :: &
          t_lay,         & !< Temperature at layer-centers       (K)
          p_lev,         & !< Pressure at layer-interfaces       (Pa)
@@ -503,10 +500,10 @@ contains
              cld_cnv_reliq(iCol,iLay) = reliq_def
              cld_cnv_reice(iCol,iLay) = reice_def
 
-             ! Xu-Randall (1996) cloud-fraction, lambda = 0.5
+             ! Xu-Randall (1996) cloud-fraction.
              cld_cnv_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay)*0.01,  &
                qs_lay(iCol,iLay), relhum(iCol,iLay), cnv_mixratio(iCol,iLay),     &
-               alpha0, 0.5, 1.0)
+               alpha, lambda, 1.0)
           endif
        enddo
     enddo
@@ -656,8 +653,9 @@ contains
 !!
   subroutine cloud_mp_thompson(nCol, nLev, nTracers, ncnd, i_cldliq, i_cldice, i_cldrain,&
        i_cldsnow, i_cldgrpl, p_lev, p_lay, tv_lay, t_lay, tracer, qs_lay, q_lay, relhum, &
-       con_ttp, con_g, con_rd, con_eps, alpha0, cnv_mixratio, lwp_ex, iwp_ex, lwp_fc,    &
-       iwp_fc, cld_frac, cld_lwp, cld_iwp, cld_swp, cld_rwp, cond_cfrac_onRH, doGP_smearclds)
+       con_ttp, con_g, con_rd, con_eps, alpha, lambda, cnv_mixratio, lwp_ex, iwp_ex,     &
+       lwp_fc, iwp_fc, cld_frac, cld_lwp, cld_iwp, cld_swp, cld_rwp, cond_cfrac_onRH,    &
+       doGP_smearclds)
     implicit none
 
     ! Inputs
@@ -679,7 +677,8 @@ contains
          con_g,             & !< Physical constant: gravitational constant
          con_rd,            & !< Physical constant: gas-constant for dry air
          con_eps,           & !< Physical constant: gas constant air / gas constant H2O
-         alpha0               !<
+         alpha,             & !< Multiplicative tuning parameter for Xu Randall cloud fraction
+         lambda               !< Exponential tuning parameter for Xu Randall cloud fraction
     real(kind_phys), dimension(:,:), intent(in) :: &
          tv_lay,            & !< Virtual temperature (K)
          t_lay,             & !< Temperature (K)
@@ -739,12 +738,11 @@ contains
           cld_swp(iCol,iLay)  = max(0., cld_condensate(iCol,iLay,4) * tem1 * deltaP)
        
           ! Xu-Randall (1996) cloud-fraction. **Additionally, Conditioned on relative-humidity**
-          ! lambda = 0.5
           cld_mr = cld_condensate(iCol,iLay,1) + cld_condensate(iCol,iLay,2) +          &
                cld_condensate(iCol,iLay,3) + cld_condensate(iCol,iLay,4)
           cld_frac(iCol,iLay) = cld_frac_XuRandall(p_lay(iCol,iLay)*0.01,               &
-               qs_lay(iCol,iLay), relhum(iCol,iLay), cld_mr, alpha0,                    &
-               0.5, 1.0, cond_cfrac_onRH)
+               qs_lay(iCol,iLay), relhum(iCol,iLay), cld_mr, alpha,                     &
+               lambda, 1.0, cond_cfrac_onRH)
        enddo
     enddo
 

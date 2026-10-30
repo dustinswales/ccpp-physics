@@ -178,13 +178,6 @@
   dimensions = ()
   type = logical
   intent = in
-[lmfshal]
-  standard_name = flag_for_cloud_area_fraction_option_for_radiation
-  long_name = flag for lmfshal
-  units = flag
-  dimensions = ()
-  type = logical
-  intent = in
 [ltaerosol]
   standard_name = flag_for_aerosol_physics
   long_name = flag for aerosol physics
@@ -678,6 +671,22 @@
   type = real
   kind = kind_phys
   intent = out
+[alpha]
+  standard_name = multiplicative_tuning_parameter_for_Xu_Randall_cloud_fraction
+  long_name = multiplicative tuning parameter for Xu Randall cloud fraction
+  units = 1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
+[lambda]
+  standard_name = exponent_tuning_parameter_for_Xu_Randall_cloud_fraction
+  long_name = exponent tuning parameter for Xu Randall cloud fraction
+  units = 1
+  dimensions = ()
+  type = real
+  kind = kind_phys
+  intent = in
 [errmsg]
   standard_name = ccpp_error_message
   long_name = error message for error handling in CCPP
