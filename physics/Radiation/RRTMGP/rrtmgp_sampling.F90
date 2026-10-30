@@ -124,20 +124,24 @@ contains
        cloud_mask(icol,ilay,1:ngpt) = local_rands(1:ngpt) > (1._wp - cloud_frac(icol,ilay))
        do ilay = cloud_lay_fst+1, cloud_lay_lst
           ! ################################################################################
-          ! Exponential-decorrelation overlap
+          ! Max-random overlap
           !   new  random deviates if the adjacent layer isn't cloudy
-          !   correlated  deviates if the adjacent layer is    cloudy and decorrelation-length
-          ! ################################################################################ 
-          if (l_use_second_rng) then
-             where (randoms2(1:ngpt,ilay,icol) > overlap_param(icol,ilay-1)) &
-                  local_rands(1:ngpt) = randoms(1:ngpt,ilay,icol)
-             cloud_mask(icol,ilay,1:ngpt) = local_rands(1:ngpt) > (1._wp - cloud_frac(icol,ilay))
+          !   same random deviates if the adjacent layer is    cloudy
+          ! ################################################################################
+          if (.not. l_use_overlap_param) then
+             if(cloud_mask_layer(ilay)) then
+                if(.not. cloud_mask_layer(ilay-1)) local_rands(1:ngpt) = randoms(1:ngpt,ilay,icol)
+                cloud_mask(icol,ilay,1:ngpt) = local_rands(1:ngpt) > (1._wp - cloud_frac(icol,ilay))
+             else
+                cloud_mask(icol,ilay,1:ngpt) = .false.
+             end if
+          end if   ! END COND: Maximum-random overlap
           ! ################################################################################
           ! Exponential-random overlap
           !   new  random deviates if the adjacent layer isn't cloudy
           !   correlated  deviates if the adjacent layer is    cloudy
           ! ################################################################################
-          elseif (l_use_overlap_param) then
+          if (l_use_overlap_param) then
              if(cloud_mask_layer(ilay)) then
                 if(cloud_mask_layer(ilay-1)) then
                    ! Create random deviates correlated between this layer and the previous layer
@@ -150,19 +154,19 @@ contains
                 end if
                 cloud_mask(icol,ilay,1:ngpt) = local_rands(1:ngpt) > (1._wp - cloud_frac(icol,ilay))
              endif
+          endif   ! END COND: Exponential/Exponential-random overlap
           ! ################################################################################
-          ! Max-random overlap
+          ! Exponential-decorrelation overlap
           !   new  random deviates if the adjacent layer isn't cloudy
-          !   same random deviates if the adjacent layer is    cloudy
-          ! ################################################################################
-          else
-             if(cloud_mask_layer(ilay)) then
-                if(.not. cloud_mask_layer(ilay-1)) local_rands(1:ngpt) = randoms(1:ngpt,ilay,icol)
-                cloud_mask(icol,ilay,1:ngpt) = local_rands(1:ngpt) > (1._wp - cloud_frac(icol,ilay))
-             else
-                cloud_mask(icol,ilay,1:ngpt) = .false.
-             end if
-          end if   ! END COND: Maximum-random overlap
+          !   correlated  deviates if the adjacent layer is    cloudy and decorrelation-length
+          ! ################################################################################		
+          if (l_use_overlap_param .and. l_use_second_rng) then
+             where(randoms2(1:nGpt,iLay,iCol) .le. overlap_param(iCol,iLay-1))
+                cloud_mask(iCol,iLay,1:nGpt) = randoms(1:ngpt,iLay-1,iCol) > (1._wp - cloud_frac(iCol,iLay))
+             elsewhere
+                cloud_mask(iCol,iLay,1:nGpt) = randoms(1:ngpt,iLay,iCol)   > (1._wp - cloud_frac(iCol,iLay))
+             end where
+          endif 	! END COND: Exponential decorrelation-length
        end do    ! END LOOP: Layers
        
        ! Set cloud-mask in layer below clouds to false      
