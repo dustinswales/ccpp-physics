@@ -19,9 +19,16 @@ module rrtmgp_lw_main
                                     iStr_o2, iStr_ccl4, iStr_cfc11, iStr_cfc12, iStr_cfc22,  &
                                     eps, oneminus, ftiny
   use mersenne_twister,       only: random_setseed, random_number, random_stat 
-  use rrtmgp_sampling,        only: sampled_mask, draw_samples
+  use rrtmgp_sampling,        only: sampled_mask, draw_samples, sample_cloud_type
   use mo_rte_kind,            only: rte_wp => wp
   implicit none
+
+  ! Subgrid convective clouds
+  real(kind_phys), parameter :: &
+       cnv_frac_min    = 1.e-3_kind_phys  !< Minimum convective cloud fraction sampled by McICA.
+                                          !< Convective water in layers below this is not radiatively active.
+  integer, parameter :: &
+       cnv_seed_offset = 1000003          !< Offset added to stratiform McICA seeds for the convective stream.
 
   public rrtmgp_lw_main_init, rrtmgp_lw_main_run
 contains
@@ -79,23 +86,25 @@ contains
 !! \htmlinclude rrtmgp_lw_main_run.html
 !!
   subroutine rrtmgp_lw_main_run(doLWrad, doLWclrsky, top_at_1, doGP_lwscat,              &
-       nCol, nLay, nGases,rrtmgp_phys_blksz,                 &
+       nCol, nLay, nGases,rrtmgp_phys_blksz,                                             &
        nGauss_angles, icseed_lw, iovr, iovr_convcld, iovr_max, iovr_maxrand, iovr_rand,  &
        iovr_dcorr, iovr_exp, iovr_exprand, isubc_lw, semis, tsfg, p_lay, p_lev, t_lay,   &
        t_lev,  vmr_o2, vmr_h2o, vmr_o3, vmr_ch4, vmr_n2o, vmr_co2,                       &
        cld_frac, cld_lwp, cld_reliq, cld_iwp, cld_reice, cld_swp, cld_resnow,            &
        cld_rwp, cld_rerain, precip_frac, cld_cnv_lwp, cld_cnv_reliq, cld_cnv_iwp,        &
-       cld_cnv_reice, cld_pbl_lwp, cld_pbl_reliq, cld_pbl_iwp, cld_pbl_reice,            &
-       cloud_overlap_param, active_gases_array, aerlw_tau, aerlw_ssa, aerlw_g,           &
+       cld_cnv_reice, cld_cnv_frac, doGP_sgs_cnv_in, cld_pbl_lwp, cld_pbl_reliq,         &
+       cld_pbl_iwp, cld_pbl_reice, cloud_overlap_param, cnv_cloud_overlap_param,         &
+       active_gases_array, aerlw_tau, aerlw_ssa, aerlw_g,                                &
        fluxlwUP_allsky, fluxlwDOWN_allsky, fluxlwUP_clrsky, fluxlwDOWN_clrsky,           &
        fluxlwUP_radtime, fluxlwDOWN_radtime, fluxlwUP_jac, errmsg, errflg)
 
     ! Inputs
     logical, intent(in) :: &
+         doGP_sgs_cnv_in,    & ! Flag (namelist) for explicit sgs convective cloud
          doLWrad,            & ! Flag to perform longwave calculation
          doLWclrsky,         & ! Flag to compute clear-sky fluxes
          top_at_1,           & ! Flag for vertical ordering convention
-         doGP_lwscat           ! Flag to include scattering in clouds
+         doGP_lwscat           ! Flag (namelist) to include scattering in clouds
     integer,intent(in) :: &
          nCol,               & ! Number of horizontal points
          nLay,               & ! Number of vertical grid points.
@@ -144,6 +153,8 @@ contains
          cld_cnv_reliq,       & ! Effective radius for convective   liquid cloud-particles
          cld_cnv_iwp,         & ! Water path for       convective   ice    cloud-particles
          cld_cnv_reice,       & ! Effective radius for convective   ice    cloud-particles
+         cld_cnv_frac,        & ! Cloud fraction for   convective   clouds
+         cnv_cloud_overlap_param, & ! Overlap parameter for convective clouds
          cld_pbl_lwp,         & ! Water path for       PBL          liquid cloud-particles
          cld_pbl_reliq,       & ! Effective radius for PBL          liquid cloud-particles
          cld_pbl_iwp,         & ! Water path for       PBL          ice    cloud-particles
@@ -176,7 +187,10 @@ contains
     integer, dimension(rrtmgp_phys_blksz) :: ipseed_lw
     type(random_stat) :: rng_stat
     real(kind_phys), dimension(rrtmgp_phys_blksz) :: zcf0, zcf1
-    logical, dimension(rrtmgp_phys_blksz,nLay,lw_gas_props%get_ngpt()) :: maskMCICA
+    logical, dimension(rrtmgp_phys_blksz,nLay,lw_gas_props%get_ngpt()) :: maskMCICA, maskCNV
+    real(kind_phys), dimension(rrtmgp_phys_blksz,nLay) :: cnv_lwp_ic, cnv_iwp_ic
+    integer, dimension(rrtmgp_phys_blksz) :: ipseed_cnv
+    logical :: cnv_cloudy
     real(kind_phys), dimension(rrtmgp_phys_blksz) :: tau_rain, tau_snow
     real(kind_dbl_prec), dimension(lw_gas_props%get_ngpt()) :: rng1D
     real(rte_wp), dimension(lw_gas_props%get_ngpt(),nLay,rrtmgp_phys_blksz) :: rng3D,rng3D2
@@ -192,7 +206,7 @@ contains
     type(ty_optical_props_1scl) :: lw_optical_props_clrsky, lw_optical_props_aerosol_local
     type(ty_optical_props_2str) :: lw_optical_props_clouds, lw_optical_props_cloudsByBand,    &
          lw_optical_props_cnvcloudsByBand, lw_optical_props_pblcloudsByBand,                  &
-         lw_optical_props_precipByBand
+         lw_optical_props_precipByBand, lw_optical_props_cnvclouds
     type(ty_source_func_lw)     :: sources 
 
     ! Initialize CCPP error handling variables
@@ -204,7 +218,8 @@ contains
     ! Do we have convective cloud properties?
     doGP_sgs_cnv = .false.
     if (present(cld_cnv_lwp) .and. present(cld_cnv_reliq) .and. &
-         present(cld_cnv_iwp) .and. present(cld_cnv_reice)) then
+         present(cld_cnv_iwp) .and. present(cld_cnv_reice) .and. present(cld_cnv_frac) .and. &
+         doGP_sgs_cnv_in) then
        doGP_sgs_cnv = .true.
     endif
     
@@ -238,6 +253,8 @@ contains
     if (doGP_sgs_cnv) then
        call check_error_msg('rrtmgp_lw_main_cnv_cloud_optics_run',&
             lw_optical_props_cnvcloudsByBand%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props%get_band_lims_wavenumber()))
+       call check_error_msg('rrtmgp_lw_main_cnv_cloud_sampling_run',&
+            lw_optical_props_cnvclouds%alloc_2str(rrtmgp_phys_blksz, nLay, lw_gas_props))
     endif
     if (doGP_sgs_pbl) then
        call check_error_msg('rrtmgp_lw_main_pbl_cloud_optics_run',&
@@ -345,6 +362,10 @@ contains
        do iblck = 1, rrtmgp_phys_blksz
           do iLay=1,nLay
              zcf0(iblck) = min(zcf0(iblck), 1._kind_phys - cld_frac(iCol+iblck-1,iLay))
+             if (doGP_sgs_cnv) then
+                if (cld_cnv_frac(iCol+iblck-1,iLay) > cnv_frac_min) &
+                     zcf0(iblck) = min(zcf0(iblck), 1._kind_phys - cld_cnv_frac(iCol+iblck-1,iLay))
+             endif
           enddo
           if (zcf0(iblck) <= ftiny)   zcf0(iblck) = 0._kind_phys
           if (zcf0(iblck) > oneminus) zcf0(iblck) = 1._kind_phys
@@ -361,18 +382,32 @@ contains
                lw_optical_props_cloudsByBand))         ! OUT - RRTMGP DDT containing cloud radiative properties
                                                        !       in each band
           ! Include convective (subgrid scale) clouds?
+          ! Convective clouds are sampled separately (own cloud fraction and overlap; see
+          ! below), so their optics are computed from in-cloud water paths. The input paths
+          ! are grid means
+          ! Dividing by the convective cloud fraction CONSERVES water.
+          cnv_cloudy = .false.
           if (doGP_sgs_cnv) then
-             ! Compute
-             call check_error_msg('rrtmgp_lw_main_cnv_cloud_optics',lw_cloud_props%cloud_optics(&
-                  real(cld_cnv_lwp(iCol:iCol2,:),kind=rte_wp),         & ! IN  - Convective cloud liquid water path (g/m2)
-                  real(cld_cnv_iwp(iCol:iCol2,:),kind=rte_wp),         & ! IN  - Convective cloud ice water path (g/m2)
-                  real(cld_cnv_reliq(iCol:iCol2,:),kind=rte_wp),       & ! IN  - Convective cloud liquid effective radius (microns)
-                  real(cld_cnv_reice(iCol:iCol2,:),kind=rte_wp),       & ! IN  - Convective cloud ice effective radius (microns)
-                  lw_optical_props_cnvcloudsByBand))   ! OUT - RRTMGP DDT containing convective cloud radiative properties
-                                                       !       in each band
-             ! Increment
-             call check_error_msg('rrtmgp_lw_main_increment_cnvclouds_to_clouds',&
-                  lw_optical_props_cnvcloudsByBand%increment(lw_optical_props_cloudsByBand))
+             do iblck = 1, rrtmgp_phys_blksz
+                do iLay = 1, nLay
+                   if (cld_cnv_frac(iCol+iblck-1,iLay) > cnv_frac_min) then
+                      cnv_lwp_ic(iblck,iLay) = cld_cnv_lwp(iCol+iblck-1,iLay) / cld_cnv_frac(iCol+iblck-1,iLay)
+                      cnv_iwp_ic(iblck,iLay) = cld_cnv_iwp(iCol+iblck-1,iLay) / cld_cnv_frac(iCol+iblck-1,iLay)
+                   else
+                      cnv_lwp_ic(iblck,iLay) = 0._kind_phys
+                      cnv_iwp_ic(iblck,iLay) = 0._kind_phys
+                   endif
+                enddo
+             enddo
+             cnv_cloudy = any(cnv_lwp_ic > 0._kind_phys .or. cnv_iwp_ic > 0._kind_phys)
+             if (cnv_cloudy) then
+                call check_error_msg('rrtmgp_lw_main_cnv_cloud_optics',lw_cloud_props%cloud_optics(&
+                     real(cnv_lwp_ic,kind=rte_wp),                        & ! IN  - In-cloud convective liquid water path (g/m2)
+                     real(cnv_iwp_ic,kind=rte_wp),                        & ! IN  - In-cloud convective ice water path (g/m2)
+                     real(cld_cnv_reliq(iCol:iCol2,:),kind=rte_wp),       & ! IN  - Conv. cloud liquid eff. radius (um)
+                     real(cld_cnv_reice(iCol:iCol2,:),kind=rte_wp),       & ! IN  - Conv. cloud ice eff. radius (um)
+                     lw_optical_props_cnvcloudsByBand))   ! OUT - RRTMGP DDT containing convective cloud radiative properties
+             endif
           endif
 
           ! Include PBL (subgrid scale) clouds?
@@ -482,6 +517,33 @@ contains
           call check_error_msg('rrtmgp_lw_main_cloud_sampling',&
                draw_samples(maskMCICA, .true., &
                lw_optical_props_cloudsByBand, lw_optical_props_clouds))
+
+          ! Convective clouds: independent McICA mask using the convective cloud fraction
+          ! and overlap assumption (iovr_convcld), then add to the sampled cloud optics.
+          if (cnv_cloudy) then
+             do ix = 1, rrtmgp_phys_blksz
+                ipseed_cnv(ix) = ipseed_lw(ix) + cnv_seed_offset
+             enddo
+             if (present(cnv_cloud_overlap_param)) then
+                call check_error_msg('rrtmgp_lw_main_cnv_cloud_mask', sample_cloud_type(          &
+                     iovr_convcld, iovr_max, iovr_maxrand, iovr_rand, iovr_dcorr, iovr_exp,         &
+                     iovr_exprand, ipseed_cnv,                                                      &
+                     real(merge(cld_cnv_frac(iCol:iCol2,:), 0._kind_phys,                           &
+                                cld_cnv_frac(iCol:iCol2,:) > cnv_frac_min), kind=rte_wp), maskCNV,  &
+                     overlap_param = real(cnv_cloud_overlap_param(iCol:iCol2,1:nLay-1), kind=rte_wp)))
+             else
+                call check_error_msg('rrtmgp_lw_main_cnv_cloud_mask', sample_cloud_type(          &
+                     iovr_convcld, iovr_max, iovr_maxrand, iovr_rand, iovr_dcorr, iovr_exp,         &
+                     iovr_exprand, ipseed_cnv,                                                      &
+                     real(merge(cld_cnv_frac(iCol:iCol2,:), 0._kind_phys,                           &
+                                cld_cnv_frac(iCol:iCol2,:) > cnv_frac_min), kind=rte_wp), maskCNV))
+             endif
+             call check_error_msg('rrtmgp_lw_main_cnv_cloud_sampling', &
+                  draw_samples(maskCNV, .true., &
+                  lw_optical_props_cnvcloudsByBand, lw_optical_props_cnvclouds))
+             call check_error_msg('rrtmgp_lw_main_increment_cnvclouds_to_clouds', &
+                  lw_optical_props_cnvclouds%increment(lw_optical_props_clouds))
+          endif
        endif
 
        ! ###################################################################################

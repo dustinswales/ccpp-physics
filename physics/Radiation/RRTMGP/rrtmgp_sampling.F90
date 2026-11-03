@@ -22,6 +22,8 @@
 !
 ! -------------------------------------------------------------------------------------------------
 module rrtmgp_sampling
+  use machine,          only: kind_dbl_prec
+  use mersenne_twister, only: random_setseed, random_number, random_stat
   use mo_rte_kind,      only: wp, wl
   use mo_optical_props, only: ty_optical_props_arry, &
                               ty_optical_props_1scl, &
@@ -29,7 +31,7 @@ module rrtmgp_sampling
                               ty_optical_props_nstr
   implicit none
   private
-  public :: draw_samples, sampled_mask
+  public :: draw_samples, sampled_mask, sample_cloud_type
 contains
 !> Apply a T/F sampled cloud mask to cloud optical properties defined by band to produce
 !!  McICA-sampled cloud optical properties
@@ -93,8 +95,9 @@ contains
     real(wp)                             :: rho
     real(wp), dimension(size(randoms,1)) :: local_rands
     logical,  dimension(size(randoms,2)) :: cloud_mask_layer
-    logical                              :: l_use_overlap_param = .false.
-    logical                              :: l_use_second_rng = .false.
+    ! NOTE: no initializers on these flags; an initializer implies SAVE, so a flag set by one
+    !       call (e.g. dcorr) used to persist into later calls (e.g. max-rand).
+    logical                              :: l_use_overlap_param, l_use_second_rng
     character(len=128)                   :: error_msg
 
     ! Array dimensions
@@ -103,10 +106,10 @@ contains
     ngpt = size(randoms, 1)
     
     ! Using cloud-overlap parameter (alpha)?
-    if (present(overlap_param)) l_use_overlap_param = .true.
+    l_use_overlap_param = present(overlap_param)
     
     ! Using a second RNG?
-    if (present(randoms2)) l_use_second_rng = .true.
+    l_use_second_rng    = present(randoms2)
     
     ! Construct the cloud mask for each column
     do icol = 1, ncol
@@ -174,6 +177,82 @@ contains
     end do		! END LOOP: Columns
     
   end subroutine sampled_mask
+
+  ! -------------------------------------------------------------------------------------------------
+  !> Generate a McICA cloud mask for a single cloud type (e.g. subgrid convective cloud) with
+  !! its own cloud fraction, overlap assumption, and random-number stream.
+  !!
+  !! Random numbers are drawn from the Mersenne twister seeded with seeds(icol). Callers should
+  !! offset the seeds from those used for the stratiform cloud so the two masks are statistically
+  !! independent, i.e. the two cloud types overlap randomly within a layer and the expected layer
+  !! cover is cf_a + cf_b*(1 - cf_a).
+  !!
+  !! For decorrelation-length overlap the second set of random numbers continues the same stream
+  !! (no re-seeding), so it is independent of the first set.
+  ! -------------------------------------------------------------------------------------------------
+  function sample_cloud_type(iovr_type, iovr_max, iovr_maxrand, iovr_rand, iovr_dcorr,       &
+       iovr_exp, iovr_exprand, seeds, cloud_frac, cloud_mask, overlap_param) result(error_msg)
+    integer,                    intent(in )           :: iovr_type     ! Overlap assumption for this cloud type
+    integer,                    intent(in )           :: iovr_max, iovr_maxrand, iovr_rand, &
+                                                         iovr_dcorr, iovr_exp, iovr_exprand
+    integer,  dimension(:),     intent(in )           :: seeds         ! ncol
+    real(wp), dimension(:,:),   intent(in )           :: cloud_frac    ! ncol,nlay
+    logical,  dimension(:,:,:), intent(out)           :: cloud_mask    ! ncol,nlay,ngpt
+    real(wp), dimension(:,:),   intent(in ), optional :: overlap_param ! ncol,nlay-1
+    character(len=128)                                :: error_msg
+
+    integer :: ncol, nlay, ngpt, icol, ilay
+    type(random_stat) :: rng_stat
+    real(kind_dbl_prec), dimension(size(cloud_mask,3))                    :: rng1D
+    real(kind_dbl_prec), dimension(size(cloud_mask,3)*size(cloud_mask,2)) :: rng2D
+    real(wp), dimension(size(cloud_mask,3),size(cloud_mask,2),size(cloud_mask,1)) :: rng3D, rng3D2
+
+    error_msg = ""
+    ncol = size(cloud_mask,1)
+    nlay = size(cloud_mask,2)
+    ngpt = size(cloud_mask,3)
+    cloud_mask = .false.
+
+    if (iovr_type == iovr_dcorr .or. iovr_type == iovr_exp .or. iovr_type == iovr_exprand) then
+       if (.not. present(overlap_param)) then
+          error_msg = "sample_cloud_type: overlap_param required for dcorr/exp/exprand overlap"
+          return
+       endif
+    endif
+
+    ! Skip columns with no cloud of this type
+    if (.not. any(cloud_frac > 0._wp)) return
+
+    do icol = 1, ncol
+       call random_setseed(seeds(icol), rng_stat)
+       if (iovr_type == iovr_max) then
+          call random_number(rng1D, rng_stat)
+          do ilay = 1, nlay
+             rng3D(:,ilay,icol) = real(rng1D, wp)
+          enddo
+       else
+          do ilay = 1, nlay
+             call random_number(rng1D, rng_stat)
+             rng3D(:,ilay,icol) = real(rng1D, wp)
+          enddo
+       endif
+       if (iovr_type == iovr_dcorr) then
+          ! Continue the stream: independent of rng3D
+          call random_number(rng2D, rng_stat)
+          rng3D2(:,:,icol) = reshape(real(rng2D, wp), shape=[ngpt,nlay])
+       endif
+    enddo
+
+    if (iovr_type == iovr_maxrand .or. iovr_type == iovr_rand .or. iovr_type == iovr_max) then
+       call sampled_mask(rng3D, cloud_frac, cloud_mask)
+    elseif (iovr_type == iovr_dcorr) then
+       call sampled_mask(rng3D, cloud_frac, cloud_mask, overlap_param=overlap_param, randoms2=rng3D2)
+    elseif (iovr_type == iovr_exp .or. iovr_type == iovr_exprand) then
+       call sampled_mask(rng3D, cloud_frac, cloud_mask, overlap_param=overlap_param)
+    else
+       error_msg = "sample_cloud_type: unsupported overlap assumption"
+    endif
+  end function sample_cloud_type
 
 !> Apply a true/false cloud mask to a homogeneous field
 !!   This could be a kernel

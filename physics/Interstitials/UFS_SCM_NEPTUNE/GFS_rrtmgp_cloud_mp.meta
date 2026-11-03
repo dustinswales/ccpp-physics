@@ -360,7 +360,7 @@
   kind = kind_phys
   intent = in
 [cnv_mixratio]
-  standard_name = convective_cloud_water_mixing_ratio
+  standard_name = convective_cloud_condensate_mixing_ratio
   long_name = moist convective cloud water mixing ratio
   units = kg kg-1
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
@@ -368,7 +368,7 @@
   kind = kind_phys
   intent = in
 [cld_cnv_frac]
-  standard_name = convective_cloud_fraction_for_RRTMGP
+  standard_name = convective_cloud_area_fraction
   long_name = layer convective cloud fraction
   units = frac
   dimensions = (horizontal_loop_extent,vertical_layer_dimension)
