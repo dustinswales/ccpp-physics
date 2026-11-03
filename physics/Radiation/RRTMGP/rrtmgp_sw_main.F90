@@ -555,7 +555,6 @@ contains
              if (iovr == iovr_dcorr) then
                 do iblck = 1, rrtmgp_phys_blksz
                    ! Generate second RNG
-                   call random_setseed(ipseed_sw(iblck),rng_stat)
                    call random_number(rng2D,rng_stat)
                    rng3D2(:,:,iblck) = reshape(source = rng2D,shape=[sw_gas_props%get_ngpt(),nLay])
                 enddo
