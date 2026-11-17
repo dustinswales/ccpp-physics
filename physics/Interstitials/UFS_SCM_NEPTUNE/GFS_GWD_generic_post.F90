@@ -37,7 +37,7 @@ contains
        dtp, dusfcg, dvsfcg, ten_t, ten_u, ten_v, ten_q, dudt, dvdt, dtdt, dqdt, dugwd,      &
        dvgwd, gt0, gq0, gu0, gv0, flag_for_gwd_generic_tend, dtend, dtidx,                  &
        index_of_temperature,index_of_x_wind,index_of_y_wind,index_of_process_orographic_gwd,&
-       dudt_gw, dvdt_gw, dtdt_gw, errmsg, errflg)
+       ten_u_gwd, ten_v_gwd, ten_t_gwd, errmsg, errflg)
 
     use machine, only : kind_phys
     implicit none
@@ -59,7 +59,7 @@ contains
     integer, intent(in) :: dtidx(:,:), index_of_temperature,          &
          index_of_x_wind, index_of_y_wind, index_of_process_orographic_gwd
 
-    real(kind=kind_phys), intent(out) :: dudt_gw(:,:), dvdt_gw(:,:), dtdt_gw(:,:)
+    real(kind=kind_phys), intent(out) :: ten_u_gwd(:,:), ten_v_gwd(:,:), ten_t_gwd(:,:)
     character(len=*), intent(out) :: errmsg
     integer,          intent(out) :: errflg
 
@@ -77,9 +77,9 @@ contains
     ! they are available to other physics parameterizations.
     do k=1,levs
        do i=1,im
-          dudt_gw(i,k) = ten_u(i,k)
-          dvdt_gw(i,k) = ten_v(i,k)
-          dtdt_gw(i,k) = ten_t(i,k)
+          ten_u_gwd(i,k) = ten_u(i,k)
+          ten_v_gwd(i,k) = ten_v(i,k)
+          ten_t_gwd(i,k) = ten_t(i,k)
        end do
     end do
 
