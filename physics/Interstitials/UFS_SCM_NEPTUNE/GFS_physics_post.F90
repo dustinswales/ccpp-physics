@@ -35,18 +35,13 @@ contains
          ip_prod_loss,   & !< Index for process in diagnostic tendency output
          ip_ozmix,       & !< Index for process in diagnostic tendency output
          ip_temp,        & !< Index for process in diagnostic tendency output
-         ip_overhead_ozone,& !< Index for process in diagnostic tendency output
-         imfdeepcnv,     & !< Flag for mass-flux deep convection scheme
-         imfdeepcnv_ntiedtke !< Flag for new Tiedtke deep convection scheme
+         ip_overhead_ozone !< Index for process in diagnostic tendency output
     integer, intent(in), dimension(:,:) :: &
          dtidx             !< Bookkeeping indices for GFS diagnostic tendencies
     logical, intent(in) :: &
          ldiag3d           !< Flag for 3d diagnostic fields
     logical, intent(in), dimension(:) :: &
          is_photochem      !< Flags for photochemistry processes to sum
-    real(kind=kind_phys), intent(in), dimension(:,:) :: &
-         t, q              !< Current temperature and specific humidity
-
     real(kind=kind_phys), intent(in), dimension(:,:) :: &
          u, v, t, qv             !< Current state variables
 
