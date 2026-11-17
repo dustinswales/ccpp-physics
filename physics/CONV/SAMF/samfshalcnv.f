@@ -75,8 +75,7 @@
       real(kind=kind_phys), intent(in) ::  delt, cscale
       real(kind=kind_phys), intent(in) :: psp(:), delp(:,:),            &
      &   prslp(:,:), garea(:), hpbl(:), dot(:,:), phil(:,:),            &
-     &   tmf(:,:,:), q(:,:), qmicro(:,:)
-      real(kind=kind_phys), intent(in), optional :: prevsq(:,:)
+     &   tmf(:,:,:), q(:,:), qmicro(:,:), prevsq(:,:)
       real(kind=kind_phys), intent(in), optional :: sigmain(:,:),       &
      &     omegain(:,:)
 !
@@ -2142,11 +2141,7 @@ c
          else
             sigmaout_loc(:,:) = 0.0_conv_wp
          endif
-         if (present(qmicro)) then
-            qmicro_loc(:,:) = real(qmicro(:,:), kind=conv_wp)
-         else
-            qmicro_loc(:,:) = 0.0_conv_wp
-         endif
+         qmicro_loc(:,:) = real(qmicro(:,:), kind=conv_wp)
          if (present(sigmain)) then
             sigmain_loc(:,:) = real(sigmain(:,:), kind=conv_wp)
          else

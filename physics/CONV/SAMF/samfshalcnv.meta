@@ -288,7 +288,6 @@
   type = real
   kind = kind_phys
   intent = in
-  optional = True
 [q]
   standard_name = physics_timestep_initial_specific_humidity
   long_name = water vapor specific humidity
